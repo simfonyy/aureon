@@ -1,0 +1,13 @@
+
+/target/
+target/
+**/*.rs.bk
+*.pdb
+
+
+gen/schemas/
+
+
+.env
+.env.*
+!.env.example

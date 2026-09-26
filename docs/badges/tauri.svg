@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="22" role="img" aria-label="Tauri: 2">
+  <title>Tauri: 2</title>
+  <clipPath id="r"><rect width="62" height="22" rx="3"/></clipPath>
+  <g clip-path="url(#r)"><path fill="#42454d" d="M0 0h40v22H0z"/><path fill="#16a6bd" d="M40 0h22v22H40z"/></g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,DejaVu Sans,sans-serif" font-size="11"><text x="20.0" y="15">Tauri</text><text x="51.0" y="15">2</text></g>
+</svg>

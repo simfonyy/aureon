@@ -1,0 +1,5 @@
+<template><div class="background-presets" :class="{simple:bg.mode==='optimized'}" aria-label="Пресеты фона"><button v-for="preset in presets" :key="preset.id" type="button" :class="{selected:bg.preset===preset.id}" :aria-pressed="bg.preset===preset.id" @click="bg.selectPreset(preset.id)"><img :src="preset.image" alt="" loading="lazy"/><span>{{preset.label}}</span><i v-if="bg.preset===preset.id"><Icon name="check" :size="12"/></i></button></div></template>
+<script setup lang="ts">
+import {computed} from 'vue';import Icon from '@/components/Icon.vue';import {useBackgroundStore} from '@/stores/background';import {proceduralPresets} from '@/stores/ui/proceduralPresets';import {appearancePresets} from '@/stores/ui/appearancePresets';const bg=useBackgroundStore();
+const presets=computed(()=>bg.mode==='beauty'?proceduralPresets.map(p=>({id:p.name,label:p.name,image:`/backgrounds/${p.name.toLowerCase().replaceAll(' ','-')}.png` })):appearancePresets.map(p=>({id:p.id,label:p.label,image:`/backgrounds/simple/${p.id}.png`})));
+</script>

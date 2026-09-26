@@ -1,0 +1,39 @@
+
+.player-bar { max-width: 100%; min-width: 0; }
+.player-center, .player-right, .player-left, .player-meta, .mini-meta, .mini-info,
+.about-ident, .setting-copy, .settings-content, .settings-scroll, .head-info { min-width: 0; max-width: 100%; }
+.player-title, .player-artist, .mini-title, .mini-artist { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover, .player-cover, .mini-cover, .home-card-art { overflow: hidden; isolation: isolate; }
+.cover img, .player-cover img, .mini-cover img, .home-card-art img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.about-ident a, .about-note, .setting-copy span { overflow-wrap: anywhere; }
+.setting-row { min-width: 0; gap: 14px; }
+.setting-row input, .setting-row select { min-width: 0; max-width: 100%; }
+.setting-row input[type='number'] { width: 100px; }
+.procedural-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.setting-row select, .setting-row input[type='number'] { color: inherit; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: 8px 12px; font: inherit; }
+.setting-row select option { background: #16161c; }
+.liquid-shell.optimized-effects, .liquid-shell:has(.game-active) {
+  .topbar, .sidebar, .rightbar, .player-bar { backdrop-filter: none; }
+  .metal-folds, .metal-ambient { animation-play-state: paused; }
+}
+@media(max-width: 1050px) {
+  .player-bar { grid-template-columns: minmax(0, 1fr) minmax(200px, 1.3fr) minmax(0, 1fr); gap: 8px; }
+  .player-right { flex-wrap: wrap; gap: 4px; }
+  .setting-row:not(.setting-toggle-row) { flex-wrap: wrap; }
+  .setting-slider-control { max-width: 100%; }
+}
+@media(max-width: 760px) {
+  .player-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+  .player-right { grid-column: 1 / -1; justify-content: flex-end; }
+  .settings-page { flex-direction: column; }
+  .settings-nav { flex: 0 0 auto; max-height: 180px; width: 100%; }
+  .settings-nav-list { display: flex; overflow-x: auto; }
+  .settings-nav-group { flex: 0 0 auto; }
+  .settings-nav-group-title, .settings-nav-head { display: none; }
+  .settings-scroll { flex: 1; }
+  .settings-content { padding-inline: 12px; }
+  .material-presets { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .about-card { flex-wrap: wrap; }
+}
+.liquid-metal:has(.procedural-metal.ready) .metal-folds,
+.liquid-metal:has(.procedural-metal.ready) .metal-ambient { animation-play-state: paused; }

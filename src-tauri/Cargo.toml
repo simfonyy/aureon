@@ -1,0 +1,40 @@
+[package]
+name = "nightlezz-devs"
+version = "1.0.0"
+description = "Aureon - music desktop client by Nightlezz Dev's"
+authors = ["Mashiro contributors"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "mashiro_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2.4.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
+md-5 = "0.10"
+sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+hex = "0.4"
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-webpki-roots"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+mashiro-together-crypto = { path = "crates/together-crypto", version = "0.1.0" }
+ed25519-dalek = "2"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common"] }
+

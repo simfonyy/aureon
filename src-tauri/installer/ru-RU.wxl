@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="ru-RU" Codepage="1251" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="TauriLanguage">1049</String>
+  <String Id="TauriCodepage">1251</String>
+  <String Id="LaunchApp">Запустить Aureon</String>
+  <String Id="DowngradeErrorMessage">Уже установлена более новая версия Aureon.</String>
+  <String Id="WelcomeDlgTitle">{\WixUI_Font_Bigger}Вас приветствует мастер установки Aureon</String>
+  <String Id="WelcomeDlgDescription">Мастер установит [ProductName] на ваш компьютер. Нажмите «Далее», чтобы продолжить, или «Отмена», чтобы выйти.</String>
+  <String Id="ExitDialogTitle">{\WixUI_Font_Bigger}Установка Aureon завершена</String>
+  <String Id="ExitDialogDescription">Нажмите «Готово», чтобы закрыть мастер установки.</String>
+</WixLocalization>
