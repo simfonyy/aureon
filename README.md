@@ -23,7 +23,7 @@
 
 ## Скриншоты
 
-![ТЫК](docs/screen_disc.jpg)
+[ТЫК](docs/screen_disc.jpg)
 
 ## Возможности
 
