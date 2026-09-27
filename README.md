@@ -14,15 +14,10 @@
   <img src="docs/badges/rust.svg" alt="Rust 1.77.2 или новее" />
 </p>
 
-Плейлисты, «Моя волна», текст песни и очередь — в отдельном приложении. Проект основан на [Mashiro](https://github.com/aeviww/yandex-music-client). Разработка Aureon — Nightlezz Dev’s.
 
 ## Скриншоты
 
-![Главная страница Aureon](docs/screenshots/home.png)
-
-![Текст песни и очередь в Aureon](docs/screenshots/lyrics.png)
-
-[Снимки интерфейса](docs/screenshots/INDEX.md). На снимках используются демонстрационные треки, плейлисты и текст песни.
+![ТЫК](docs/screen_disc.jpg)
 
 ## Возможности
 
@@ -79,9 +74,17 @@ cargo check --manifest-path src-tauri/Cargo.toml
 
 В Issue укажи версию приложения и шаги, после которых появляется проблема. Если не собирается MSI, приложи лог из `build-logs/`. Перед отправкой убери из лога токены и личные данные.
 
-## Авторство и лицензия
+## Благодарности
 
-Оригинальный проект — [Mashiro](https://github.com/aeviww/yandex-music-client), автор — [elytrya (aeviww)](https://github.com/aeviww). Изменения Aureon — Nightlezz Dev’s.
+Спасибо авторам и разработчикам проектов, которые использовались в Aureon:
+
+- [aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client) — оригинальный проект **Mashiro**, на основе которого создан Aureon
+- [MarshallX/yandex-music-api](https://github.com/MarshallX/yandex-music-api) — описание неофициального API Яндекс Музыки
+- [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — схемы ответов API для Rust-части
+- [Hazzz895/FckCensor](https://github.com/Hazzz895/FckCensor) — логика работы с цензурированными треками
+- [Hazzz895/FckCensorData](https://github.com/Hazzz895/FckCensorData) — база ссылок на нецензурные версии
+- [alexeyfv/slopless](https://github.com/alexeyfv/slopless) — база артистов с Яндекс Музыки
+- [lrclib](https://github.com/tranxuanthang/lrclib) — открытая база текстов песен
 
 Лицензия: **GPL-3.0-or-later**. См. [LICENSE](LICENSE) и [NOTICE](NOTICE). Источники и лицензия шаблона установщика указаны в [src-tauri/installer](src-tauri/installer).
 
