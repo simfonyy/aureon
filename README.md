@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="src-tauri/icons/128x128.png" width="120" alt="Aureon">
+</p>
+
 <h1 align="center">Aureon</h1>
 
-<p align="center">Неофициальный клиент Яндекс Музыки для Windows на Tauri 2 и Vue 3.</p>
+<p align="center">
+  Неофициальный клиент Яндекс Музыки для Windows
+</p>
 
 <p align="center">
   <img src="docs/badges/version.svg" alt="Версия 1.0.0" />
