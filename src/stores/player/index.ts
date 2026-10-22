@@ -1,4 +1,6 @@
 import { defineStore } from "pinia";
+import { watch } from "vue";
+import { bindMediaSession } from "@/lib/mediaSession";
 import { Notify } from "quasar";
 import { api } from "@/api/client";
 import type { Lyrics, Quality, RepeatMode, Track } from "@/api/types";
@@ -133,6 +135,7 @@ let lastSessionSave = 0;
 let lastProgress = 0;
 let quietSince = 0;
 let skipGuard = 0;
+let lyricsRequest = 0;
 
 let clearPendingSeek: (() => void) | null = null;
 let playbackWanted = true;
@@ -233,6 +236,10 @@ export const usePlayerStore = defineStore("player", {
     },
 
     bind() {
+      bindMediaSession(this);
+      watch(() => useUiStore().settings.skipAiTracks, enabled => {
+        if (enabled && this.current) void this.loadCurrent({ startAt: this.progress, autoplay: this.isPlaying });
+      });
       if (useUiStore().settings.censorBypass) void ensureCensorList();
       audio.volume = this.muted ? 0 : this.volume;
       audio.playbackRate = this.playbackRate;
@@ -574,6 +581,8 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async loadCurrent(opts?: { startAt?: number; autoplay?: boolean }) {
+      ++lyricsRequest;
+      this.lyricsLoading = false;
 
       const token = nextSourceToken();
       playbackWanted = opts?.autoplay ?? true;
@@ -589,8 +598,37 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async performLoad(opts?: { startAt?: number; autoplay?: boolean }, token = nextSourceToken()) {
-      const track = this.queue[this.index];
+      let track = this.queue[this.index];
       if (!track) return;
+      if (useUiStore().settings.skipAiTracks) {
+        this.loading = true;
+        // Bound the search to this queue; an all-AI queue must stop, not loop.
+        let extended = false;
+        while (track && useUiStore().settings.skipAiTracks) {
+          const result = await api.aiCheckTracks([track.id]).catch(() => []);
+          if (!isCurrentToken(token)) return;
+          if (!useUiStore().settings.skipAiTracks || !result.some(item => item.id === track!.id && item.ai)) break;
+          if (this.index === this.queue.length - 1 && this.isWave && !extended) {
+            extended = true;
+            await this.extendWave();
+            if (!isCurrentToken(token)) return;
+          }
+          if (this.index >= this.queue.length - 1) {
+            this.current = null;
+            this.lyrics = null;
+            this.progress = 0;
+            this.duration = 0;
+            this.pendingResume = false;
+            this.loading = false;
+            Notify.create({ message: "В очереди больше нет треков, прошедших AI-фильтр" });
+            return;
+          }
+          this.index += 1;
+          track = this.queue[this.index];
+          opts = { autoplay: opts?.autoplay ?? true };
+        }
+        if (!track) { this.loading = false; return; }
+      }
       if (
         useUiStore().settings.autoSkipDisliked &&
         useLibraryStore().disliked(track.id) &&
@@ -887,6 +925,8 @@ export const usePlayerStore = defineStore("player", {
       const track = this.current;
       if (!track) return;
       if (!force && this.lyrics?.track_id === track.id) return;
+      const request = ++lyricsRequest;
+      const isLatest = () => request === lyricsRequest && this.current?.id === track.id;
 
       const pick = mode ?? this.lyricsPick ?? undefined;
       this.lyricsLoading = true;
@@ -903,7 +943,7 @@ export const usePlayerStore = defineStore("player", {
 
       try {
         const found = await loadTrackLyrics(track, pick, force);
-        if (this.current?.id !== track.id) return;
+        if (!isLatest()) return;
         if (found) {
           this.lyrics = found.lyrics;
           this.lyricsOrigin = found.origin;
@@ -915,19 +955,17 @@ export const usePlayerStore = defineStore("player", {
           this.lyricsError = "Текста для этого трека нет";
         }
       } catch {
-        if (this.current?.id !== track.id) return;
+        if (!isLatest()) return;
         if (!hasText(this.lyrics)) {
           this.lyrics = null;
           this.lyricsOrigin = null;
           this.lyricsError = "Не удалось загрузить текст";
         }
       } finally {
-        if (this.current?.id === track.id) this.lyricsLoading = false;
+        if (isLatest()) this.lyricsLoading = false;
       }
 
-      if (this.lyricsFullscreen && !this.lyrics?.lines?.length) {
-        this.openFullscreen();
-      }
+      // Keep the lyrics view open on a miss so retry/source controls remain available.
     },
 
     async setLyricsSource(mode: LyricsSource | null, force = false) {
@@ -1084,6 +1122,15 @@ export const usePlayerStore = defineStore("player", {
       }
       if (audio.paused) void safePlay();
       else audio.pause();
+    },
+
+    setPlaying(wanted: boolean) {
+      playbackWanted = wanted;
+      if (!wanted) { audio.pause(); return; }
+      if (this.loading || !this.current) return;
+      if (this.pendingResume || !audio.getAttribute('src') || audio.error) {
+        void this.loadCurrent({ startAt: this.progress, autoplay: true });
+      } else if (audio.paused) void safePlay();
     },
 
     async next(auto = false) {

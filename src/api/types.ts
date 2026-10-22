@@ -190,6 +190,11 @@ export interface SearchResult {
   albums: AlbumBrief[];
 }
 
+export interface LyricSearchHit {
+  song: GeniusHit;
+  fragment: string;
+}
+
 export type FeedbackType =
   | "radioStarted"
   | "trackStarted"

@@ -27,5 +27,10 @@
 }
 
 .q-scrollarea__thumb {
-  width: max(4px, calc(var(--radius) * 0.4)) !important;
+  display: none !important;
 }
+
+/* Keep wheel, touch and keyboard scrolling; hide only the visual rails. */
+* { scrollbar-width: none !important; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+.q-scrollarea__bar { display: none !important; }

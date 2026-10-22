@@ -6,7 +6,7 @@ New-Item -ItemType Directory -Force $logDirectory | Out-Null
 $log = Join-Path $logDirectory ('MSI-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log')
 Start-Transcript -Path $log | Out-Null
 try {
-    foreach ($tool in @('node.exe','npm.cmd','cargo.exe')) {
+    foreach ($tool in @('node.exe','cargo.exe')) {
         if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "Missing $tool. Install Node.js LTS and Rust (MSVC), then reopen the build window." }
     }
     if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
@@ -17,11 +17,12 @@ try {
         & (Join-Path $vs 'Common7/Tools/Launch-VsDevShell.ps1') -Arch amd64 -HostArch amd64 -SkipAutomaticLocation
     }
     if (-not $SkipInstall) {
+        if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) { throw 'Missing npm.cmd. Use -SkipInstall if dependencies are already installed.' }
         & npm.cmd ci --no-audit --no-fund
         if ($LASTEXITCODE -ne 0) { throw 'npm ci failed; see build log.' }
     }
     
-    & npm.cmd run tauri -- build --bundles msi --verbose
+    & node node_modules/@tauri-apps/cli/tauri.js build --bundles msi --verbose
     if ($LASTEXITCODE -ne 0) { throw 'Tauri MSI build failed; see build log.' }
     $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
     $bundle = Join-Path $PSScriptRoot 'src-tauri/target/release/bundle/msi'

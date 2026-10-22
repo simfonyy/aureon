@@ -11,7 +11,7 @@
       <div class="setting-copy">
         <b>Источник текста</b>
         <span>
-          В режиме «Авто» поиск идёт в LRCLIB, затем в Genius. Яндекс можно выбрать вручную. В окне текста источник меняется только для текущего трека.
+          «Авто» ищет в LRCLIB, Яндексе и Genius и выбирает текст с синхронизацией. В плеере источник можно сменить для текущего трека.
         </span>
       </div>
       <div class="settings-choice">
@@ -48,8 +48,7 @@
       <div class="setting-copy">
         <b>Свой шрифт</b>
         <span>
-          Имя шрифта, установленного в системе. Можно перечислить несколько
-          через запятую - возьмётся первый доступный.
+          Название установленного шрифта. Несколько вариантов можно указать через запятую.
         </span>
       </div>
       <input
@@ -79,20 +78,10 @@
 
     <div class="setting-row">
       <div class="setting-copy">
-        <b>Активная строка</b>
+        <b>Караоке по словам</b>
         <span>
-          «Караоке» постепенно подсвечивает строку во время воспроизведения. Нужен текст с таймингами.
+          Включается автоматически для текста с синхронизацией. Если известно только время строк, подсветка слов приблизительная. Перед первой строкой — отсчёт.
         </span>
-      </div>
-      <div class="settings-choice">
-        <button
-          v-for="item in highlights"
-          :key="item.value"
-          :class="{ on: ui.settings.lyricsHighlight === item.value }"
-          @click="ui.set('lyricsHighlight', item.value)"
-        >
-          {{ item.label }}
-        </button>
       </div>
     </div>
 
@@ -215,14 +204,14 @@
     <SettingToggle
       :model-value="ui.settings.lyricsShowCredits"
       label="Участники записи"
-      description="Показывать продюсеров и авторов с Genius в подвале панели текста."
+      description="Авторы и продюсеры из Genius под текстом песни."
       @update:model-value="ui.set('lyricsShowCredits', $event)"
     />
 
     <SettingToggle
       :model-value="ui.settings.lyricsShowOrigin"
       label="Подпись «Источник»"
-      description="Строка с названием сервиса, откуда загружен текст. Если выключить её и участников записи, подвал исчезнет."
+      description="Название сервиса, из которого загружен текст."
       @update:model-value="ui.set('lyricsShowOrigin', $event)"
     />
 
@@ -231,7 +220,7 @@
     <SettingToggle
       :model-value="ui.settings.lyricsAnnotations"
       label="Разборы строк"
-      description="Отмечать строки, у которых на Genius есть аннотация. Работает и с синхронным текстом из LRCLIB."
+      description="Отмечать строки с комментариями на Genius."
       @update:model-value="ui.set('lyricsAnnotations', $event)"
     />
 
@@ -279,7 +268,6 @@ import type {
   LyricsAnnotationMark,
   LyricsBackdrop,
   LyricsFont,
-  LyricsHighlight,
   LyricsSource,
 } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
@@ -308,12 +296,6 @@ const aligns: Array<{ value: LyricsAlign; label: string }> = [
   { value: "left", label: "Слева" },
   { value: "center", label: "По центру" },
   { value: "right", label: "Справа" },
-];
-
-const highlights: Array<{ value: LyricsHighlight; label: string }> = [
-  { value: "white", label: "Белая" },
-  { value: "accent", label: "Акцент" },
-  { value: "karaoke", label: "Караоке" },
 ];
 
 const backdrops: Array<{ value: LyricsBackdrop; label: string }> = [

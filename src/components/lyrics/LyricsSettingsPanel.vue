@@ -129,21 +129,8 @@
         </button>
       </div>
 
-      <div class="lset-label">Активная строка</div>
-      <div class="lset-seg">
-        <button
-          v-for="item in highlights"
-          :key="item.id"
-          type="button"
-          :class="{ on: s.lyricsHighlight === item.id }"
-          @click="ui.set('lyricsHighlight', item.id)"
-        >
-          {{ item.label }}
-        </button>
-      </div>
-      <div v-if="s.lyricsHighlight === 'karaoke'" class="lset-hint">
-        Строка заливается по ходу песни — работает с синхронным текстом.
-      </div>
+      <div class="lset-label">Караоке по словам</div>
+      <div class="lset-hint">Работает автоматически с синхронным текстом: спетые слова белые, остальные серые. Если есть только время строк, ритм слов приблизительный.</div>
 
       <label class="lset-range" style="margin-top: 10px">
         <span class="lset-range-top">
@@ -339,7 +326,6 @@ import type {
   LyricsAnnotationMark,
   LyricsBackdrop,
   LyricsFont,
-  LyricsHighlight,
   LyricsSource,
 } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
@@ -527,12 +513,6 @@ const aligns: Array<{ id: LyricsAlign; label: string }> = [
   { id: "left", label: "Слева" },
   { id: "center", label: "По центру" },
   { id: "right", label: "Справа" },
-];
-
-const highlights: Array<{ id: LyricsHighlight; label: string }> = [
-  { id: "white", label: "Белая" },
-  { id: "accent", label: "Акцент" },
-  { id: "karaoke", label: "Караоке" },
 ];
 
 const backdrops: Array<{ id: LyricsBackdrop; label: string }> = [

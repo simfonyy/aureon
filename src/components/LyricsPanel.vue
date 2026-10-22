@@ -78,7 +78,7 @@
           class="icon-btn round"
           :class="{ on: player.lyricsFullscreen }"
           data-no-drag
-          @click="player.toggleLyricsFullscreen()"
+          @click="toggleWindow"
         >
           <Icon
             :name="player.lyricsFullscreen ? 'restore' : 'maximize'"
@@ -113,11 +113,11 @@
         :class="{ 'no-artwork': !artworkVisible, 'with-queue': showQueue }"
         
       >
-        <div v-if="artworkVisible" class="lyrics-artwork-column">
+        <div v-show="artworkVisible" class="lyrics-artwork-column">
           <div
             class="lyrics-artwork"
             :class="{ playing: player.isPlaying && motionAllowed }"
-            @click="player.toggleLyricsFullscreen()"
+            @click="toggleWindow"
           >
             <Transition name="lyrics-art-swap"><img :key="coverUrl" decoding="async" :src="coverUrl" alt="Обложка трека" /></Transition>
             <div class="lyrics-artwork-side">
@@ -240,13 +240,13 @@
       </div>
     </div>
 
-        <q-scroll-area v-else ref="scroller" class="lyrics-scroll" @wheel="onStageWheel">
+        <q-scroll-area v-else ref="scroller" class="lyrics-scroll" :class="{ 'lyrics-awaiting-vocal': countdown > 0 }" @wheel="onStageWheel">
           <div
             :key="player.current?.id"
             class="lyrics-lines"
             :class="[
               `align-${s.align}`,
-              `hl-${s.highlight}`,
+              { 'hl-karaoke': synced },
               `ann-${markMode}`,
               { motion: motionAllowed && synced, plain: !synced },
             ]"
@@ -258,12 +258,10 @@
                 :ref="(el) => setLineRef(el, i)"
                 class="lyric-line"
                 :class="[lineClass(i), { annotated: !!lineAnnotations[i], matched: searchMatches.includes(i), found: searchMatches[searchMatchIndex] === i }]"
-                :style="i === player.activeLine ? fillStyle : undefined"
                 @click="seekTo(line.time_ms)"
                 @contextmenu.stop.prevent="onLineMenu($event, i)"
               >
-                <span class="lyric-timestamp" aria-hidden="true">{{ formatDuration(line.time_ms) }}</span>
-                <span class="lyric-text"><span v-for="(word, wordIndex) in (line.text || '…').split(/(\s+)/)" :key="wordIndex" class="lyric-word" :style="{ '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word }}</span></span>
+                <span class="lyric-text"><span v-for="(word, wordIndex) in words[i]" :key="wordIndex" class="lyric-word" :class="{ 'word-singing': karaoke && clockMs >= word.start && clockMs < word.end }" :style="{ '--word-fill': `${wordFill(word, clockMs)}%`, '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word.text }}</span></span>
                 <span
                   v-if="lineAnnotations[i]"
                   class="lyric-note"
@@ -304,8 +302,11 @@
             </div>
           </div>
         </q-scroll-area>
+        <div v-if="countdown" class="lyrics-countdown" aria-label="До начала вокала">
+          <Transition name="countdown-number" mode="out-in"><span :key="countdown">{{ countdown }}</span></Transition>
         </div>
-        <Transition name="lyrics-queue-reveal"><LyricsQueue v-if="showQueue" @close="showQueue = false" /></Transition>
+        </div>
+        <LyricsQueue v-show="showQueue" @close="showQueue = false" />
       </div>
 
       <div v-if="footVisible" class="lyrics-foot">
@@ -397,11 +398,14 @@ import LyricsBackdrop from "@/components/lyrics/LyricsBackdrop.vue";
 import LyricsQueue from "@/components/lyrics/LyricsQueue.vue";
 import WindowControls from "@/components/WindowControls.vue";
 import { startWindowDrag } from "@/lib/window";
+import { useWindowState } from "@/composables/useWindowState";
 import LyricsSettingsPanel from "@/components/lyrics/LyricsSettingsPanel.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
 import { api } from "@/api/client";
 import type { GeniusQuote } from "@/api/types";
 import { audio } from "@/lib/audio";
+import { lineWords, vocalCountdown, wordFill } from "@/lib/karaoke";
+import { createScrollFollower } from "@/lib/smoothScroll";
 import { artistNames, formatDuration } from "@/lib/format";
 import { ORIGIN_LABEL } from "@/lib/lyricsSource";
 import { useGeniusStore } from "@/stores/genius";
@@ -414,6 +418,10 @@ type Credit = { id: number; name: string; role: string; image: string };
 type SourcePick = "auto" | "lrclib" | "genius";
 
 const player = usePlayerStore();
+const { expanded: windowExpanded, ready: windowReady, toggle: toggleWindow } = useWindowState();
+watch([windowExpanded, windowReady], ([expanded, ready]) => {
+  if (ready) player.lyricsFullscreen = expanded;
+}, { immediate: true });
 const router = useRouter();
 const route = useRoute();
 const ui = useUiStore();
@@ -430,7 +438,6 @@ const s = computed(() => ({
   inactive: ui.settings.lyricsInactive,
   align: ui.settings.lyricsAlign,
   backdrop: ui.settings.lyricsBackdrop,
-  highlight: ui.settings.lyricsHighlight,
   glow: ui.settings.lyricsGlow,
   showArtwork: ui.settings.lyricsShowArtwork,
   motion: ui.settings.lyricsMotion,
@@ -443,7 +450,7 @@ const markMode = computed(() =>
 );
 
 const showSettings = ref(false);
-const showQueue = ref(window.innerWidth >= 1180);
+const showQueue = ref(false);
 const searchText = ref('');
 const searchMatchIndex = ref(0);
 const searchMatches = computed(() => {
@@ -455,7 +462,7 @@ const prefersReducedMotion = ref(reducedMotion.matches);
 const updateMotion = () => { prefersReducedMotion.value = reducedMotion.matches; };
 reducedMotion.addEventListener('change', updateMotion);
 onBeforeUnmount(() => reducedMotion.removeEventListener('change', updateMotion));
-const motionAllowed = computed(() => s.value.motion && !prefersReducedMotion.value);
+const motionAllowed = computed(() => s.value.motion && ui.settings.animations && !prefersReducedMotion.value);
 const scrubbing = ref<number | null>(null);
 const seekValue = computed(() => scrubbing.value ?? player.progress);
 function commitSeek(value: number | null) { player.seek(Number(value ?? 0)); scrubbing.value = null; }
@@ -463,8 +470,9 @@ function scrollToLine(index: number) {
   const el = lineRefs.value[index];
   const area = scroller.value;
   if (!el || !area) return;
-  const target = Math.max(0, el.offsetTop - area.$el.clientHeight * 0.36);
-  area.setScrollPosition('vertical', target, motionAllowed.value ? 520 : 0);
+  const scrollTarget = area.getScrollTarget() as HTMLElement;
+  const target = Math.max(0, Math.min(scrollTarget.scrollHeight - scrollTarget.clientHeight, el.offsetTop - area.$el.clientHeight * 0.36));
+  scrollFollower.move(target, motionAllowed.value);
 }
 function findNext() {
   if (!searchMatches.value.length) return;
@@ -473,11 +481,18 @@ function findNext() {
 }
 const scroller = ref<QScrollArea | null>(null);
 const lineRefs = ref<Array<HTMLElement | null>>([]);
+const scrollFollower = createScrollFollower(
+  () => (scroller.value?.getScrollTarget() as HTMLElement | undefined)?.scrollTop ?? 0,
+  value => scroller.value?.setScrollPosition('vertical', value, 0),
+);
+let manualScrollTimer: ReturnType<typeof setTimeout> | undefined;
+let manualScrolling = false;
+onBeforeUnmount(() => { scrollFollower.stop(); clearTimeout(manualScrollTimer); });
+watch(scroller, area => { if (!area) scrollFollower.stop(); });
 
 const ARTWORK_MIN_WIDTH = 720;
 const root = ref<HTMLElement | null>(null);
 const panelWidth = ref(1400);
-watch(() => panelWidth.value >= 1180, (wide) => { showQueue.value = wide; });
 let sizeObserver: ResizeObserver | null = null;
 
 watch(root, (el) => {
@@ -503,7 +518,7 @@ watch(searchMatches, async () => {
   await nextTick();
   const match = searchMatches.value[0];
   if (match !== undefined) scrollToLine(match);
-  else if (!searchText.value.trim()) scrollToLine(player.activeLine);
+  else if (!searchText.value.trim()) scrollToLine(activeIndex.value);
 });
 const synced = computed(() => Boolean(player.lyrics?.synced));
 const coverUrl = computed(() => player.current?.cover_url || "");
@@ -515,6 +530,7 @@ const writers = computed(() => player.lyrics?.writers?.join(", ") || "");
 const artworkVisible = computed(
   () =>
     s.value.showArtwork &&
+    (!showQueue.value || panelWidth.value >= 1180) &&
     Boolean(coverUrl.value) &&
     panelWidth.value >= ARTWORK_MIN_WIDTH,
 );
@@ -685,7 +701,7 @@ const pick = computed<SourcePick>(
 const searchingIn = computed(() => {
   if (pick.value === "lrclib") return "LRCLIB";
   if (pick.value === "genius") return "Genius";
-  return "LRCLIB и Genius";
+  return "LRCLIB, Яндексе и Genius";
 });
 
 const originTag = computed(() => {
@@ -720,27 +736,28 @@ const visualStyle = computed(() => ({
   "--lyrics-line-blur": `${s.value.lineBlur}px`,
 }));
 
-const fill = ref(0);
-const fillStyle = computed(() => ({ "--lp": `${fill.value}%` }));
+const clockMs = ref(player.progress * 1000);
+const activeIndex = computed(() => {
+  if (!synced.value) return -1;
+  let low = 0, high = lines.value.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (lines.value[middle]!.time_ms <= clockMs.value) low = middle + 1;
+    else high = middle;
+  }
+  return low - 1;
+});
+const words = computed(() => lines.value.map((line, i) => lineWords(line, lines.value[i + 1]?.time_ms ?? (player.duration > 0 ? player.duration * 1000 : undefined))));
+const firstVocal = computed(() => words.value.find(row => row.some(word => word.text.trim()))?.[0]?.start);
+const countdown = computed(() => synced.value ? vocalCountdown(firstVocal.value, clockMs.value) : 0);
 const karaoke = computed(
-  () => s.value.highlight === "karaoke" && synced.value && player.showLyrics,
+  () => synced.value && player.showLyrics,
 );
 
 let raf = 0;
 
 function tick() {
-  const index = player.activeLine;
-  const list = lines.value;
-  const line = index >= 0 ? list[index] : null;
-  if (line) {
-    const start = line.time_ms;
-    const end = list[index + 1]?.time_ms ?? start + 4200;
-    const span = Math.max(320, end - start);
-    const now = audio.currentTime * 1000;
-    fill.value = Math.min(100, Math.max(0, ((now - start) / span) * 100));
-  } else {
-    fill.value = 0;
-  }
+  clockMs.value = (player.pendingResume ? player.progress : audio.currentTime) * 1000;
   raf = requestAnimationFrame(tick);
 }
 
@@ -748,11 +765,10 @@ function stopTick() {
   if (!raf) return;
   cancelAnimationFrame(raf);
   raf = 0;
-  fill.value = 0;
 }
 
 watch(
-  karaoke,
+  () => synced.value && player.showLyrics,
   (on) => {
     if (on && !raf) raf = requestAnimationFrame(tick);
     if (!on) stopTick();
@@ -781,7 +797,7 @@ function seekTo(ms: number) {
 }
 
 function lineClass(i: number) {
-  const active = player.activeLine;
+  const active = activeIndex.value;
   return {
     on: i === active,
     past: synced.value && i < active,
@@ -791,6 +807,13 @@ function lineClass(i: number) {
 }
 
 function onStageWheel(event: WheelEvent) {
+  scrollFollower.stop();
+  manualScrolling = true;
+  clearTimeout(manualScrollTimer);
+  manualScrollTimer = setTimeout(() => {
+    manualScrolling = false;
+    if (!searchText.value.trim()) scrollToLine(activeIndex.value);
+  }, 3000);
   const area = scroller.value;
   if (!area) return;
   const target = area.getScrollTarget() as HTMLElement | null;
@@ -806,16 +829,16 @@ function onStageWheel(event: WheelEvent) {
 }
 
 watch(
-  () => player.activeLine,
+  () => activeIndex.value,
   (i) => {
     if (!synced.value || i < 0) return;
-    if (!searchText.value.trim()) scrollToLine(i);
+    if (!searchText.value.trim() && !manualScrolling) scrollToLine(i);
   },
   { flush: 'post' },
 );
 watch([lines, () => player.showLyrics, () => player.lyricsFullscreen], async () => {
   await nextTick();
-  if (!searchText.value.trim()) scrollToLine(player.activeLine);
+  if (!searchText.value.trim()) scrollToLine(activeIndex.value);
 }, { immediate: true });
 
 watch(

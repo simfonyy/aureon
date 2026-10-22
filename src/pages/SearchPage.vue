@@ -11,7 +11,9 @@
               v-model="text"
               type="text"
               spellcheck="false"
-              placeholder="Треки, артисты, альбомы"
+              :placeholder="mode === 'lyrics' ? 'Вспомни несколько слов из песни' : 'Трек, артист или строчка песни'"
+              maxlength="240"
+              aria-label="Поиск музыки"
               @keyup.enter="submit"
               @keydown.esc="closeSuggest"
               @focus="suggestOpen = true"
@@ -41,6 +43,34 @@
             </button>
           </div>
         </div>
+
+        <div class="search-modes q-mt-md" aria-label="Тип поиска">
+          <button :class="{active:mode==='all'}" :aria-pressed="mode==='all'" @click="setMode('all')">Всё</button>
+          <button :class="{active:mode==='lyrics'}" :aria-pressed="mode==='lyrics'" @click="setMode('lyrics')">По строчке</button>
+        </div>
+        <p v-if="!searched" class="faint t-13 q-mt-md">Можно с опечаткой, латиницей или в другой раскладке.</p>
+        <div v-if="alternatives.length && mode==='all'" class="search-alternatives q-mt-md">
+          <span class="faint t-13">Похожие запросы</span>
+          <button v-for="hint in alternatives" :key="hint" @click="pick(hint)">{{ hint }}</button>
+        </div>
+        <p v-if="error" role="status" class="dim q-mt-lg">{{ error }} <button class="search-retry" @click="submit">Повторить</button></p>
+        <section v-if="lyricLoading || lyricMatches.length || lyricError || (searched && mode==='lyrics')" class="q-mt-xl">
+          <div class="h2 q-mb-md">По словам песни</div>
+          <div v-if="lyricLoading" class="dim t-13" role="status"><q-spinner size="18px" class="q-mr-sm" />Ищем совпадения в тексте…</div>
+          <p v-if="lyricError" class="dim t-13" role="status">{{ lyricError }} <button class="search-retry" @click="submit">Повторить</button></p>
+          <article v-for="hit in lyricMatches" :key="hit.song.id" class="lyric-search-hit">
+            <TrackRow v-if="hit.track" :track="hit.track" :index="0" :show-index="false" @play="playLyric(hit)" />
+            <div v-else class="lyric-search-unavailable">
+              <img v-if="hit.song.art" :src="hit.song.art" alt="" loading="lazy" />
+              <div><div class="w-500">{{ hit.song.title }}</div><div class="dim t-13">{{ hit.song.artist }}</div>
+                <div class="faint t-12">{{ hit.lookupFailed ? 'Не удалось проверить наличие в Яндекс Музыке' : 'Совпадение в Яндекс Музыке не найдено' }}</div>
+              </div>
+            </div>
+            <p v-if="hit.fragment" class="lyric-search-fragment">{{ hit.fragment }}</p>
+          </article>
+          <p v-if="!lyricLoading && !lyricError && !lyricMatches.length && mode==='lyrics'" class="dim t-13">Совпадений нет. Попробуй другую строчку или более длинный фрагмент.</p>
+          <div v-if="lyricMatches.length" class="faint t-11 q-mt-sm">Текст — Genius · воспроизведение — Яндекс Музыка</div>
+        </section>
 
         <div v-if="loading" class="q-mt-xl">
           <q-spinner size="24px" color="primary" />
@@ -153,7 +183,8 @@ import { useRoute, useRouter } from "vue-router";
 import LazyTracks from "@/components/LazyTracks.vue";
 import TrackRow from "@/components/TrackRow.vue";
 import { api } from "@/api/client";
-import type { Artist, SearchResult } from "@/api/types";
+import type { Artist, SearchResult, Track } from "@/api/types";
+import { smartCatalog, lyricSearch, queryVariants, bounded, type LyricMatch } from '@/lib/smartSearch';
 import { cachedAvatar, fetchAvatars } from "@/lib/artistAvatar";
 import { usePlayerStore } from "@/stores/player/index";
 import { useGeniusStore } from "@/stores/genius";
@@ -166,6 +197,21 @@ const genius = useGeniusStore();
 const text = ref("");
 const result = ref<SearchResult | null>(null);
 const loading = ref(false);
+const mode = ref<'all'|'lyrics'>('all');
+const searched = ref(false);
+const error = ref('');
+const lyricError = ref('');
+const lyricLoading = ref(false);
+const lyricMatches = ref<LyricMatch[]>([]);
+const alternatives = ref<string[]>([]);
+let request = 0;
+let suggestRequest = 0;
+function setMode(next:'all'|'lyrics') { mode.value=next; if(text.value.trim()) submit(); }
+function playLyric(hit:LyricMatch) {
+  const tracks=lyricMatches.value.map(h=>h.track).filter((t):t is Track=>!!t);
+  const index=tracks.findIndex(t=>t.id===hit.track?.id);
+  if(index>=0) void player.playQueue(tracks,index);
+}
 const avatars = ref<Record<string, string | null>>({});
 
 function avatarOf(artist: Artist): string | null {
@@ -204,6 +250,10 @@ function closeSuggestSoon() {
 }
 
 function clearQuery() {
+  request++; suggestRequest++;
+  clearTimeout(suggestTimer);
+  loading.value=false; lyricLoading.value=false; searched.value=false;
+  lyricMatches.value=[]; alternatives.value=[]; error.value=''; lyricError.value='';
   text.value = "";
   suggestions.value = [];
   result.value = null;
@@ -224,36 +274,54 @@ function submit() {
 }
 
 watch(text, (value) => {
+  const id=++suggestRequest;
+  ++request;
+  loading.value=false; lyricLoading.value=false;
+  suggestions.value=[];
   clearTimeout(suggestTimer);
   const q = value.trim();
+  if(!q) { result.value=null; lyricMatches.value=[]; alternatives.value=[]; searched.value=false; error.value=''; lyricError.value=''; }
   if (q.length < 2) {
     suggestions.value = [];
     return;
   }
-  suggestTimer = setTimeout(() => {
-    void api
-      .searchSuggest(q)
-      .then((list) => {
-        suggestions.value = list.filter(
-          (hint) => hint.toLowerCase() !== q.toLowerCase(),
-        );
-      })
-      .catch(() => {
-        suggestions.value = [];
-      });
-  }, 220);
-});
+  if(mode.value==='lyrics') return;
+  suggestTimer = setTimeout(async () => {
+    const replies=await Promise.allSettled(queryVariants(q).slice(0,2).map(v=>bounded(api.searchSuggest(v))));
+    if(id!==suggestRequest) return;
+    suggestions.value=[...new Set(replies.flatMap(r=>r.status==='fulfilled'?r.value:[]))].filter(h=>h.toLowerCase()!==q.toLowerCase()).slice(0,6);
+  }, 300);
+}, {flush:'sync'});
 
 async function run() {
   const q = text.value.trim();
   if (!q) return;
-  loading.value = true;
-  if (genius.ready) void genius.searchPeople(q);
-  result.value = await api
-    .search(q)
-    .catch(() => ({ tracks: [], artists: [], albums: [] }));
-  loading.value = false;
-  void loadAvatars(result.value?.artists ?? []);
+  clearTimeout(suggestTimer); ++suggestRequest;
+  const id=++request, current=()=>id===request;
+  const lyricsOnly=mode.value==='lyrics';
+  searched.value=true; error.value=''; lyricError.value='';
+  result.value=null; alternatives.value=[]; lyricMatches.value=[];
+  loading.value=!lyricsOnly; lyricLoading.value=false;
+  async function findLyrics() {
+    lyricLoading.value=true;
+    try { const found=await lyricSearch(q,api,current); if(current()) lyricMatches.value=found; }
+    catch { if(current()) lyricError.value='Поиск по тексту сейчас недоступен. Попробуй ещё раз.'; }
+    finally { if(current()) lyricLoading.value=false; }
+  }
+  const automaticLyrics=q.split(/\s+/).length>=3;
+  const lyricsTask=(lyricsOnly || automaticLyrics) ? findLyrics() : null;
+  if(!lyricsOnly) {
+    if(genius.ready) void genius.searchPeople(q);
+    try {
+      const found=await smartCatalog(q,api,current);
+      if(!current()) return;
+      result.value=found.result; alternatives.value=found.alternatives;
+      void loadAvatars(found.result.artists);
+      if(!lyricsTask && !found.result.tracks.length && !found.result.artists.length && !found.result.albums.length) await findLyrics();
+    } catch(e) { if(current()) error.value=e instanceof Error?e.message:'Не удалось выполнить поиск'; }
+    finally { if(current()) loading.value=false; }
+  }
+  await lyricsTask;
 }
 
 function openPerson(id: number) {
@@ -278,7 +346,19 @@ onMounted(() => {
   }
 });
 onBeforeUnmount(() => {
+  request++; suggestRequest++;
   clearTimeout(suggestTimer);
   clearTimeout(blurTimer);
 });
 </script>
+
+<style scoped>
+.search-modes,.search-alternatives {display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-modes button,.search-alternatives button,.search-retry {border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:18px;padding:7px 14px;cursor:pointer;font:inherit}
+.search-modes button.active {background:var(--surface-2);border-color:var(--accent);color:var(--accent)}
+.search-alternatives button,.search-retry {font-size:12px}
+.lyric-search-hit {padding:10px 0;border-bottom:1px solid var(--line)}
+.lyric-search-fragment {margin:4px 16px 8px 66px;color:var(--fg-dim);font-size:13px;white-space:pre-line;line-height:1.6;max-width:680px}
+.lyric-search-unavailable {display:flex;gap:12px;align-items:center;padding:8px 16px}
+.lyric-search-unavailable img {width:38px;height:38px;object-fit:cover;border-radius:6px}
+</style>

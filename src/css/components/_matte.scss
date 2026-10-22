@@ -1,0 +1,17 @@
+html[data-theme='matte'] {
+  .app-shell { background: var(--bg); }
+  .sidebar, .topbar { background: #17191a; backdrop-filter: none; }
+  .sidebar { border-right: 1px solid #ffffff09; }
+  .topbar { border-bottom: 1px solid #ffffff09; }
+  .player-bar { background: #1c1e20; border: 1px solid #ffffff12; box-shadow: 0 12px 40px #0003; backdrop-filter: none; }
+  .player-cover, .cover { box-shadow: none; }
+  .nav-item.active { background: #d6bb8a12; color: #ead6b2; border-color: #d6bb8a24; }
+  .card, .wave-pick { background: var(--surface); box-shadow: none; border-color: #ffffff0b; }
+  .lyrics-tabs, .lyrics-search, .lyrics-queue, .lyrics-artwork { background: #202225; backdrop-filter: none; box-shadow: none; border-color: #ffffff14; }
+  .lyrics-tabs button.active { background: #34332f; border-color: #d6bb8a38; box-shadow: none; color: #f3e6cf; }
+  .lyrics-wrap .la-btn-main { background: #d6bb8a; color: #191916; border: 0; box-shadow: none; }
+  .lyrics-wrap .lyrics-artwork { padding: 0; border: 0; border-radius: 16px; }
+  .lyrics-wrap .lyric-line.on { text-shadow: none; }
+  .q-menu, .q-dialog__inner > div { backdrop-filter: none; }
+  .theme-option.on { border-color: var(--accent); }
+}

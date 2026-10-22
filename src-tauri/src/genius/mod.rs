@@ -9,6 +9,15 @@ mod song;
 mod state;
 mod types;
 
+#[tauri::command]
+pub async fn search_lyrics(query: String) -> Result<Vec<types::LyricSearchHit>, String> {
+    let query = query.trim();
+    if query.chars().count() < 3 { return Ok(Vec::new()); }
+    if query.chars().count() > 240 { return Err("Введите фрагмент до 240 символов".into()); }
+    let body = http::get_site(&format!("/search/lyrics?q={}&per_page=6", http::encode(query))).await?;
+    search::lyric_hits(&body)
+}
+
 use serde_json::Value;
 
 pub use types::{

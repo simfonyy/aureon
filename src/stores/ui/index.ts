@@ -1,4 +1,6 @@
 import { defineStore } from "pinia";
+import { restoreSettings, restorePlayerLayout } from './persistence';
+import { themePalettes } from './themes';
 import { metalTints } from './appearancePresets';
 import { upgradeMetalPreset } from './proceduralPresets';
 import { applyInterfaceSettings } from "./apply";
@@ -76,9 +78,8 @@ function load(): InterfaceSettings {
     const saved = JSON.parse(
       localStorage.getItem(STORAGE_KEY) || "{}",
     ) as Partial<InterfaceSettings>;
-    delete (saved as Record<string, unknown>).gameOverlayEnabled;
-    delete (saved as Record<string, unknown>).gameOverlayDota;
-    const merged: InterfaceSettings = { ...defaultInterfaceSettings, ...saved };
+    const merged = restoreSettings(defaultInterfaceSettings, saved);
+    if (merged.theme !== 'custom' && !Object.hasOwn(themePalettes, merged.theme)) merged.theme = defaultInterfaceSettings.theme;
     if (!['css','webgl'].includes(merged.metalRenderer)) merged.metalRenderer='css';
     if (!['maximum','balanced','optimized'].includes(merged.metalQuality)) merged.metalQuality='balanced';
     if (!/^#[\da-f]{6}$/i.test(merged.metalAccent)) merged.metalAccent='#8b7cff';
@@ -95,14 +96,14 @@ function load(): InterfaceSettings {
     }
     merged.playerButtons = {
       ...defaultPlayerButtonSlots,
-      ...(saved.playerButtons || {}),
+      ...(merged.playerButtons || {}),
     } as PlayerButtonSlots;
     merged.miniButtons = {
       ...defaultMiniButtons,
-      ...(saved.miniButtons || {}),
+      ...(merged.miniButtons || {}),
     } as MiniButtonSlots;
-    merged.playerOrder = sanitizeOrder(saved.playerOrder, playerButtonOrder);
-    merged.miniOrder = sanitizeOrder(saved.miniOrder, miniButtonOrder);
+    merged.playerOrder = sanitizeOrder(merged.playerOrder, playerButtonOrder);
+    merged.miniOrder = sanitizeOrder(merged.miniOrder, miniButtonOrder);
     merged.playerEditMode = false;
     merged.playerButtons.play = "center";
     merged.miniButtons.play = true;
@@ -114,7 +115,7 @@ function load(): InterfaceSettings {
     upgradeMetalPreset(merged);
     return merged;
   } catch {
-    return { ...defaultInterfaceSettings };
+    return structuredClone(defaultInterfaceSettings);
   }
 }
 
@@ -137,6 +138,7 @@ export const useUiStore = defineStore("ui", {
       value: InterfaceSettings[K],
     ) {
       this.settings[key] = value;
+      if (key === 'theme' && value === 'matte') this.settings.accent = '#d6bb8a';
       this.apply();
     },
 
@@ -153,7 +155,7 @@ export const useUiStore = defineStore("ui", {
     },
 
     cancelEdit() {
-      if (this.snapshot) this.settings = { ...this.snapshot };
+      if (this.snapshot) restorePlayerLayout(this.settings, this.snapshot);
       this.snapshot = null;
       this.settings.playerEditMode = false;
       this.apply();

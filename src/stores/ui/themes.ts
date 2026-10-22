@@ -1,4 +1,5 @@
 export type ThemeName =
+  | "matte"
   | "black"
   | "oled"
   | "graphite"
@@ -21,6 +22,13 @@ export interface Palette {
 }
 
 export const themePalettes: Record<Exclude<ThemeName, "custom">, Palette> = {
+  matte: {
+    background: "#141516",
+    surface: "#1c1e20",
+    surface2: "#26292c",
+    hover: "#303437",
+    text: "#f3f0e9",
+  },
   black: {
     background: "#09090b",
     surface: "#151518",
@@ -127,6 +135,7 @@ export const themeNames: Array<{
   value: Exclude<ThemeName, "custom">;
   label: string;
 }> = [
+  { value: "matte", label: "Матовая" },
   { value: "black", label: "Чёрная" },
   { value: "oled", label: "OLED" },
   { value: "graphite", label: "Графит" },

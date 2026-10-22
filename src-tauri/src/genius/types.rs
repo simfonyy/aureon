@@ -2,6 +2,12 @@
 use serde::Serialize;
 
 #[derive(Serialize, Clone, Debug)]
+pub struct LyricSearchHit {
+    pub song: GeniusHit,
+    pub fragment: String,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct GeniusPerson {
     pub id: u64,
     pub name: String,

@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import ts from 'typescript';
+const source = await readFile(new URL('../src/stores/player/session.ts', import.meta.url), 'utf8');
+const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
+const { saveSession, loadSession } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+test('long shuffled session retains the current track and original order of retained tracks', () => {
+  let saved;
+  globalThis.localStorage = { setItem: (_, value) => { saved = value; }, getItem: () => saved };
+  const original = Array.from({ length: 400 }, (_, id) => ({ id: String(id) }));
+  const shuffled = [...original].reverse();
+  saveSession({ queue: shuffled, sourceQueue: original, index: 40, shuffle: true, progress: 12 });
+  const session = loadSession();
+  assert.equal(session.queue[session.index].id, '359');
+  assert.ok(session.sourceQueue.some(track => track.id === '359'));
+  assert.equal(session.sourceQueue.length, 150);
+  assert.deepEqual(session.sourceQueue.map(track => Number(track.id)), session.sourceQueue.map(track => Number(track.id)).sort((a,b) => a-b));
+  assert.deepEqual(new Set(session.sourceQueue.map(track => track.id)), new Set(session.queue.map(track => track.id)));
+});

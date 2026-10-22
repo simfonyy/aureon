@@ -2,7 +2,7 @@
   <section id="settings-downloads" class="settings-group">
     <div class="settings-group-head">
       <h2>Загрузки и качество</h2>
-      <p>Скачанные треки играются с диска и не тратят трафик.</p>
+      <p>Скачанные треки можно слушать без интернета.</p>
     </div>
 
     <label class="setting-row setting-field-row">
@@ -40,14 +40,14 @@
     <SettingToggle
       :model-value="ui.settings.preferLocalFiles"
       label="Сначала искать скачанный файл"
-      description="Если трек уже есть на диске - играем его, иначе берём из сети."
+      description="Воспроизводить сохранённую копию вместо загрузки из сети."
       @update:model-value="ui.set('preferLocalFiles', $event)"
     />
 
     <div class="setting-row">
       <div class="setting-copy">
         <b>Качество воспроизведения</b>
-        <span>Максимум, что отдаёт Яндекс для твоей подписки.</span>
+        <span>Доступное качество зависит от подписки.</span>
       </div>
       <div class="settings-choice">
         <button
@@ -65,7 +65,7 @@
     <SettingToggle
       :model-value="ui.settings.crossfadeEnabled"
       label="Плавные переходы"
-      description="Старый трек угасает, новый плавно разгорается."
+      description="Плавно уменьшать громкость перед сменой трека и повышать после."
       @update:model-value="ui.set('crossfadeEnabled', $event)"
     />
 
@@ -73,7 +73,7 @@
       v-if="ui.settings.crossfadeEnabled"
       :model-value="ui.settings.crossfadeSeconds"
       label="Длительность перехода"
-      description="Сколько длится угасание и разгорание."
+      description="Время изменения громкости."
       :min="0.5"
       :max="8"
       :step="0.5"

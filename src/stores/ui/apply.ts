@@ -104,10 +104,11 @@ export function applyInterfaceSettings(settings: InterfaceSettings): void {
   }
 
   root.dataset.mode = light ? "light" : "dark";
+  root.dataset.theme = settings.theme;
   root.classList.toggle("light-theme", light);
   Dark.set(!light);
 
-  root.classList.toggle("no-glass", !settings.glass);
+  root.classList.toggle("no-glass", !settings.glass || settings.theme === 'matte');
   root.classList.toggle("no-motion", !settings.animations);
   root.classList.toggle("thin-scrollbar", settings.thinScrollbar);
   root.classList.toggle("hide-playlist-covers", !settings.showPlaylistCovers);

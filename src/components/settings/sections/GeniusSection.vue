@@ -3,16 +3,14 @@
     <div class="settings-group-head">
       <h2>Genius</h2>
       <p>
-        Разборы строчек, авторы и продюсеры с genius.com. Нужен бесплатный
-        Client Access Token — порядок действий ниже. Чем берётся сам текст,
-        настраивается в разделе «Текст песни».
+        Разборы строк и участники записи с Genius. Для этих данных нужен бесплатный токен. Источник самого текста выбирается в разделе «Текст песни».
       </p>
     </div>
 
     <SettingToggle
       :model-value="genius.enabled"
       label="Включить Genius"
-      description="В окне текста песни появится второй источник с цитатами и участниками записи."
+      description="Загружать разборы строк и сведения об участниках записи."
       @update:model-value="genius.apply({ enabled: $event })"
     />
 
@@ -40,7 +38,7 @@
     <div class="setting-row setting-row-column">
       <div class="setting-copy">
         <b>Проверка и ссылки</b>
-        <span>{{ genius.checkResult || "Токен ещё не проверяли." }}</span>
+        <span>{{ genius.checkResult || "Токен не проверен." }}</span>
       </div>
       <div class="genius-actions">
         <button

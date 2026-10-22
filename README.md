@@ -1,97 +1,86 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128.png" width="120" alt="Aureon">
+  <img src="public/icons/aureon-256.png" width="88" alt="Логотип Aureon">
 </p>
-
 <h1 align="center">Aureon</h1>
-
+<p align="center">Яндекс Музыка на компьютере. Караоке, поиск по строчке и своё оформление.</p>
 <p align="center">
-  Неофициальный клиент Яндекс Музыки для Windows
+  <a href="https://github.com/simfonyy/aureon/releases/latest">Скачать</a> ·
+  <a href="CHANGELOG.md">Что нового</a> ·
+  <a href="docs/screenshots/INDEX.md">Скриншоты</a> ·
+  <a href="https://github.com/simfonyy/aureon/issues/new/choose">Сообщить о баге</a>
 </p>
 
-<p align="center">
-  <img src="docs/badges/version.svg" alt="Версия 1.0.0" />
-  <img src="docs/badges/license.svg" alt="Лицензия GPL-3.0-or-later" />
-  <img src="docs/badges/windows.svg" alt="Windows x64" />
-</p>
-<p align="center">
-  <img src="docs/badges/tauri.svg" alt="Tauri 2" />
-  <img src="docs/badges/vue.svg" alt="Vue 3" />
-  <img src="docs/badges/typescript.svg" alt="TypeScript 5" />
-  <img src="docs/badges/rust.svg" alt="Rust 1.77.2 или новее" />
-</p>
+![Главный экран Aureon с «Моей волной»](docs/screenshots/home.png)
 
+Aureon — неофициальный клиент Яндекс Музыки для Windows и Linux. Вход через аккаунт Яндекса; доступ к музыке зависит от твоего аккаунта (Наличие Плюса). 
 
-## Скриншоты
+## В обновлении 1.0.1
 
-[ТЫК](docs/screenshots/INDEX.md)
+- **Караоке по словам.** Текст подхватывается автоматически, слова подсвечиваются во время воспроизведения. Перед первой строкой — отсчёт.
+- **Поиск по строчке.** Введи слова, которые помнишь. Совпадения из Genius сопоставляются с треками в Яндекс Музыке.
+- **Поиск с опечатками.** `серега приат`, `serega pirat` или `cthtuf gbhfn` — поиск проверяет близкое написание, транслит и раскладку.
+- **Матовая тема.** Спокойные поверхности без анимированного фона. Живые фоны и настройка цветов тоже доступны.
+- **Фильтр AI-треков.** Можно пропускать треки, отмеченные в базе Slopless.
 
-## Возможности
+Очередь, переходы между строками и сохранение оформления также исправлены. [Полный журнал изменений →](CHANGELOG.md)
 
-- Поиск музыки, плейлисты, любимые треки и «Моя волна».
-- Текст песни с поиском и очередью. В тексте с таймингами нажатие на строку перематывает трек. `Esc` закрывает окно текста.
-- Живой или простой фон, готовые стили и свои цвета.
-- Мини-плеер, эквалайзер, горячие клавиши и работа в трее.
-- Текущий трек в профиле Discord.
-- Версии треков без цензуры, если для них найдена замена в базе FckCensorData.
+| Караоке | Поиск по словам песни |
+| --- | --- |
+| [![Подсветка слов во время воспроизведения](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Поиск трека по фрагменту текста](docs/screenshots/search.png)](docs/screenshots/search.png) |
+
+[Все скриншоты: плеер, исполнитель, статистика и оформление →](docs/screenshots/INDEX.md)
+
+Если источник содержит время только для строк, подсветка слов рассчитывается приблизительно. Текст без таймингов показывается без караоке. Поиск по строчке не добавляет в каталог Яндекса отсутствующие песни, а фильтр AI-треков зависит от покрытия Slopless.
 
 ## Установка
 
-Открой установщик `.msi` и следуй шагам мастера. При первом запуске можно выбрать фон, затем войти в аккаунт Яндекса. Фон и цвета меняются в настройках.
+Готовые выпуски находятся в **[Releases](https://github.com/simfonyy/aureon/releases/latest)**. До публикации 1.0.1 новые функции доступны в [тестовых сборках Actions](https://github.com/simfonyy/aureon/actions/workflows/desktop-packages.yml): открой успешный запуск и скачай архив в разделе Artifacts.
 
-## Сборка из исходников
+| Система | Формат | Как запустить |
+| --- | --- | --- |
+| Windows x64 | MSI | Открыть установщик |
+| Windows x64 | ZIP без установки | Распаковать и запустить `Aureon.exe` |
+| Linux x64 | DEB | Установить через менеджер пакетов |
+| Linux x64 | AppImage | Разрешить выполнение и открыть файл |
 
-Понадобятся Windows x64, Node.js 22, Rust (MSVC) и Visual Studio Build Tools с компонентами C++ и Windows SDK.
+Для Windows нужен WebView2 Runtime; MSI установит его при необходимости. Версии без установки хранят настройки в профиле пользователя. Linux пока экспериментальный: установка и воспроизведение на реальном компьютере требуют проверки. [Подробности и требования к системе →](docs/DISTRIBUTION.md)
 
-Запусти `Build-MSI.bat` из папки проекта. Он установит зависимости и соберёт MSI. При первой сборке нужен интернет.
+## Ещё в приложении
 
-Установщик появится в `src-tauri/target/release/bundle/msi/`, лог сборки — в `build-logs/`.
-
-Для ручной сборки открой Developer PowerShell for Visual Studio:
-
-```powershell
-npm ci
-npm run tauri -- build --bundles msi --verbose
-```
+«Моя волна», плейлисты и любимые треки, очередь, мини-плеер, эквалайзер, горячие клавиши и работа в трее. Есть статистика прослушивания, статус текущего трека в Discord и замена цензурированных версий по базе FckCensorData.
 
 ## Разработка
 
-Интерфейс: Vue 3 и Quasar. Нативная часть: Rust и Tauri 2.
+Vue 3 и Quasar для интерфейса, Rust и Tauri 2 для нативной части.
 
-```powershell
+Нужны Node.js 22, npm, Rust stable и системные зависимости Tauri. На Windows — Visual Studio Build Tools с C++ и Windows SDK. [Зависимости Linux и сборка пакетов](docs/DISTRIBUTION.md).
+
+```sh
 npm ci
 npm run tauri:dev
 ```
 
-`npm run dev` запускает только веб-интерфейс. Воспроизведение и другие нативные функции требуют запуска через Tauri.
+`npm run dev` запускает только интерфейс. Для нативных функций нужен запуск через Tauri.
 
-Проверки проекта:
-
-```powershell
-npm run build
+```sh
 npm test
-cargo check --manifest-path src-tauri/Cargo.toml
+npm run build
+cargo test --locked --lib --manifest-path src-tauri/Cargo.toml
 ```
 
-## Discord
+Windows: `Build-MSI.bat`. Linux: `bash Build-Linux.sh`. Сборки обеих систем: [Desktop packages](.github/workflows/desktop-packages.yml).
 
-Запусти Discord и включи статус в настройках Aureon. Пустое поле Application ID использует приложение по умолчанию. Можно указать ID своего приложения Discord; токен бота не нужен.
+Для бага укажи версию, систему и шаги воспроизведения в [Issue](https://github.com/simfonyy/aureon/issues/new/choose). [Как внести изменения →](CONTRIBUTING.md)
 
-## Сообщить об ошибке
+## Основа и источники
 
-В Issue укажи версию приложения и шаги, после которых появляется проблема. Если не собирается MSI, приложи лог из `build-logs/`. Перед отправкой убери из лога токены и личные данные.
+Aureon основан на [Mashiro — aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client).
 
-## Благодарности
+- [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — описание и схемы API Яндекс Музыки.
+- [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData) — версии треков без цензуры.
+- [Slopless](https://github.com/alexeyfv/slopless) — данные об AI-музыке.
+- [LRCLIB](https://lrclib.net) и [Genius](https://genius.com) — тексты песен.
 
-Спасибо авторам и разработчикам проектов, которые использовались в Aureon:
+**GPL-3.0-or-later** · [LICENSE](LICENSE) · [NOTICE](NOTICE). Лицензия шаблона установщика — в [src-tauri/installer](src-tauri/installer).
 
-- [aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client) — оригинальный проект **Mashiro**, на основе которого создан Aureon
-- [MarshallX/yandex-music-api](https://github.com/MarshallX/yandex-music-api) — описание неофициального API Яндекс Музыки
-- [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — схемы ответов API для Rust-части
-- [Hazzz895/FckCensor](https://github.com/Hazzz895/FckCensor) — логика работы с цензурированными треками
-- [Hazzz895/FckCensorData](https://github.com/Hazzz895/FckCensorData) — база ссылок на нецензурные версии
-- [alexeyfv/slopless](https://github.com/alexeyfv/slopless) — база артистов с Яндекс Музыки
-- [lrclib](https://github.com/tranxuanthang/lrclib) — открытая база текстов песен
-
-Лицензия: **GPL-3.0-or-later**. См. [LICENSE](LICENSE) и [NOTICE](NOTICE). Источники и лицензия шаблона установщика указаны в [src-tauri/installer](src-tauri/installer).
-
-Aureon не связан с ООО "Яндекс" и не является его официальным приложением.
+Яндекс не участвует в разработке Aureon.

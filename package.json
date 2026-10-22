@@ -1,7 +1,7 @@
 {
   "name": "nightlezz-devs-desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Aureon - music desktop client by Nightlezz Dev's",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.16.13",
-    "@tauri-apps/api": "^2.1.1",
+    "@tauri-apps/api": "2.11.1",
     "pinia": "^2.2.6",
     "quasar": "^2.17.4",
     "vue": "^3.5.13",

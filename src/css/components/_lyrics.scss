@@ -396,16 +396,7 @@
 }
 
 .lyrics-lines.hl-karaoke .lyric-line.on {
-  background-image: linear-gradient(
-    90deg,
-    #fff 0%,
-    #fff var(--lp, 0%),
-    rgba(255, 255, 255, calc(var(--lyrics-inactive, 0.32) + 0.18)) var(--lp, 0%),
-    rgba(255, 255, 255, calc(var(--lyrics-inactive, 0.32) + 0.18)) 100%
-  );
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: #fff;
 }
 
 .lyrics-wrap.glow .lyric-line.on {

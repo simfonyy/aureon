@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Aureon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "app.nightlezz.devs.desktop",
   "build": {
     "frontendDist": "../dist/spa",
     "devUrl": "http://localhost:9000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "node node_modules/@quasar/app-vite/bin/quasar.js build"
   },
   "app": {
     "withGlobalTauri": true,
