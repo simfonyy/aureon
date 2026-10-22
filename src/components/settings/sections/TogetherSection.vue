@@ -67,7 +67,7 @@
 
     <div v-if="together.active" class="setting-row column">
       <div class="setting-copy">
-        <b>{{ together.isHost ? "Хостите" : "Слушаете хоста" }}</b>
+        <b>{{ together.isHost ? "Вы управляете комнатой" : "Слушаете вместе" }}</b>
         <span>{{ together.peers.length }} в комнате</span>
       </div>
 
@@ -97,7 +97,7 @@
     <SettingToggle
       :model-value="ui.settings.togetherShowDock"
       label="Плашка комнаты поверх окна"
-      description="Маленькая панель с текстом «Хостите» / «Слушаете» и списком участников. Комната при этом продолжает работать."
+      description="Показывать участников и управление комнатой поверх приложения."
       @update:model-value="ui.set('togetherShowDock', $event)"
     />
 

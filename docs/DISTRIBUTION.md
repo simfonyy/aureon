@@ -7,15 +7,16 @@ ZIP без установки содержит тот же Aureon.exe. Наст�
 
 Linux: `.deb` для Debian/Ubuntu и `.AppImage` для запуска без установки.
 Настройки остаются в профиле пользователя. AppImage собирается с GStreamer для воспроизведения.
-Linux-пакеты пока не собраны и не проверены: на текущем Windows-компьютере нет Linux-среды.
+Linux-пакеты собираются в GitHub Actions на Ubuntu 22.04. Проверка установки и воспроизведения
+на реальном Linux-компьютере ещё нужна, поэтому эти пакеты пока экспериментальные.
 
 ## GitHub Actions
 
-Workflow `Desktop packages` собирает Windows x64 (MSI и ZIP без установки) и Linux x64
+Workflow [Desktop packages](https://github.com/simfonyy/aureon/actions/workflows/desktop-packages.yml) собирает Windows x64 (MSI и ZIP без установки) и Linux x64
 (DEB и AppImage). Он запускается при push в main, build/desktop-packages, при pull request
 в main, при теге v* или вручную: Actions → Desktop packages → Run workflow.
 
-В завершённом запуске скачайте Artifacts → Aureon-Windows-x64 / Aureon-Linux-x64.
+В успешном запуске скачайте Artifacts → Aureon-Windows-x64 / Aureon-Linux-x64.
 Архивы хранятся 30 дней и содержат SHA256SUMS.txt. GitHub Releases автоматически не публикуются.
 Пакеты без цифровой подписи. Workflow не требует личных токенов, только стандартное
 разрешение чтения репозитория. Linux воспроизведение нужно дополнительно проверить на реальном ПК.
