@@ -1,97 +1,86 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128.png" width="120" alt="Aureon">
+  <img src="src-tauri/icons/128x128.png" width="88" alt="Логотип Aureon">
 </p>
 
 <h1 align="center">Aureon</h1>
-
+<p align="center">Неофициальный клиент Яндекс Музыки для компьютера.</p>
 <p align="center">
-  Неофициальный клиент Яндекс Музыки для Windows
+  <a href="https://github.com/simfonyy/aureon/releases/latest">Скачать</a> ·
+  <a href="CHANGELOG.md">Что нового</a> ·
+  <a href="docs/screenshots/INDEX.md">Скриншоты</a> ·
+  <a href="https://github.com/simfonyy/aureon/issues/new/choose">Сообщить о баге</a>
 </p>
 
-<p align="center">
-  <img src="docs/badges/version.svg" alt="Версия 1.0.0" />
-  <img src="docs/badges/license.svg" alt="Лицензия GPL-3.0-or-later" />
-  <img src="docs/badges/windows.svg" alt="Windows x64" />
-</p>
-<p align="center">
-  <img src="docs/badges/tauri.svg" alt="Tauri 2" />
-  <img src="docs/badges/vue.svg" alt="Vue 3" />
-  <img src="docs/badges/typescript.svg" alt="TypeScript 5" />
-  <img src="docs/badges/rust.svg" alt="Rust 1.77.2 или новее" />
-</p>
-
-
-## Скриншоты
-
-[ТЫК](docs/screenshots/INDEX.md)
-
-## Возможности
-
-- Поиск музыки, плейлисты, любимые треки и «Моя волна».
-- Текст песни с поиском и очередью. В тексте с таймингами нажатие на строку перематывает трек. `Esc` закрывает окно текста.
-- Живой или простой фон, готовые стили и свои цвета.
-- Мини-плеер, эквалайзер, горячие клавиши и работа в трее.
-- Текущий трек в профиле Discord.
-- Версии треков без цензуры, если для них найдена замена в базе FckCensorData.
+![Главный экран Aureon с демонстрационными плейлистами](docs/screenshots/screen_2.png)
 
 ## Установка
 
-Открой установщик `.msi` и следуй шагам мастера. При первом запуске можно выбрать фон, затем войти в аккаунт Яндекса. Фон и цвета меняются в настройках.
+**[Последний опубликованный релиз — v1.0.0](https://github.com/simfonyy/aureon/releases/tag/v1.0.0).** Скачай `.msi`, открой установщик и войди в аккаунт Яндекса. Для прослушивания нужен доступ к музыке в твоём аккаунте.
 
-## Сборка из исходников
+Новые изменения перечислены в [журнале обновлений](CHANGELOG.md). Они появятся в установщике после следующего релиза. Скриншот выше показывает интерфейс v1.0.0 с демонстрационными данными.
 
-Понадобятся Windows x64, Node.js 22, Rust (MSVC) и Visual Studio Build Tools с компонентами C++ и Windows SDK.
+| Система | Формат | Статус |
+| --- | --- | --- |
+| Windows x64 | `.msi` | Доступен в Releases |
+| Windows x64 | ZIP без установки | Подготовлен для сборки в Actions |
+| Linux x64 | `.deb`, `.AppImage` | Экспериментальные сборки; требуется проверка на Linux |
 
-Запусти `Build-MSI.bat` из папки проекта. Он установит зависимости и соберёт MSI. При первой сборке нужен интернет.
+Вариант без установки хранит настройки в профиле системы, а не рядом с приложением. [Сборки и требования к системе →](docs/DISTRIBUTION.md)
 
-Установщик появится в `src-tauri/target/release/bundle/msi/`, лог сборки — в `build-logs/`.
+## Что умеет
 
-Для ручной сборки открой Developer PowerShell for Visual Studio:
+- «Моя волна», плейлисты, любимые треки и поиск по каталогу.
+- Текст песни, очередь воспроизведения и переход к нужному месту по нажатию на строку с таймингом.
+- Мини-плеер, эквалайзер, горячие клавиши и работа в трее.
+- Живые и статичные фоны, настройки цветов и расположения элементов плеера.
+- Текущий трек в Discord.
+- Замена цензурированной версии, если подходящий трек есть в базе FckCensorData.
 
-```powershell
-npm ci
-npm run tauri -- build --bundles msi --verbose
-```
+### В следующем обновлении
+
+**Караоке по словам.** Подсветка движется вместе с воспроизведением. Если источник содержит только время строк, время отдельных слов рассчитывается приблизительно. Тексты без таймингов показываются обычным списком.
+
+**Поиск по строчке.** Введи несколько слов из песни или выбери «По строчке». Aureon ищет совпадения в Genius и сопоставляет их с каталогом Яндекса. Трек можно включить, если найдено соответствие по названию и исполнителю.
+
+**Опечатки и раскладка.** Поиск проверяет варианты написания: `серега приат`, `serega pirat`, `cthtuf gbhfn`. Близкие запросы выводятся рядом с результатами. Это транслит и исправление раскладки, не перевод названий.
+
+Также добавлены матовая тема, системные медиаконтроли и настройка пропуска AI-треков по данным Slopless. Покрытие текстов и точность определения AI-треков зависят от внешних источников.
 
 ## Разработка
 
-Интерфейс: Vue 3 и Quasar. Нативная часть: Rust и Tauri 2.
+Интерфейс — Vue 3 и Quasar. Нативная часть — Rust и Tauri 2.
 
-```powershell
+Нужны Node.js 22, npm, Rust stable и системные зависимости Tauri. На Windows — Visual Studio Build Tools с C++ и Windows SDK. [Инструкция для Linux и сборка установщиков](docs/DISTRIBUTION.md).
+
+```sh
 npm ci
 npm run tauri:dev
 ```
 
-`npm run dev` запускает только веб-интерфейс. Воспроизведение и другие нативные функции требуют запуска через Tauri.
+`npm run dev` запускает только интерфейс; для нативных функций нужен запуск через Tauri.
 
-Проверки проекта:
-
-```powershell
-npm run build
+```sh
 npm test
-cargo check --manifest-path src-tauri/Cargo.toml
+npm run build
+cargo test --locked --lib --manifest-path src-tauri/Cargo.toml
 ```
 
-## Discord
+Windows-установщик собирается через `Build-MSI.bat`, Linux-пакеты — через `bash Build-Linux.sh`. В GitHub Actions подготовлен workflow [Desktop packages](.github/workflows/desktop-packages.yml).
 
-Запусти Discord и включи статус в настройках Aureon. Пустое поле Application ID использует приложение по умолчанию. Можно указать ID своего приложения Discord; токен бота не нужен.
+## Обратная связь
 
-## Сообщить об ошибке
+[Сообщи о баге или предложи изменение](https://github.com/simfonyy/aureon/issues/new/choose). Для ошибки нужны версия приложения, система и шаги воспроизведения. Не прикладывай токены, cookies и данные входа. [Как внести изменения в код](CONTRIBUTING.md).
 
-В Issue укажи версию приложения и шаги, после которых появляется проблема. Если не собирается MSI, приложи лог из `build-logs/`. Перед отправкой убери из лога токены и личные данные.
+## Основа и источники
 
-## Благодарности
+Aureon создан на основе [Mashiro — aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client).
 
-Спасибо авторам и разработчикам проектов, которые использовались в Aureon:
+- [MarshallX/yandex-music-api](https://github.com/MarshallX/yandex-music-api) — описание неофициального API Яндекс Музыки.
+- [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — схемы ответов для Rust.
+- [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData) — работа с цензурированными версиями.
+- [Slopless](https://github.com/alexeyfv/slopless) — данные для фильтра AI-треков.
+- [LRCLIB](https://github.com/tranxuanthang/lrclib) и [Genius](https://genius.com) — тексты песен.
 
-- [aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client) — оригинальный проект **Mashiro**, на основе которого создан Aureon
-- [MarshallX/yandex-music-api](https://github.com/MarshallX/yandex-music-api) — описание неофициального API Яндекс Музыки
-- [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — схемы ответов API для Rust-части
-- [Hazzz895/FckCensor](https://github.com/Hazzz895/FckCensor) — логика работы с цензурированными треками
-- [Hazzz895/FckCensorData](https://github.com/Hazzz895/FckCensorData) — база ссылок на нецензурные версии
-- [alexeyfv/slopless](https://github.com/alexeyfv/slopless) — база артистов с Яндекс Музыки
-- [lrclib](https://github.com/tranxuanthang/lrclib) — открытая база текстов песен
+Лицензия **GPL-3.0-or-later**: [LICENSE](LICENSE), [NOTICE](NOTICE). Отдельные источники и лицензия шаблона установщика — в [src-tauri/installer](src-tauri/installer).
 
-Лицензия: **GPL-3.0-or-later**. См. [LICENSE](LICENSE) и [NOTICE](NOTICE). Источники и лицензия шаблона установщика указаны в [src-tauri/installer](src-tauri/installer).
-
-Aureon не связан с ООО "Яндекс" и не является его официальным приложением.
+Aureon не связан с Яндексом и не является его официальным приложением.

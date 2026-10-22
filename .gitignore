@@ -48,3 +48,6 @@ Thumbs.db
 build-logs/
 *.msi
 *.zip
+artifacts/
+*.AppImage
+*.deb

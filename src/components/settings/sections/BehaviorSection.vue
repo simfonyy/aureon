@@ -37,12 +37,6 @@
         description="Плавные переходы между страницами, появление меню и движение элементов. Без них интерфейс переключается мгновенно."
         @update:model-value="ui.set('animations', $event)"
       />
-      <SettingToggle
-        :model-value="ui.settings.thinScrollbar"
-        label="Тонкие полосы прокрутки"
-        description="Узкие скроллбары во всех списках вместо системных широких."
-        @update:model-value="ui.set('thinScrollbar', $event)"
-      />
     </div>
 
     <div class="settings-subgroup">
@@ -159,6 +153,12 @@
         label="Показывать пометку о подмене"
         description="Рядом с названием трека в плеере появляется метка «без цензуры», когда играет подменённая версия."
         @update:model-value="ui.set('censorBadge', $event)"
+      />
+      <SettingToggle
+        :model-value="ui.settings.skipAiTracks"
+        label="Не воспроизводить AI-треки"
+        description="Перед воспроизведением проверять трек по базе Slopless и пропускать отмеченные AI-треки без дизлайка. Неизвестные базе треки могут пройти проверку."
+        @update:model-value="ui.set('skipAiTracks', $event)"
       />
       <SettingToggle
         :model-value="ui.settings.autoDislikeAi"

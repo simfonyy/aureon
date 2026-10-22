@@ -1,0 +1,30 @@
+name: Ошибка
+description: Воспроизведение, интерфейс, текст песни или установка работают неправильно.
+title: '[Баг] '
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Версия Aureon
+      placeholder: Например, 1.0.0 из Releases или ссылка на сборку Actions
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Система и способ установки
+      placeholder: Например, Windows 11 x64, MSI; Ubuntu 22.04, AppImage
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как повторить
+      description: Что нажал, что ожидал и что произошло вместо этого.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Дополнительные сведения
+      description: Скриншот, ссылка на трек или лог сборки. Удали токены, cookies и личные данные перед отправкой.

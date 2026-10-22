@@ -17,10 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { useWindowState } from "@/composables/useWindowState";
 import Icon from "@/components/Icon.vue";
 
-const maximized = ref(false);
+const { expanded: maximized, toggle: toggleMaximize } = useWindowState();
 
 type AppWindow = {
   minimize: () => Promise<void>;
@@ -43,20 +43,10 @@ async function minimize() {
   await win?.minimize();
 }
 
-async function toggleMaximize() {
-  const win = await appWindow();
-  if (!win) return;
-  await win.toggleMaximize();
-  maximized.value = await win.isMaximized();
-}
 
 async function close() {
   const win = await appWindow();
   await win?.close();
 }
 
-onMounted(async () => {
-  const win = await appWindow();
-  if (win) maximized.value = await win.isMaximized();
-});
 </script>

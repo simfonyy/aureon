@@ -2,7 +2,6 @@
   <div
     class="player-bar"
     :class="{
-      'has-viz': ui.settings.playerVisualizer,
       'player-edit': editMode,
     }"
     @contextmenu.prevent="toggleEdit"
@@ -21,9 +20,6 @@
 
       <PlayerEditor />
     </template>
-    <div v-if="ui.settings.playerVisualizer" class="player-viz-window" aria-hidden="true">
-      <canvas ref="vizCanvas" class="player-visualizer" />
-    </div>
 
     <div class="player-left">
       <div
@@ -208,7 +204,6 @@ import Icon from "@/components/Icon.vue";
 import PlayerButton from "@/components/player/PlayerButton.vue";
 import PlayerEditor from "@/components/player/PlayerEditor.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
-import { useVisualizer } from "@/composables/useVisualizer";
 import { formatDuration } from "@/lib/format";
 import { ensureAiArtists, isAiArtist } from "@/lib/aiTag";
 import { useLibraryStore } from "@/stores/library";
@@ -221,8 +216,6 @@ const player = usePlayerStore();
 const library = useLibraryStore();
 const ui = useUiStore();
 
-const vizCanvas = ref<HTMLCanvasElement | null>(null);
-useVisualizer(vizCanvas, () => ui.settings.playerVisualizer, { bars: 72 });
 
 const primaryArtistId = computed(
   () => player.current?.artists?.[0]?.id ?? null,

@@ -9,6 +9,42 @@ use super::types::{GeniusHit, GeniusPersonHit};
 const HIT_LIMIT: usize = 8;
 const PEOPLE_LIMIT: usize = 10;
 
+pub fn lyric_hits(body: &Value) -> Result<Vec<super::types::LyricSearchHit>, String> {
+    let sections = body.get("sections").and_then(Value::as_array)
+        .ok_or_else(|| "Источник текста прислал неизвестный ответ".to_string())?;
+    let mut out = Vec::new();
+    for section in sections.iter().filter(|s| s["type"] == "lyric") {
+        if let Some(hits) = section.get("hits").and_then(Value::as_array) {
+            for hit in hits {
+                let Some(song) = hit.get("result").and_then(hit_from) else { continue; };
+                if out.iter().any(|old: &super::types::LyricSearchHit| old.song.id == song.id) { continue; }
+                let fragment = hit.get("highlights").and_then(Value::as_array)
+                    .and_then(|items| items.iter().find(|h| h["property"] == "lyrics"))
+                    .and_then(|h| h.get("value")).and_then(Value::as_str).unwrap_or("");
+                out.push(super::types::LyricSearchHit { song, fragment: super::parse::strip_tags(fragment).chars().take(240).collect() });
+                if out.len() == 6 { return Ok(out); }
+            }
+        }
+    }
+    Ok(out)
+}
+
+#[cfg(test)]
+mod lyric_search_tests {
+    use super::*;
+    #[test]
+    fn parses_only_lyric_matches_and_plain_fragments() {
+        let hit = serde_json::json!({"result":{"id":7,"title":"Song","artist_names":"Artist"},"highlights":[{"property":"lyrics","value":"a <b>matching</b> line"}]});
+        let body = serde_json::json!({"sections":[{"type":"song","hits":[hit.clone()]},{"type":"lyric","hits":[hit.clone(),hit]}]});
+        let parsed = lyric_hits(&body).unwrap();
+        assert_eq!(parsed.len(),1);
+        assert_eq!(parsed[0].song.title,"Song");
+        assert_eq!(parsed[0].fragment,"a matching line");
+        assert!(lyric_hits(&serde_json::json!({"error":"unavailable"})).is_err());
+        assert!(lyric_hits(&serde_json::json!({"sections":[]})).unwrap().is_empty());
+    }
+}
+
 pub fn norm(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     let mut gap = false;

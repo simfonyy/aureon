@@ -45,6 +45,7 @@ export const SETTINGS_CATALOG: Record<string, string[]> = {
     "Обход цензуры",
     "Показывать пометку о подмене",
     "Автодизлайк AI-треков",
+    "Не воспроизводить AI-треки",
   ],
 
   player: [

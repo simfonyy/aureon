@@ -109,6 +109,7 @@ pub fn run() {
             commands::downloads_info,
             genius::genius_check,
             genius::genius_search,
+            genius::search_lyrics,
             genius::genius_search_people,
             genius::genius_song,
             genius::genius_lookup,

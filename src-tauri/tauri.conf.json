@@ -7,7 +7,7 @@
     "frontendDist": "../dist/spa",
     "devUrl": "http://localhost:9000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "node node_modules/@quasar/app-vite/bin/quasar.js build"
   },
   "app": {
     "withGlobalTauri": true,

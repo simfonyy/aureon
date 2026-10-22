@@ -151,7 +151,12 @@ export const useHotkeysStore = defineStore("hotkeys", {
 
     async applyGlobal() {
       const bindings = this.globalEnabled
-        ? HOTKEYS.filter((meta) => (this.global[meta.action] || "").trim()).map(
+        ? HOTKEYS.filter((meta) => {
+            const key = (this.global[meta.action] || "").trim();
+            // Bare media keys belong to the active OS media session. Registering
+            // them globally as well can consume the key or execute it twice.
+            return key && !('mediaSession' in navigator && /^(MediaPlayPause|MediaNextTrack|MediaPreviousTrack|MediaStop)$/i.test(key));
+          }).map(
             (meta) => ({
               action: meta.action,
               accelerator: (this.global[meta.action] || "").trim(),

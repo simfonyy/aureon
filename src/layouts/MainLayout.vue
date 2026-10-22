@@ -19,7 +19,7 @@
             <Icon name="search" :size="15" class="faint" />
             <input
               v-model="query"
-              placeholder="Найти трек, артиста или альбом"
+              placeholder="Трек, артист или строчка песни"
               @keyup.enter="submitSearch"
             />
             <div v-if="query" class="icon-btn xs round" @click="query = ''">
@@ -462,7 +462,7 @@ const panels = usePanelsStore();
 const liquidAvailable = computed(() => {
   const theme = ui.settings.theme;
   const background = theme === "custom" ? ui.settings.customBackground : themePalettes[theme].background;
-  return ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
+  return theme !== 'matte' && ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
     ;
 });
 const liquidActive=computed(()=>liquidAvailable.value&&!panels.hidden&&!panels.mini);

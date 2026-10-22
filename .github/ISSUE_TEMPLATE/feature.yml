@@ -1,0 +1,16 @@
+name: Предложение
+description: Идея для Aureon или улучшение существующей функции.
+title: '[Идея] '
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Что хочешь сделать
+      description: Опиши ситуацию и что сейчас мешает.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Как это могло бы работать
+      description: Пример поведения, скриншот или ссылка на похожее решение.

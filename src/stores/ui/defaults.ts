@@ -129,6 +129,7 @@ export interface InterfaceSettings {
   censorBadge: boolean;
   minimizeToTray: boolean;
   autoDislikeAi: boolean;
+  skipAiTracks: boolean;
   resumeLastSession: boolean;
   resumeAutoplay: boolean;
 }
@@ -205,7 +206,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   lyricsInactive: 32,
   lyricsAlign: "left",
   lyricsBackdrop: "cover",
-  lyricsHighlight: "white",
+  lyricsHighlight: "karaoke",
   lyricsGlow: true,
   lyricsShowArtwork: true,
   lyricsMotion: true,
@@ -236,6 +237,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   censorBadge: true,
   minimizeToTray: true,
   autoDislikeAi: false,
+  skipAiTracks: false,
   resumeLastSession: true,
   resumeAutoplay: true,
 };

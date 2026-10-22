@@ -7,6 +7,7 @@ import type {
   FeedbackPayload,
   GeniusArtist,
   GeniusHit,
+  LyricSearchHit,
   GeniusSong,
   LrcLyrics,
   Lyrics,
@@ -86,6 +87,7 @@ export const api = {
   album: (id: string) => call<AlbumPage>("get_album", { id }),
 
   search: (text: string) => call<SearchResult>("search_tracks", { text }),
+  searchLyrics: (query: string) => call<LyricSearchHit[]>("search_lyrics", { query }),
 
   likedTracks: () => call<Track[]>("get_liked_tracks"),
 

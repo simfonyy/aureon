@@ -31,7 +31,7 @@ export function sourceOrder(mode: LyricsSource): LyricsOrigin[] {
     case "yandex":
       return ["yandex"];
     default:
-      return ["lrclib", "genius"];
+      return ["lrclib", "yandex", "genius"];
   }
 }
 
@@ -97,6 +97,7 @@ export async function loadTrackLyrics(
   force = false,
 ): Promise<LyricsResult | null> {
   let lastError: unknown = null;
+  let fallback: LyricsResult | null = null;
 
   for (const origin of sourceOrder(mode)) {
     try {
@@ -106,12 +107,16 @@ export async function loadTrackLyrics(
           : origin === "genius"
             ? await fromGenius(track, force)
             : await fromYandex(track);
-      if (lyrics) return { lyrics, origin };
+      if (lyrics) {
+        if (mode !== "auto" || lyrics.synced) return { lyrics, origin };
+        fallback ??= { lyrics, origin };
+      }
     } catch (error) {
       lastError = error;
     }
   }
 
+  if (fallback) return fallback;
   if (lastError) throw lastError;
   return null;
 }

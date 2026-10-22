@@ -54,13 +54,6 @@
     </div>
 
     <SettingToggle
-        label="Визуализатор V2"
-        description="Полосы внутри панели меняются в такт музыке."
-      :model-value="ui.settings.playerVisualizer"
-      @update:model-value="ui.set('playerVisualizer', $event)"
-    />
-
-    <SettingToggle
       label="Показывать тайминги"
       description="Текущее время и длительность по краям полосы прогресса."
       :model-value="ui.settings.playerShowTimes"

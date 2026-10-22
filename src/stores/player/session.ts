@@ -59,9 +59,17 @@ export function loadSession(): PlayerSession | null {
 export function saveSession(session: PlayerSession): void {
   try {
     const trimmed = windowAround(session.queue, session.index);
+    const retained = new Set(trimmed.queue.map(track => track.id));
     const source = session.shuffle
-      ? session.sourceQueue.slice(0, KEEP_TOTAL)
+      ? session.sourceQueue.filter(track => retained.has(track.id))
       : trimmed.queue;
+    // A restored shuffled queue must contain the current track when shuffle is disabled.
+    const sourceIds = new Set(source.map(track => track.id));
+    if (session.shuffle) {
+      for (const track of trimmed.queue) {
+        if (!sourceIds.has(track.id)) { source.push(track); sourceIds.add(track.id); }
+      }
+    }
     const payload: PlayerSession = {
       ...session,
       queue: trimmed.queue,

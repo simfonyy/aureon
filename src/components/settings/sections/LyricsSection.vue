@@ -11,7 +11,7 @@
       <div class="setting-copy">
         <b>Источник текста</b>
         <span>
-          В режиме «Авто» поиск идёт в LRCLIB, затем в Genius. Яндекс можно выбрать вручную. В окне текста источник меняется только для текущего трека.
+          В режиме «Авто» поиск идёт в LRCLIB, Яндексе и Genius. Приоритет у текста с таймингами для караоке. В окне текста источник меняется только для текущего трека.
         </span>
       </div>
       <div class="settings-choice">
@@ -79,20 +79,10 @@
 
     <div class="setting-row">
       <div class="setting-copy">
-        <b>Активная строка</b>
+        <b>Караоке по словам</b>
         <span>
-          «Караоке» постепенно подсвечивает строку во время воспроизведения. Нужен текст с таймингами.
+          Работает автоматически: слова заполняются от серого к белому. Нужен текст с таймингами; если есть только время строк, ритм слов приблизительный. За три секунды до начала вокала появляется отсчёт.
         </span>
-      </div>
-      <div class="settings-choice">
-        <button
-          v-for="item in highlights"
-          :key="item.value"
-          :class="{ on: ui.settings.lyricsHighlight === item.value }"
-          @click="ui.set('lyricsHighlight', item.value)"
-        >
-          {{ item.label }}
-        </button>
       </div>
     </div>
 
@@ -279,7 +269,6 @@ import type {
   LyricsAnnotationMark,
   LyricsBackdrop,
   LyricsFont,
-  LyricsHighlight,
   LyricsSource,
 } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
@@ -308,12 +297,6 @@ const aligns: Array<{ value: LyricsAlign; label: string }> = [
   { value: "left", label: "Слева" },
   { value: "center", label: "По центру" },
   { value: "right", label: "Справа" },
-];
-
-const highlights: Array<{ value: LyricsHighlight; label: string }> = [
-  { value: "white", label: "Белая" },
-  { value: "accent", label: "Акцент" },
-  { value: "karaoke", label: "Караоке" },
 ];
 
 const backdrops: Array<{ value: LyricsBackdrop; label: string }> = [

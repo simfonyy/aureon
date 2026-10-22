@@ -1,0 +1,81 @@
+name: Desktop packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, build/desktop-packages]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64 — MSI and portable
+            os: windows-latest
+            bundles: msi
+            artifact: Aureon-Windows-x64
+          - name: Linux x64 — DEB and AppImage
+            os: ubuntu-22.04
+            bundles: deb,appimage
+            artifact: Aureon-Linux-x64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - name: Linux system and audio dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file pkg-config patchelf \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev \
+            libsecret-1-dev libdbus-1-dev libfuse2 xdg-utils \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-libav
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Install locked frontend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Frontend regression tests
+        run: npm test
+      - name: Backend regression tests
+        working-directory: src-tauri
+        run: cargo test --locked --lib
+      - name: Build installation packages
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: node node_modules/@tauri-apps/cli/tauri.js build --bundles ${{ matrix.bundles }} -- --locked
+      - name: Collect packages and SHA256 checksums
+        run: node scripts/collect-packages.mjs
+      - name: Inspect Linux package
+        if: runner.os == 'Linux'
+        run: |
+          dpkg-deb --info artifacts/*.deb
+          chmod +x artifacts/*.AppImage
+          file artifacts/*.AppImage
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

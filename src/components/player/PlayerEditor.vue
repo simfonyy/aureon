@@ -105,11 +105,6 @@
           :model-value="s.showPlayerArtwork"
           @update:model-value="ui.set('showPlayerArtwork', $event)"
         />
-        <EditSwitch
-          label="Визуализатор"
-          :model-value="s.playerVisualizer"
-          @update:model-value="ui.set('playerVisualizer', $event)"
-        />
       </div>
 
       <div class="pe-col pe-col-wide">
