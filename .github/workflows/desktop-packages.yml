@@ -43,9 +43,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       - name: Linux system and audio dependencies
         if: runner.os == 'Linux'
+        timeout-minutes: 15
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential curl wget file pkg-config patchelf \
+          # The Azure mirror can stall downloads for most of the job's hour limit.
+          # Change only that mirror; keep Ubuntu's signed repositories and suites.
+          sudo find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' \) \
+            -exec sed -i -E 's@https?://azure\.archive\.ubuntu\.com/ubuntu/?@https://archive.ubuntu.com/ubuntu/@g' {} +
+          apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+          sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
+            build-essential curl wget file pkg-config patchelf \
             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev \
             libsecret-1-dev libdbus-1-dev libfuse2 xdg-utils \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
