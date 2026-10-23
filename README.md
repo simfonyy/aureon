@@ -34,14 +34,14 @@ Aureon — неофициальный клиент Яндекс Музыки д�
 
 ## Установка
 
-Готовые выпуски находятся в **[Releases](https://github.com/simfonyy/aureon/releases/latest)**. До публикации 1.0.1 новые функции доступны в [тестовых сборках Actions](https://github.com/simfonyy/aureon/actions/workflows/desktop-packages.yml): открой успешный запуск и скачай архив в разделе Artifacts.
+**[Скачать Aureon 1.0.1](https://github.com/simfonyy/aureon/releases/tag/v1.0.1)** — установщик и версии без установки доступны в Releases. Контрольные суммы файлов — в `SHA256SUMS.txt` рядом с пакетами.
 
 | Система | Формат | Как запустить |
 | --- | --- | --- |
-| Windows x64 | MSI | Открыть установщик |
-| Windows x64 | ZIP без установки | Распаковать и запустить `Aureon.exe` |
-| Linux x64 | DEB | Установить через менеджер пакетов |
-| Linux x64 | AppImage | Разрешить выполнение и открыть файл |
+| Windows x64 | [MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_x64_ru-RU.msi) | Открыть установщик |
+| Windows x64 | [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_windows-x64_portable.zip) | Распаковать и запустить `Aureon.exe` |
+| Linux x64 | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_amd64.deb) | Установить через менеджер пакетов |
+| Linux x64 | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_amd64.AppImage) | Разрешить выполнение и открыть файл |
 
 Для Windows нужен WebView2 Runtime; MSI установит его при необходимости. Версии без установки хранят настройки в профиле пользователя. Linux пока экспериментальный: установка и воспроизведение на реальном компьютере требуют проверки. [Подробности и требования к системе →](docs/DISTRIBUTION.md)
 
