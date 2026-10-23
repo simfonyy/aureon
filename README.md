@@ -4,6 +4,9 @@
 <h1 align="center">Aureon</h1>
 <p align="center">Яндекс Музыка на компьютере. Караоке, поиск по строчке и своё оформление.</p>
 <p align="center">
+  <a href="https://github.com/simfonyy/aureon/releases"><img src="https://img.shields.io/github/downloads/simfonyy/aureon/total?style=flat-square&amp;label=скачиваний%20файлов&amp;labelColor=252628&amp;color=786443" alt="Скачивания файлов из всех релизов Aureon"></a>
+</p>
+<p align="center">
   <a href="https://github.com/simfonyy/aureon/releases/latest">Скачать</a> ·
   <a href="CHANGELOG.md">Что нового</a> ·
   <a href="docs/screenshots/INDEX.md">Скриншоты</a> ·
@@ -35,6 +38,8 @@ Aureon — неофициальный клиент Яндекс Музыки д�
 ## Установка
 
 **[Скачать Aureon 1.0.1](https://github.com/simfonyy/aureon/releases/tag/v1.0.1)** — установщик и версии без установки доступны в Releases. Контрольные суммы файлов — в `SHA256SUMS.txt` рядом с пакетами.
+
+Счётчик вверху обновляется автоматически и учитывает загрузки файлов из всех релизов, включая повторные.
 
 | Система | Формат | Как запустить |
 | --- | --- | --- |
