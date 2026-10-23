@@ -47,8 +47,9 @@ jobs:
         shell: bash
         run: |
           # The Azure mirror can stall downloads for most of the job's hour limit.
-          # Change only that mirror; keep Ubuntu's signed repositories and suites.
-          sudo find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' \) \
+          # Handle direct sources and the mirror+file list used by hosted runners.
+          sudo find /etc/apt -maxdepth 2 -type f \
+            \( -name '*.list' -o -name '*.sources' -o -name '*mirrors*.txt' \) \
             -exec sed -i -E 's@https?://azure\.archive\.ubuntu\.com/ubuntu/?@https://archive.ubuntu.com/ubuntu/@g' {} +
           apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
           sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
