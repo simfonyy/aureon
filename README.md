@@ -2,10 +2,8 @@
   <img src="public/icons/aureon-256.png" width="88" alt="Логотип Aureon">
 </p>
 <h1 align="center">Aureon</h1>
-<p align="center">Яндекс Музыка на компьютере. Караоке, поиск по строчке и своё оформление.</p>
+<p align="center">Своя музыка.</p>
 <p align="center">
-  <a href="https://github.com/simfonyy/aureon/releases"><img src="https://img.shields.io/github/downloads/simfonyy/aureon/total?style=flat-square&amp;label=скачиваний%20файлов&amp;labelColor=252628&amp;color=786443" alt="Скачивания файлов из всех релизов Aureon"></a>
-</p>
 <p align="center">
   <a href="https://github.com/simfonyy/aureon/releases/latest">Скачать</a> ·
   <a href="CHANGELOG.md">Что нового</a> ·
