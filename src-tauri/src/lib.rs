@@ -1,4 +1,5 @@
 mod commands;
+mod updates;
 mod gpu;
 mod files;
 mod genius;
@@ -59,6 +60,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             gpu::detect_gpu,
+            updates::check_update,
+            updates::download_update,
             commands::prefetch_stream,
             commands::clear_stream_cache,
             commands::auth_login,

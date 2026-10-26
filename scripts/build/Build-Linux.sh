@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 if [[ "$(uname -s)" != Linux ]]; then
   echo 'Run this script on Linux (Ubuntu 22.04+ recommended).' >&2
   exit 1

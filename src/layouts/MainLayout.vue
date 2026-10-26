@@ -462,7 +462,7 @@ const panels = usePanelsStore();
 const liquidAvailable = computed(() => {
   const theme = ui.settings.theme;
   const background = theme === "custom" ? ui.settings.customBackground : themePalettes[theme].background;
-  return theme !== 'matte' && ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
+  return ui.settings.backgroundMode === 'beauty' && ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
     ;
 });
 const liquidActive=computed(()=>liquidAvailable.value&&!panels.hidden&&!panels.mini);

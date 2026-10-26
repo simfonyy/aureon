@@ -1,8 +1,8 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Aureon - Build MSI 1.0.0
-echo Aureon 1.0.0 - MSI build
+title Aureon - Build MSI
+echo Aureon - MSI build
 echo This can take several minutes. Internet is needed for the first build.
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Build-MSI.ps1"

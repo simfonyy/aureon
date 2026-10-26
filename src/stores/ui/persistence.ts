@@ -20,3 +20,8 @@ export function restorePlayerLayout<T extends object>(settings: T, snapshot: T):
     if (/^(player|mini)/.test(String(key)) || key === 'showPlayerArtwork') settings[key] = snapshot[key];
   }
 }
+
+export function restoreBackgroundMode(saved: { backgroundMode?: unknown; metalRenderer?: unknown; metalQuality?: unknown; liquidMetal?: unknown; theme?: unknown } | null): 'matte' | 'beauty' {
+  if (saved?.backgroundMode === 'matte' || saved?.backgroundMode === 'beauty') return saved.backgroundMode;
+  return saved?.metalRenderer === 'webgl' && saved.metalQuality !== 'optimized' && saved.liquidMetal !== false && saved.theme !== 'matte' ? 'beauty' : 'matte';
+}

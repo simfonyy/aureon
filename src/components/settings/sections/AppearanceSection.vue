@@ -2,44 +2,10 @@
   <section id="settings-theme" class="settings-group">
     <div class="settings-group-head">
       <h2>Оформление</h2>
-      <p>Цвета панелей, текста и кнопок. Фон — в разделе «Фон и эффекты».</p>
+      <p>Цвет выделения и своя палитра.</p>
     </div>
 
-    <div class="setting-row setting-row-column">
-      <div class="setting-copy">
-        <b>Тема</b>
-        <span>Цвета фона, панелей и текста.</span>
-      </div>
-      <div class="theme-grid">
-        <button
-          v-for="theme in themes"
-          :key="theme.value"
-          class="theme-option"
-          :class="{ on: ui.settings.theme === theme.value }"
-          @click="ui.set('theme', theme.value)"
-        >
-          <span class="theme-preview" :style="{ background: theme.background }">
-            <i :style="{ background: theme.surface }" />
-            <i :style="{ background: theme.surface2 }" />
-          </span>
-          <span>{{ theme.label }}</span>
-        </button>
-        <button
-          class="theme-option"
-          :class="{ on: ui.settings.theme === 'custom' }"
-          @click="ui.useCustomTheme()"
-        >
-          <span
-            class="theme-preview custom-theme-preview"
-            :style="{ background: ui.settings.customBackground }"
-          >
-            <i :style="{ background: ui.settings.customSurface }" />
-            <i :style="{ background: ui.settings.customSurface2 }" />
-          </span>
-          <span>Своя</span>
-        </button>
-      </div>
-    </div>
+    <div class="setting-row"><div class="setting-copy"><b>Свои цвета</b><span>Пресеты матовой темы находятся в разделе «Фон».</span></div><button class="btn" @click="ui.useCustomTheme()">Настроить палитру</button></div>
 
     <div
       v-if="ui.settings.theme === 'custom'"
@@ -47,7 +13,7 @@
     >
       <div class="setting-copy">
         <b>Своя палитра</b>
-        <span>Цвета для своей темы.</span>
+        <span></span>
       </div>
       <div class="custom-palette-grid">
         <ColorField
@@ -113,17 +79,11 @@ import ColorField from "@/components/settings/ColorField.vue";
 import Icon from "@/components/Icon.vue";
 import {
   accentColors,
-  themeNames,
-  themePalettes,
   useUiStore,
 } from "@/stores/ui/index";
 
 const ui = useUiStore();
 const accents = accentColors;
-const themes = themeNames.map((theme) => ({
-  ...theme,
-  ...themePalettes[theme.value],
-}));
 
 type ColorKey =
   | "accent"
@@ -134,7 +94,7 @@ type ColorKey =
 
 function setColor(key: ColorKey, value: string) {
   ui.settings[key] = value;
-  if (key !== "accent") ui.settings.theme = "custom";
+  if (key !== "accent") { ui.settings.theme = "custom"; ui.settings.backgroundMode = "matte"; }
   ui.apply();
 }
 </script>

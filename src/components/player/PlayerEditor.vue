@@ -1,10 +1,10 @@
 <template>
-  <div class="pe-panel" @contextmenu.stop.prevent @pointerdown.stop>
+  <div ref="panel" class="pe-panel" @contextmenu.stop.prevent @pointerdown.stop>
     <div class="pe-panel-head">
       <div class="pe-panel-copy">
         <div class="pe-panel-title">Редактор плеера</div>
         <div class="pe-panel-sub">
-          Тяни кнопки прямо на плеере, края меняют размер. Всё видно сразу.
+          Кнопки можно перетаскивать между частями плеера.
         </div>
       </div>
       <div class="pe-panel-actions">
@@ -58,7 +58,7 @@
       </div>
 
       <div class="pe-col">
-        <div class="pe-col-head">Геометрия</div>
+        <div class="pe-col-head">Расположение</div>
         <EditRange
           label="Поля по краям"
           suffix=" px"
@@ -71,12 +71,12 @@
           label="Блок с треком"
           suffix=" px"
           :min="150"
-          :max="460"
-          :model-value="s.playerMetaWidth"
+          :max="metaLimit"
+          :model-value="Math.min(s.playerMetaWidth, metaLimit)"
           @update:model-value="ui.set('playerMetaWidth', $event)"
         />
         <EditRange
-          label="Ширина прогресса"
+          label="Ширина шкалы"
           suffix="%"
           :min="40"
           :max="100"
@@ -84,7 +84,7 @@
           @update:model-value="ui.set('playerProgressWidth', $event)"
         />
         <EditRange
-          label="Толщина прогресса"
+          label="Толщина шкалы"
           suffix=" px"
           :min="2"
           :max="10"
@@ -127,11 +127,11 @@
             {{ labelOf(id) }}
           </span>
           <span v-if="!hidden.length" class="pe-tray-empty">
-            Перетащи сюда кнопку с плеера, чтобы убрать её
+            Перетащите сюда ненужные кнопки
           </span>
         </div>
         <div class="pe-tray-hint">
-          Обратно — просто перетащи чип в нужную часть плеера.
+          Чтобы вернуть кнопку, перетащите её на плеер.
         </div>
       </div>
     </div>
@@ -147,6 +147,11 @@ import { playerButtonCatalog } from "@/stores/ui/playerButtons";
 import type { PlayerButtonId } from "@/stores/ui/playerButtons";
 import { useUiStore } from "@/stores/ui/index";
 
+import { playerMetaLimit } from "@/lib/playerSizing";
+const panel = ref<HTMLElement | null>(null);
+const contentWidth = ref(1400);
+const metaLimit = computed(() => playerMetaLimit(contentWidth.value));
+let observer: ResizeObserver | undefined;
 const ui = useUiStore();
 const s = computed(() => ui.settings);
 const trayOver = ref(false);
@@ -182,8 +187,12 @@ function onKeydown(event: KeyboardEvent) {
   ui.cancelEdit();
 }
 
-onMounted(() => window.addEventListener("keydown", onKeydown, true));
-onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown, true));
+onMounted(() => {
+  window.addEventListener("keydown", onKeydown, true);
+  const bar = panel.value?.parentElement;
+  if (bar) { observer = new ResizeObserver(entries => { contentWidth.value = entries[0].contentRect.width; }); observer.observe(bar); }
+});
+onBeforeUnmount(() => { observer?.disconnect(); window.removeEventListener("keydown", onKeydown, true); });
 </script>
 
 <style scoped>

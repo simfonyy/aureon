@@ -88,6 +88,7 @@ export function applyInterfaceSettings(settings: InterfaceSettings): void {
     "--player-icon": `${settings.playerIconSize}px`,
     "--player-gap": `${settings.playerGap}px`,
     "--player-pad": `${settings.playerSidePadding}px`,
+    "--player-progress-max": (540 * settings.playerProgressWidth / 100) + "px",
     "--player-progress-width": `${settings.playerProgressWidth}%`,
     "--player-progress-thickness": `${settings.playerProgressThickness}px`,
     "--player-meta-width": `${settings.playerMetaWidth}px`,
@@ -105,10 +106,11 @@ export function applyInterfaceSettings(settings: InterfaceSettings): void {
 
   root.dataset.mode = light ? "light" : "dark";
   root.dataset.theme = settings.theme;
+  root.dataset.appearance = settings.backgroundMode;
   root.classList.toggle("light-theme", light);
   Dark.set(!light);
 
-  root.classList.toggle("no-glass", !settings.glass || settings.theme === 'matte');
+  root.classList.toggle("no-glass", !settings.glass || settings.backgroundMode === 'matte');
   root.classList.toggle("no-motion", !settings.animations);
   root.classList.toggle("thin-scrollbar", settings.thinScrollbar);
   root.classList.toggle("hide-playlist-covers", !settings.showPlaylistCovers);

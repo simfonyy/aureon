@@ -27,6 +27,7 @@ export type LyricsAnnotationMark = "off" | "underline" | "dot" | "tint";
 export const DEFAULT_DISCORD_CLIENT_ID = "1552613649515020348";
 
 export interface InterfaceSettings {
+  backgroundMode: 'matte' | 'beauty';
   metalRenderer: 'css' | 'webgl';
   metalQuality: 'maximum' | 'balanced' | 'optimized';
   metalAccent: string;
@@ -135,6 +136,7 @@ export interface InterfaceSettings {
 }
 
 export const defaultInterfaceSettings: InterfaceSettings = {
+  backgroundMode: 'matte',
   metalRenderer: 'css',
   metalQuality: 'balanced',
   metalAccent: '#8b7cff',

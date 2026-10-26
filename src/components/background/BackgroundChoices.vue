@@ -1,5 +1,23 @@
-<template><div class="background-choices" role="group" aria-label="Тип фона"><button v-for="mode in modes" :key="mode.id" type="button" :class="['background-choice',{selected:bg.mode===mode.id}]" :aria-pressed="bg.mode===mode.id" @click="bg.setMode(mode.id)"><div class="choice-top"><Icon :name="mode.id==='beauty'?'wave':'display'" :size="20"/><b>{{mode.title}}</b><span v-if="recommendation&&bg.recommendation.mode===mode.id" class="recommend-badge">Рекомендуем</span></div><p>{{mode.subtitle}}</p><ul><li v-for="feature in mode.features" :key="feature">{{feature}}</li></ul><div :class="['choice-art',mode.id]"><img :src="mode.id==='beauty'?'/backgrounds/black-chrome.png':'/backgrounds/simple/chrome.png'" alt="" loading="lazy"/><span v-if="bg.mode===mode.id" class="choice-check"><Icon name="check" :size="14"/></span></div></button></div></template>
+<template>
+  <div class="background-choices" role="group" aria-label="Тип фона">
+    <button v-for="mode in modes" :key="mode.id" type="button" :class="['background-choice', {selected:bg.mode===mode.id}]" :aria-pressed="bg.mode===mode.id" @click="bg.setMode(mode.id)">
+      <div class="choice-top"><b>{{mode.title}}</b><Icon v-if="bg.mode===mode.id" name="check" :size="16" /></div>
+      <p>{{mode.subtitle}}</p>
+      <div :class="['choice-art',mode.id]">
+        <img v-if="mode.id==='beauty'" src="/backgrounds/black-chrome.png" alt="" loading="lazy" />
+        <div v-else class="matte-sample" aria-hidden="true"><i/><div><b/><span/><span/></div></div>
+      </div>
+    </button>
+  </div>
+</template>
 <script setup lang="ts">
-import Icon from '@/components/Icon.vue';import {useBackgroundStore} from '@/stores/background';import type {BackgroundMode} from '@/lib/gpuRecommendation';defineProps<{recommendation?:boolean}>();const bg=useBackgroundStore();
-const modes:Array<{id:BackgroundMode;title:string;subtitle:string;features:string[]}>= [{id:'beauty',title:'Живой фон',subtitle:'Движущиеся отражения',features:['Настройка цвета и рисунка','Регулировка скорости','Выше нагрузка на видеокарту']},{id:'optimized',title:'Простой фон',subtitle:'Готовый рисунок без анимации',features:['Выбор цветовой темы','Меньше эффектов','Ниже нагрузка на видеокарту']}];
+import Icon from '@/components/Icon.vue';
+import {useBackgroundStore} from '@/stores/background';
+import type {BackgroundMode} from '@/lib/gpuRecommendation';
+defineProps<{recommendation?:boolean}>();
+const bg=useBackgroundStore();
+const modes: Array<{id:BackgroundMode;title:string;subtitle:string}> = [
+  {id:'optimized',title:'Матовая тема',subtitle:'Однотонный фон и непрозрачные панели.'},
+  {id:'beauty',title:'Живой фон',subtitle:'Движущиеся металлические отражения.'},
+];
 </script>

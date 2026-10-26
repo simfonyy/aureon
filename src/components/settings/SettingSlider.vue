@@ -2,7 +2,7 @@
   <div class="setting-row setting-slider-row">
     <div class="setting-copy">
       <b>{{ label }}</b>
-      <span>{{ description }}</span>
+      <span v-if="description">{{ description }}</span>
     </div>
     <div class="setting-slider-control">
       <span class="setting-number">{{ displayValue }}</span>
@@ -24,7 +24,7 @@ import { computed } from "vue";
 
 const props = defineProps<{
   label: string;
-  description: string;
+  description?: string;
   modelValue: number;
   min: number;
   max: number;

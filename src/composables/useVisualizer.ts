@@ -1,5 +1,6 @@
 import { onBeforeUnmount, onMounted, watch, type Ref } from "vue";
-import { frequencyData } from "@/lib/audio";
+import { spectrumBands, smoothSpectrum } from "@/lib/spectrum";
+import { audioSampleRate, frequencyData } from "@/lib/audio";
 import { usePlayerStore } from "@/stores/player/index";
 
 interface VisualizerOptions { bars?: number }
@@ -9,6 +10,7 @@ export function useVisualizer(canvas: Ref<HTMLCanvasElement | null>, enabled: ()
   const player = usePlayerStore();
   const count = options.bars ?? 56;
   const levels = new Float32Array(count);
+  const targets = new Float32Array(count);
   let raf = 0, last = 0, colorAt = 0, accent = "#a77cff";
   let reduced = false;
   let media: MediaQueryList;
@@ -27,26 +29,23 @@ export function useVisualizer(canvas: Ref<HTMLCanvasElement | null>, enabled: ()
     if (!w || !h) { stop(); return; }
     if (now - colorAt > 500) { accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#a77cff"; colorAt = now; }
     const data = player.isPlaying ? frequencyData() : null;
-    const usable = data ? Math.floor(data.length * .66) : 0;
-    const stride = Math.max(1, Math.floor(usable / count));
+    spectrumBands(data, audioSampleRate(), targets);
     const slot = w / count, bw = Math.max(1, Math.min(4, slot * .48));
-    const maxHeight = Math.min(32, Math.max(0, h - 4));
+    const maxHeight = Math.max(0, h - 4);
     const center = h / 2;
     const fill = ctx.createLinearGradient(0, center - maxHeight / 2, 0, center + maxHeight / 2);
     fill.addColorStop(0, accent); fill.addColorStop(.5, accent); fill.addColorStop(1, "transparent");
     ctx.fillStyle = fill;
     let peak = 0;
     for (let i = 0; i < count; i++) {
-      let sum = 0;
-      if (data) for (let j = 0; j < stride; j++) sum += data[i * stride + j] ?? 0;
-      const target = data ? Math.pow(sum / stride / 255, 1.5) : 0;
+      const target = targets[i];
       const previous = levels[i] ?? 0;
-      const next = previous + (target - previous) * (1 - Math.exp(-dt / (target > previous ? .045 : .21)));
+      const next = smoothSpectrum(previous, target, dt);
       levels[i] = next; peak = Math.max(peak, next);
       if (next < .006) continue;
-      const edge = Math.pow(Math.sin(Math.PI * (i + .5) / count), .4);
+      const edge = (.8 + .2 * Math.sin(Math.PI * (i + .5) / count));
       const bh = Math.min(maxHeight, Math.max(2, next * maxHeight * edge));
-      ctx.globalAlpha = (.25 + next * .5) * edge;
+      ctx.globalAlpha = (.4 + next * .55) * edge;
       ctx.beginPath();ctx.roundRect(i * slot + (slot - bw) / 2, center - bh / 2, bw, bh, Math.min(bw / 2, bh / 2));ctx.fill();
     }
     ctx.globalAlpha = 1;

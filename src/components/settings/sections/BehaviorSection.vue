@@ -13,15 +13,16 @@
       </div>
 
       <SettingToggle
+        v-if="ui.settings.backgroundMode === 'beauty'"
         :model-value="ui.settings.glass"
         label="Размытие панелей"
         description="Размывать фон за полупрозрачными панелями."
         @update:model-value="ui.set('glass', $event)"
       />
       <SettingSlider
-        v-if="ui.settings.glass"
+        v-if="ui.settings.backgroundMode === 'beauty' && ui.settings.glass"
         label="Сила размытия"
-        description="Чем выше значение, тем сильнее размытие."
+
         :model-value="ui.settings.glassBlur"
         :min="0"
         :max="40"

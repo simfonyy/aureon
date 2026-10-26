@@ -1,0 +1,13 @@
+// A stable reading surface keeps moving highlights from crossing small text.
+.liquid-shell {
+  --fg-dim: #c3c5cd;
+  --fg-faint: #a6a9b3;
+  .q-page-container { background: rgba(8, 9, 12, .76); }
+  .settings-nav { background: rgba(16, 17, 21, .94); border-right: 1px solid var(--line); }
+  .settings-group { background: rgba(20, 21, 26, .96); box-shadow: none; }
+  .home-card, .panel, .wave-pick { background-color: rgba(20, 21, 26, .92); }
+  .topbar, .rightbar { background: rgba(12, 13, 17, .92); }
+  .sidebar { background: rgba(12, 13, 17, .92) !important; }
+  .player-bar { background: rgba(20, 21, 26, .95); }
+  .settings-group-head p, .setting-copy span, .settings-subgroup-head p { color: var(--fg-dim); opacity: 1; }
+}

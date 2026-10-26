@@ -1,5 +1,4 @@
 
-.player-bar { max-width: 100%; min-width: 0; }
 .player-center, .player-right, .player-left, .player-meta, .mini-meta, .mini-info,
 .about-ident, .setting-copy, .settings-content, .settings-scroll, .head-info { min-width: 0; max-width: 100%; }
 .player-title, .player-artist, .mini-title, .mini-artist { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -17,13 +16,13 @@
   .metal-folds, .metal-ambient { animation-play-state: paused; }
 }
 @media(max-width: 1050px) {
-  .player-bar { grid-template-columns: minmax(0, 1fr) minmax(200px, 1.3fr) minmax(0, 1fr); gap: 8px; }
+
   .player-right { flex-wrap: wrap; gap: 4px; }
   .setting-row:not(.setting-toggle-row) { flex-wrap: wrap; }
   .setting-slider-control { max-width: 100%; }
 }
 @media(max-width: 760px) {
-  .player-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+
   .player-right { grid-column: 1 / -1; justify-content: flex-end; }
   .settings-page { flex-direction: column; }
   .settings-nav { flex: 0 0 auto; max-height: 180px; width: 100%; }

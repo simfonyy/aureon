@@ -14,6 +14,10 @@
       </div>
     </div>
 
+    <div class="about-update">
+      <button class="btn" :disabled="updates.checking || updates.downloading" @click="updates.check(true)">{{ updates.checking ? 'Проверяем…' : 'Проверить обновления' }}</button>
+      <span role="status">{{ updates.error || (updates.checked && !updates.release ? 'Установлена последняя версия.' : updates.release ? 'Доступна версия ' + updates.release.version : 'Новые версии проверяются автоматически.') }}</span>
+    </div>
     <nav class="about-actions" aria-label="Ссылки проекта">
       <a v-for="link in links" :key="link.url" :href="link.url" @click.prevent="openLink(link.url)">
         <Icon :name="link.icon" :size="17" />
@@ -50,6 +54,8 @@ import { version as appVersion } from "../../../../package.json";
 import { api } from "@/api/client";
 import Icon from "@/components/Icon.vue";
 
+import { useUpdatesStore } from '@/stores/updates';
+const updates = useUpdatesStore();
 const REPOSITORY_URL = "https://github.com/simfonyy/aureon";
 const MAINTAINER_URL = "https://github.com/simfonyy";
 const ORIGINAL_URL = "https://github.com/aeviww/yandex-music-client";
@@ -76,6 +82,8 @@ function openLink(url: string) {
 </script>
 
 <style scoped>
+.about-update { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:0 0 20px; }
+.about-update span { color:var(--fg-dim); font-size:12px; }
 .about-card { display: flex; align-items: center; gap: 24px; padding: 26px 0; }
 .about-icon { width: 96px; height: 96px; flex-shrink: 0; object-fit: contain; }
 .about-identity { min-width: 0; }

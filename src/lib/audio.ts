@@ -197,7 +197,10 @@ export function ensureAnalyser(): boolean {
   }
   if (!analyser) {
     analyser = current.context.createAnalyser();
-    analyser.fftSize = 1024;
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = .25;
+    analyser.minDecibels = -90;
+    analyser.maxDecibels = -20;
     levelBuffer = new Float32Array(analyser.fftSize);
     current.source.connect(analyser);
   }
@@ -205,6 +208,8 @@ export function ensureAnalyser(): boolean {
 }
 
 let freqBuffer: Uint8Array<ArrayBuffer> | null = null;
+
+export function audioSampleRate(): number { return graph?.context.sampleRate ?? 48000; }
 
 export function frequencyData(): Uint8Array | null {
   if (!ensureAnalyser()) return null;

@@ -1,17 +1,38 @@
-html[data-theme='matte'] {
-  .app-shell { background: var(--bg); }
-  .sidebar, .topbar { background: #17191a; backdrop-filter: none; }
-  .sidebar { border-right: 1px solid #ffffff09; }
-  .topbar { border-bottom: 1px solid #ffffff09; }
-  .player-bar { background: #1c1e20; border: 1px solid #ffffff12; box-shadow: 0 12px 40px #0003; backdrop-filter: none; }
+html[data-appearance='matte'] {
+  .app-shell, .lyrics-wrap, .fullscreen-player { background: var(--bg); }
+  .sidebar, .topbar { background: var(--bg); backdrop-filter: none; }
+  .sidebar { border-right: 1px solid var(--line); }
+  .topbar { border-bottom: 1px solid var(--line); }
+  .player-bar, .pe-panel { background: var(--surface); border-color: var(--line); box-shadow: none; backdrop-filter: none; }
+  .settings-nav, .settings-content, .settings-group { background: var(--bg); }
+  .player-bar.has-viz .player-controls { background: var(--surface); backdrop-filter: none; }
   .player-cover, .cover { box-shadow: none; }
-  .nav-item.active { background: #d6bb8a12; color: #ead6b2; border-color: #d6bb8a24; }
-  .card, .wave-pick { background: var(--surface); box-shadow: none; border-color: #ffffff0b; }
-  .lyrics-tabs, .lyrics-search, .lyrics-queue, .lyrics-artwork { background: #202225; backdrop-filter: none; box-shadow: none; border-color: #ffffff14; }
-  .lyrics-tabs button.active { background: #34332f; border-color: #d6bb8a38; box-shadow: none; color: #f3e6cf; }
-  .lyrics-wrap .la-btn-main { background: #d6bb8a; color: #191916; border: 0; box-shadow: none; }
+  .nav.on { background: var(--surface-2); border-color: transparent; color: var(--fg); }
+  .nav.on .ic { color: var(--accent); }
+  .card, .wave-pick, .home-card { background: var(--surface); box-shadow: none; border-color: var(--line); }
+  .lyrics-tabs, .lyrics-search, .lyrics-queue, .lyrics-artwork { background: var(--surface); backdrop-filter: none; box-shadow: none; border-color: var(--line); }
+  .lyrics-tabs button.active { background: var(--surface-2); border-color: var(--line); box-shadow: none; color: var(--fg); }
   .lyrics-wrap .lyrics-artwork { padding: 0; border: 0; border-radius: 16px; }
   .lyrics-wrap .lyric-line.on { text-shadow: none; }
-  .q-menu, .q-dialog__inner > div { backdrop-filter: none; }
-  .theme-option.on { border-color: var(--accent); }
+  .q-menu, .q-dialog__inner > div { background: var(--surface); backdrop-filter: none; }
 }
+.background-choices .background-choice { background: var(--surface); border-color: var(--line); color: var(--fg); box-shadow: none; }
+.background-choices .background-choice.selected { border-color: var(--accent); background: var(--surface); box-shadow: none; }
+.background-choices .choice-top { color: var(--fg); justify-content: space-between; }
+.background-choices .background-choice p { color: var(--fg-dim); }
+.background-choices .choice-art { margin-top: 16px; height: 110px; }
+.matte-sample { background: #121314; height: 100%; min-height: 110px; display: flex; align-items: center; justify-content: center; gap: 16px; }
+.matte-sample > i { width: 54px; height: 54px; border-radius: 9px; background: #303235; }
+.matte-sample > div { display: grid; gap: 9px; width: 100px; }
+.matte-sample b, .matte-sample span { display: block; border-radius: 2px; height: 5px; background: #85888a; }
+.matte-sample span { width: 70%; background: #444749; }
+.matte-sample span:last-child { width: 90%; }
+.background-presets.matte { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+.background-presets button { color: var(--fg); background: var(--surface); border-color: var(--line); }
+.background-presets button.selected { border-color: var(--accent); box-shadow: none; }
+.background-presets button > i { background: var(--accent); color: var(--bg); }
+.matte-swatch { height: 70px; position: relative; border-radius: 8px; overflow: hidden; }
+.matte-swatch i { position: absolute; width: 24%; height: 100%; left: 0; top: 0; right: auto; border-radius: 0; transform: none; }
+.matte-swatch b { position: absolute; inset: 18px 12px 18px 36%; border-radius: 5px; }
+.background-preview.matte { background: var(--bg); border-color: var(--line); }
+.background-preview.matte .preview-sample { background: var(--surface); color: var(--fg); border-color: var(--line); backdrop-filter: none; }

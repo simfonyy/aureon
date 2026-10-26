@@ -1,7 +1,8 @@
 ﻿param([switch]$SkipInstall)
 $ErrorActionPreference = 'Stop'
-Set-Location -LiteralPath $PSScriptRoot
-$logDirectory = Join-Path $PSScriptRoot 'build-logs'
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+Set-Location -LiteralPath $projectRoot
+$logDirectory = Join-Path $projectRoot 'build-logs'
 New-Item -ItemType Directory -Force $logDirectory | Out-Null
 $log = Join-Path $logDirectory ('MSI-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log')
 Start-Transcript -Path $log | Out-Null
@@ -25,7 +26,7 @@ try {
     & node node_modules/@tauri-apps/cli/tauri.js build --bundles msi --verbose
     if ($LASTEXITCODE -ne 0) { throw 'Tauri MSI build failed; see build log.' }
     $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
-    $bundle = Join-Path $PSScriptRoot 'src-tauri/target/release/bundle/msi'
+    $bundle = Join-Path $projectRoot 'src-tauri/target/release/bundle/msi'
     $installer = Get-ChildItem -LiteralPath $bundle -Filter "*_${version}_*.msi" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if (-not $installer) { throw "Build finished but MSI $version was not found in $bundle" }
     Write-Host "`nMSI READY: $($installer.FullName)" -ForegroundColor Green

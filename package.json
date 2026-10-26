@@ -1,7 +1,7 @@
 {
   "name": "nightlezz-devs-desktop",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Aureon - music desktop client by Nightlezz Dev's",
   "type": "module",
   "scripts": {

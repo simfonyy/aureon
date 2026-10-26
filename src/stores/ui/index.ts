@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { restoreSettings, restorePlayerLayout } from './persistence';
+import { restoreSettings, restorePlayerLayout, restoreBackgroundMode } from './persistence';
 import { themePalettes } from './themes';
 import { metalTints } from './appearancePresets';
 import { upgradeMetalPreset } from './proceduralPresets';
@@ -79,6 +79,7 @@ function load(): InterfaceSettings {
       localStorage.getItem(STORAGE_KEY) || "{}",
     ) as Partial<InterfaceSettings>;
     const merged = restoreSettings(defaultInterfaceSettings, saved);
+    merged.backgroundMode = restoreBackgroundMode(saved);
     if (merged.theme !== 'custom' && !Object.hasOwn(themePalettes, merged.theme)) merged.theme = defaultInterfaceSettings.theme;
     if (!['css','webgl'].includes(merged.metalRenderer)) merged.metalRenderer='css';
     if (!['maximum','balanced','optimized'].includes(merged.metalQuality)) merged.metalQuality='balanced';
@@ -138,7 +139,7 @@ export const useUiStore = defineStore("ui", {
       value: InterfaceSettings[K],
     ) {
       this.settings[key] = value;
-      if (key === 'theme' && value === 'matte') this.settings.accent = '#d6bb8a';
+      if (key === 'theme' && value === 'matte') this.settings.backgroundMode = 'matte';
       this.apply();
     },
 
@@ -295,6 +296,7 @@ export const useUiStore = defineStore("ui", {
 
     useCustomTheme() {
       this.settings.theme = "custom";
+      this.settings.backgroundMode = "matte";
       this.apply();
     },
 

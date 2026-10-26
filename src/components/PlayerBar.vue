@@ -371,11 +371,13 @@ function onZoneDrop(zone: PlayerZone, event: DragEvent) {
   ui.movePlayerButton(id, zone, from >= 0 && from < slot ? slot - 1 : slot);
 }
 
+import { playerMetaLimit } from "@/lib/playerSizing";
 type ResizeKind = "height" | "meta";
 
 let resizeKind: ResizeKind | null = null;
 let startPos = 0;
 let startValue = 0;
+let resizeLimit = 460;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)));
@@ -390,7 +392,7 @@ function onResizeMove(event: PointerEvent) {
   } else if (resizeKind === "meta") {
     ui.set(
       "playerMetaWidth",
-      clamp(startValue + (event.clientX - startPos), 150, 460),
+      clamp(startValue + (event.clientX - startPos), 150, resizeLimit),
     );
   }
 }
@@ -407,6 +409,12 @@ function startResize(kind: ResizeKind, event: PointerEvent) {
   startPos = kind === "height" ? event.clientY : event.clientX;
   startValue =
     kind === "height" ? ui.settings.playerHeight : ui.settings.playerMetaWidth;
+  if (kind === "meta") {
+    const bar = (event.currentTarget as HTMLElement).closest(".player-bar") as HTMLElement;
+    const css = getComputedStyle(bar);
+    resizeLimit = playerMetaLimit(bar.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight));
+    startValue = bar.querySelector(".player-left")?.getBoundingClientRect().width ?? Math.min(startValue, resizeLimit);
+  }
   window.addEventListener("pointermove", onResizeMove);
   window.addEventListener("pointerup", onResizeUp);
 }
@@ -422,7 +430,7 @@ function onGlobalKeydown(event: KeyboardEvent) {
   if (event.key !== "Escape" || !editMode.value) return;
   event.preventDefault();
   event.stopPropagation();
-  ui.finishEdit();
+  ui.cancelEdit();
 }
 
 onMounted(() => {
@@ -518,7 +526,7 @@ onBeforeUnmount(() => {
 
 .pe-grip-meta {
   top: 20%;
-  left: var(--player-meta-width, 260px);
+  left: calc(var(--player-pad, 18px) + min(var(--player-meta-width, 260px), (100% - 2 * var(--player-pad, 18px)) * .36));
   width: 5px;
   height: 60%;
   border-radius: 3px;

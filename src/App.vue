@@ -1,10 +1,12 @@
 <template>
   <div :inert="main&&(bg.open||bg.intro)" :aria-hidden="main&&(bg.open||bg.intro)?true:undefined" style="display:contents"><router-view /></div>
   <BackgroundOnboarding v-if="main" />
+  <UpdateNotice v-if="main" :blocked="bg.open || bg.intro" />
   <StartupIntro v-if="main&&bg.intro" @done="bg.intro=false" />
 </template>
 
 <script setup lang="ts">
+import UpdateNotice from '@/components/UpdateNotice.vue';
 import {onMounted} from 'vue';
 import {isTauri} from '@tauri-apps/api/core';
 import {getCurrentWindow} from '@tauri-apps/api/window';

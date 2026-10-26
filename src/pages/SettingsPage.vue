@@ -110,7 +110,7 @@ const query = ref("");
 const GROUPS = ["Основное", "Плеер", "Библиотека", "Сеть", "Система"];
 
 const sections = [
-  {id:'backgrounds',label:'Фон и эффекты',icon:'wave',group:'Основное',hint:'фон живой простой рисунок скорость цвет liquid metal beauty optimized gpu видеокарта первая настройка',component:BackgroundSection},
+  {id:'backgrounds',label:'Фон',icon:'wave',group:'Основное',hint:'фон живой матовый матовая чёрный графит рисунок скорость цвет liquid metal beauty optimized gpu видеокарта первая настройка',component:BackgroundSection},
   {
     id: "theme",
     label: "Оформление",

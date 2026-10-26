@@ -15,12 +15,19 @@
 
 Aureon — неофициальный клиент Яндекс Музыки для Windows и Linux. Вход через аккаунт Яндекса; доступ к музыке зависит от твоего аккаунта (Наличие Плюса). 
 
-## В обновлении 1.0.1
+## В обновлении 1.0.2
+
+- Проверка новых релизов GitHub. Можно скачать обновление или отложить напоминание на два дня.
+- Матовая тема с чёрным, графитовым, цветными и светлыми пресетами.
+- Исправлены поля плеера, ширина блока с треком и шкалы воспроизведения.
+- Визуализатор лучше реагирует на бас и голос; настройки стали короче.
+
+## Возможности
 
 - **Караоке по словам.** Текст подхватывается автоматически, слова подсвечиваются во время воспроизведения. Перед первой строкой — отсчёт.
 - **Поиск по строчке.** Введи слова, которые помнишь. Совпадения из Genius сопоставляются с треками в Яндекс Музыке.
 - **Поиск с опечатками.** `серега приат`, `serega pirat` или `cthtuf gbhfn` — поиск проверяет близкое написание, транслит и раскладку.
-- **Матовая тема.** Спокойные поверхности без анимированного фона. Живые фоны и настройка цветов тоже доступны.
+- **Матовая тема.** Однотонный фон и непрозрачные панели. Живые фоны и настройка цветов тоже доступны.
 - **Фильтр AI-треков.** Можно пропускать треки, отмеченные в базе Slopless.
 
 Очередь, переходы между строками и сохранение оформления также исправлены. [Полный журнал изменений →](CHANGELOG.md)
@@ -35,16 +42,16 @@ Aureon — неофициальный клиент Яндекс Музыки д�
 
 ## Установка
 
-**[Скачать Aureon 1.0.1](https://github.com/simfonyy/aureon/releases/tag/v1.0.1)** — установщик и версии без установки доступны в Releases. Контрольные суммы файлов — в `SHA256SUMS.txt` рядом с пакетами.
+**[Скачать Aureon 1.0.2](https://github.com/simfonyy/aureon/releases/tag/v1.0.2)** — установщик и версии без установки доступны в Releases. Контрольные суммы файлов — в `SHA256SUMS.txt` рядом с пакетами.
 
 Счётчик вверху обновляется автоматически и учитывает загрузки файлов из всех релизов, включая повторные.
 
 | Система | Формат | Как запустить |
 | --- | --- | --- |
-| Windows x64 | [MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_x64_ru-RU.msi) | Открыть установщик |
-| Windows x64 | [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_windows-x64_portable.zip) | Распаковать и запустить `Aureon.exe` |
-| Linux x64 | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_amd64.deb) | Установить через менеджер пакетов |
-| Linux x64 | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.1/Aureon_1.0.1_amd64.AppImage) | Разрешить выполнение и открыть файл |
+| Windows x64 | [MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_x64_ru-RU.msi) | Открыть установщик |
+| Windows x64 | [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_windows-x64_portable.zip) | Распаковать и запустить `Aureon.exe` |
+| Linux x64 | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_amd64.deb) | Установить через менеджер пакетов |
+| Linux x64 | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_amd64.AppImage) | Разрешить выполнение и открыть файл |
 
 Для Windows нужен WebView2 Runtime; MSI установит его при необходимости. Версии без установки хранят настройки в профиле пользователя. Linux пока экспериментальный: установка и воспроизведение на реальном компьютере требуют проверки. [Подробности и требования к системе →](docs/DISTRIBUTION.md)
 
@@ -71,9 +78,9 @@ npm run build
 cargo test --locked --lib --manifest-path src-tauri/Cargo.toml
 ```
 
-Windows: `Build-MSI.bat`. Linux: `bash Build-Linux.sh`. Сборки обеих систем: [Desktop packages](.github/workflows/desktop-packages.yml).
+Windows: `scripts/build/Build-MSI.bat`. Linux: `bash scripts/build/Build-Linux.sh`. Сборки обеих систем: [Desktop packages](.github/workflows/desktop-packages.yml).
 
-Для бага укажи версию, систему и шаги воспроизведения в [Issue](https://github.com/simfonyy/aureon/issues/new/choose). [Как внести изменения →](CONTRIBUTING.md)
+Для бага укажи версию, систему и шаги воспроизведения в [Issue](https://github.com/simfonyy/aureon/issues/new/choose). [Как внести изменения →](docs/CONTRIBUTING.md)
 
 ## Основа и источники
 
