@@ -1,5 +1,9 @@
 # Обновления
 
+## [1.0.3] — 26 октября 2026
+
+Проверка обновления с 1.0.2. Без изменений в приложении.
+
 ## [1.0.2] — 26 октября 2026
 
 - Матовые темы с выбором цвета.
@@ -17,6 +21,7 @@
 
 Первый публичный релиз для Windows.
 
+[1.0.3]: https://github.com/simfonyy/aureon/releases/tag/v1.0.3
 [1.0.2]: https://github.com/simfonyy/aureon/releases/tag/v1.0.2
 [1.0.1]: https://github.com/simfonyy/aureon/releases/tag/v1.0.1
 [1.0.0]: https://github.com/simfonyy/aureon/releases/tag/v1.0.0

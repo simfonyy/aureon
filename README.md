@@ -28,8 +28,8 @@
 
 | Windows x64 | Linux x64 · экспериментально |
 | --- | --- |
-| [Установщик MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_x64_ru-RU.msi) | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_amd64.deb) |
-| [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_windows-x64_portable.zip) | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.2/Aureon_1.0.2_amd64.AppImage) |
+| [Установщик MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_x64_ru-RU.msi) | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_amd64.deb) |
+| [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_windows-x64_portable.zip) | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_amd64.AppImage) |
 
 ZIP нужно распаковать. Для AppImage — разрешить выполнение файла. [Подробнее об установке](docs/DISTRIBUTION.md).
 

@@ -1,6 +1,6 @@
 [package]
 name = "nightlezz-devs"
-version = "1.0.2"
+version = "1.0.3"
 description = "Aureon - music desktop client by Nightlezz Dev's"
 authors = ["Mashiro contributors"]
 edition = "2021"
