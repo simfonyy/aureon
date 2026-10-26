@@ -17,10 +17,9 @@ Aureon — неофициальный клиент Яндекс Музыки д�
 
 ## В обновлении 1.0.2
 
-- Проверка новых релизов GitHub. Можно скачать обновление или отложить напоминание на два дня.
-- Матовая тема с чёрным, графитовым, цветными и светлыми пресетами.
+- Проверка новых релизов GitHub. Можно скачать обновление или отложить напоминание на пару дней.
 - Исправлены поля плеера, ширина блока с треком и шкалы воспроизведения.
-- Визуализатор лучше реагирует на бас и голос; настройки стали короче.
+- Визуализатор лучше реагирует на бас и голос; настройки стали короче и понятнее для нового пользователя.
 
 ## Возможности
 
@@ -43,8 +42,6 @@ Aureon — неофициальный клиент Яндекс Музыки д�
 ## Установка
 
 **[Скачать Aureon 1.0.2](https://github.com/simfonyy/aureon/releases/tag/v1.0.2)** — установщик и версии без установки доступны в Releases. Контрольные суммы файлов — в `SHA256SUMS.txt` рядом с пакетами.
-
-Счётчик вверху обновляется автоматически и учитывает загрузки файлов из всех релизов, включая повторные.
 
 | Система | Формат | Как запустить |
 | --- | --- | --- |
@@ -84,7 +81,7 @@ Windows: `scripts/build/Build-MSI.bat`. Linux: `bash scripts/build/Build-Linux.s
 
 ## Основа и источники
 
-Aureon основан на [Mashiro — aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client).
+Aureon основан на [Mashiro — aeviww/yandex-music-client](https://github.com/aeviww/yandex-music-client). Спасибо!
 
 - [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs) — описание и схемы API Яндекс Музыки.
 - [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData) — версии треков без цензуры.
