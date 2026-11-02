@@ -10,11 +10,6 @@
             <span>Моя волна</span>
           </button>
 
-          <button class="btn" type="button" @click="router.push('/liked')">
-            <Icon name="heartFilled" :size="15" />
-            <span>Мне нравится</span>
-          </button>
-
           <button class="btn" type="button" @click="router.push('/library')">
             <Icon name="search" :size="15" />
             <span>Поиск в библиотеке</span>

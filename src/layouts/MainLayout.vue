@@ -497,7 +497,6 @@ const accountSub = computed(() =>
 );
 
 const profileLinks = [
-  { to: "/liked", label: "Любимое", icon: "heart" },
   { to: "/playlists", label: "Коллекция", icon: "library" },
   { to: "/stats", label: "Статистика", icon: "stats" },
   { to: "/settings", label: "Настройки", icon: "settings" },
