@@ -23,7 +23,16 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'npm ci failed; see build log.' }
     }
     
-    & node node_modules/@tauri-apps/cli/tauri.js build --bundles msi --verbose
+    & (Join-Path $PSScriptRoot 'Prepare-InstallerArtwork.ps1')
+    $desktopCrateType = (Select-String -LiteralPath 'src-tauri/Cargo.toml' -Pattern '^crate-type\s*=').Line
+    $obsoleteLibrary = Join-Path $projectRoot 'src-tauri/target/release/mashiro_lib.dll'
+    if ($desktopCrateType -and $desktopCrateType -notlike '*"cdylib"*' -and (Test-Path -LiteralPath $obsoleteLibrary)) {
+        $resolvedLibrary = (Resolve-Path -LiteralPath $obsoleteLibrary).Path
+        $expectedDirectory = (Resolve-Path -LiteralPath (Join-Path $projectRoot 'src-tauri/target/release')).Path
+        if ([IO.Path]::GetDirectoryName($resolvedLibrary) -ne $expectedDirectory) { throw 'Unexpected build artifact path.' }
+        Move-Item -LiteralPath $resolvedLibrary -Destination ($resolvedLibrary + '.' + [Guid]::NewGuid().ToString('N') + '.unused')
+    }
+    & node node_modules/@tauri-apps/cli/tauri.js build --bundles msi --verbose -- --locked
     if ($LASTEXITCODE -ne 0) { throw 'Tauri MSI build failed; see build log.' }
     $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
     $bundle = Join-Path $projectRoot 'src-tauri/target/release/bundle/msi'

@@ -3,7 +3,7 @@ name: Desktop packages
 on:
   workflow_dispatch:
   push:
-    branches: [main, build/desktop-packages]
+    branches: [main, build/desktop-packages, 'release/**']
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -66,6 +66,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Frontend regression tests
         run: npm test
+      - name: TypeScript
+        run: npm run typecheck
       - name: Backend regression tests
         working-directory: src-tauri
         run: cargo test --locked --lib
