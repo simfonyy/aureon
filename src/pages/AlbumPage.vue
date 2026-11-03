@@ -1,5 +1,5 @@
 <template>
-  <q-page class="scroll-page">
+  <q-page class="scroll-page album-page" :style="paletteStyle">
     <q-scroll-area class="scroll-page-area">
       <div class="scroll-page-inner">
         <div v-if="loading" class="flex flex-center" style="height: 300px">
@@ -7,29 +7,31 @@
         </div>
 
         <template v-else-if="album">
-          <div class="page-head">
-            <div class="cover head-cover">
+          <div class="page-head album-hero">
+            <div v-if="album.cover_url && !coverFailed" class="album-hero-tint" aria-hidden="true">
+              <img :src="album.cover_url" alt="" decoding="async" @error="coverFailed = true" />
+            </div>
+            <div ref="albumCover" class="cover head-cover album-cover">
               <img
-                loading="lazy"
                 decoding="async"
-                v-if="album.cover_url"
+                v-if="album.cover_url && !coverFailed"
                 :src="album.cover_url"
+                :alt="`Обложка альбома «${album.title}»`"
+                @error="coverFailed = true"
               />
               <Icon v-else name="album" :size="42" class="faint" />
             </div>
 
             <div class="head-info">
               <div class="head-kind">Альбом</div>
-              <div class="head-title">{{ album.title }}</div>
-              <div class="head-meta">
+              <h1 class="head-title">{{ album.title }}</h1>
+              <div class="album-artists">
                 <ArtistsLine :artists="album.artists" :limit="3" />
-                <span v-if="album.year" class="faint"> · {{ album.year }}</span>
-                <span v-if="album.genre" class="faint">
-                  · {{ album.genre }}</span
-                >
-                <span class="faint">
-                  · {{ plural(album.tracks.length, "трек", "трека", "треков") }}
-                </span>
+              </div>
+              <div class="head-meta album-details">
+                <span v-if="album.year">{{ album.year }}</span>
+                <span v-if="album.genre">{{ album.genre }}</span>
+                <span>{{ plural(album.tracks.length, "трек", "трека", "треков") }}</span>
               </div>
 
               <div class="head-actions">
@@ -53,9 +55,9 @@
                   <span>Перемешать</span>
                 </button>
 
-                <button class="btn" type="button" @click="playAlbumWave">
+                <button class="btn" type="button" aria-label="Волна по альбому" title="Волна по альбому" @click="playAlbumWave">
                   <Icon name="wave" :size="15" />
-                  <span>Волна по альбому</span>
+                  <span>Волна</span>
                 </button>
 
                 <button
@@ -67,6 +69,7 @@
                       ? 'Убрать альбом из коллекции'
                       : 'Сохранить альбом в коллекцию'
                   "
+                  :aria-label="albumLiked ? 'Убрать альбом из коллекции' : 'Сохранить альбом в коллекцию'"
                   @click="toggleAlbumLike"
                 >
                   <Icon
@@ -75,7 +78,7 @@
                   />
                 </button>
 
-                <button class="icon-btn" type="button" title="Ещё">
+                <button class="icon-btn" type="button" title="Ещё" aria-label="Действия с альбомом">
                   <Icon name="moreH" :size="18" />
                   <q-menu class="menu" anchor="bottom left" self="top left">
                     <div class="menu-body" style="min-width: 226px">
@@ -228,24 +231,27 @@
             </div>
           </div>
 
-          <div class="head-row q-mt-xl">
-            <div style="width: 20px; text-align: center">#</div>
-            <div class="col">Название</div>
-            <div style="width: 40px; text-align: right">Время</div>
-          </div>
+          <div class="album-tracklist">
+            <div class="head-row album-track-head">
+              <span class="album-select-space" aria-hidden="true" />
+              <div class="album-track-number">#</div>
+              <div class="col">Название</div>
+              <div style="width: 40px; text-align: right">Время</div>
+            </div>
 
-          <LazyTracks v-slot="{ item, index }" :items="album.tracks">
-            <TrackRow
-              :track="item"
-              :index="index"
-              :show-cover="false"
-              :show-album="false"
-              :selectable="true"
-              :selected="selectedIds.includes(item.id)"
-              @play="playFrom(index)"
-              @toggle-select="toggleRow(item.id, $event)"
-            />
-          </LazyTracks>
+            <LazyTracks v-slot="{ item, index }" :items="album.tracks">
+              <TrackRow
+                :track="item"
+                :index="index"
+                :show-cover="false"
+                :show-album="false"
+                :selectable="true"
+                :selected="selectedIds.includes(item.id)"
+                @play="playFrom(index)"
+                @toggle-select="toggleRow(item.id, $event)"
+              />
+            </LazyTracks>
+          </div>
         </template>
 
         <div v-else class="dim t-13">Не удалось загрузить альбом</div>
@@ -257,9 +263,9 @@
 <script setup lang="ts">
 import ArtistsLine from "@/components/ArtistsLine.vue";
 import Icon from "@/components/Icon.vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { Notify } from "quasar";
-import { useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import LazyTracks from "@/components/LazyTracks.vue";
 import TrackRow from "@/components/TrackRow.vue";
 import { api } from "@/api/client";
@@ -268,6 +274,8 @@ import { plural } from "@/lib/format";
 import { readCache, swr } from "@/lib/cache";
 import { useLibraryStore } from "@/stores/library";
 import { usePlayerStore } from "@/stores/player/index";
+import { beginAlbumCoverTransition, finishAlbumCoverTransition, cancelAlbumCoverTransition } from '@/lib/albumCoverTransition';
+import { useCoverPalette } from '@/composables/useCoverPalette';
 
 const props = defineProps<{ id: string }>();
 
@@ -279,6 +287,18 @@ const album = ref<AlbumPage | null>(null);
 const loading = ref(false);
 const selectedIds = ref<string[]>([]);
 const lastPicked = ref<string | null>(null);
+const coverFailed = ref(false);
+const { style: paletteStyle } = useCoverPalette(() => coverFailed.value ? null : album.value?.cover_url);
+const albumCover = ref<HTMLElement | null>(null);
+watch(() => album.value?.cover_url, () => { coverFailed.value = false; });
+watch([albumCover, loading, coverFailed], async () => {
+  await nextTick();
+  if (!loading.value && album.value?.cover_url && !coverFailed.value) finishAlbumCoverTransition(props.id, albumCover.value);
+}, { flush: 'post' });
+onBeforeRouteLeave(to => {
+  if (to.path === '/' && album.value?.cover_url && !coverFailed.value) beginAlbumCoverTransition(props.id, albumCover.value, 'home');
+  else cancelAlbumCoverTransition();
+});
 
 const albumLiked = computed(() => library.albumLiked(props.id));
 

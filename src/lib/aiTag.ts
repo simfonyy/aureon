@@ -20,7 +20,7 @@ async function flushArtists() {
 export function ensureAiArtists(ids: Array<string | null | undefined>): void {
   let scheduled = false;
   for (const id of ids) {
-    if (!id || requestedArtists.has(id)) continue;
+    if (!id || id.startsWith('local') || requestedArtists.has(id)) continue;
     requestedArtists.add(id);
     artistQueue.add(id);
     scheduled = true;
@@ -53,7 +53,7 @@ async function flushTracks() {
 export function ensureAiTracks(ids: Array<string | null | undefined>): void {
   let scheduled = false;
   for (const id of ids) {
-    if (!id || requestedTracks.has(id)) continue;
+    if (!id || id.startsWith('local:') || requestedTracks.has(id)) continue;
     requestedTracks.add(id);
     trackQueue.add(id);
     scheduled = true;

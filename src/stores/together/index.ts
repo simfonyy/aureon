@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import {appendReaction,validReaction,type RoomReaction} from '@/lib/reactions';
 import { Notify } from "quasar";
 import { watch } from "vue";
 import type { WatchStopHandle } from "vue";
@@ -50,10 +51,13 @@ let applying = false;
 let holding = false;
 let resumeAfterWait = false;
 let lastReady: boolean | null = null;
+let lastReactionAt=0;
+const reactionLimits=new Map<number,number>();
 
 let handoffAt = 0;
 
 interface TogetherState {
+  reactions: RoomReaction[];
   mode: TogetherMode;
   port: number;
   address: string | null;
@@ -75,6 +79,7 @@ function reason(e: unknown, fallback: string): string {
 
 export const useTogetherStore = defineStore("together", {
   state: (): TogetherState => ({
+    reactions:[],
     mode: "off",
     port: DEFAULT_PORT,
     address: null,
@@ -109,6 +114,8 @@ export const useTogetherStore = defineStore("together", {
   },
 
   actions: {
+    react(emoji:string){if(!this.active||!validReaction(emoji)||Date.now()-lastReactionAt<900)return;lastReactionAt=Date.now();this.reactions=appendReaction(this.reactions,emoji,this.nick||'Ты');this.send({kind:'reaction',emoji});},
+    clearReaction(id:number){this.reactions=this.reactions.filter(r=>r.id!==id);},
     async init() {
       if (this.ready) return;
       this.ready = true;
@@ -409,7 +416,7 @@ export const useTogetherStore = defineStore("together", {
     },
 
     reportReady(ready: boolean) {
-      if (!this.isGuest || lastReady === ready) return;
+      if (!this.isGuest || lastReady === ready || usePlayerStore().current?.id.startsWith('local:')) return;
 
       lastReady = ready;
       this.send({
@@ -459,6 +466,12 @@ export const useTogetherStore = defineStore("together", {
     async receive(message: TogetherMessage) {
       const payload = message.payload;
       if (!payload) return;
+      if(payload.kind==='reaction'){
+        if(!this.active||!validReaction(payload.emoji)||typeof message.nick!=='string'||!Number.isFinite(message.from))return;
+        const now=Date.now(),last=reactionLimits.get(message.from)??0;if(now-last<800)return;
+        if(reactionLimits.size>100)reactionLimits.clear();reactionLimits.set(message.from,now);
+        this.reactions=appendReaction(this.reactions,payload.emoji,message.nick,now);return;
+      }
 
       if (payload.kind === "note") {
         this.note(formatLocal("net", `${message.nick}: ${payload.text}`));

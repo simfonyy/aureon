@@ -98,3 +98,10 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   if (el.closest('[role="slider"], [role="spinbutton"]')) return true;
   return el.isContentEditable === true;
 }
+
+export function isControlActivation(event: KeyboardEvent): boolean {
+  if (event.ctrlKey || event.altKey || event.metaKey) return false;
+  if (event.code !== 'Space' && event.key !== 'Enter') return false;
+  const target = event.target as Element | null;
+  return Boolean(target?.closest?.('button, a[href], [role="button"]'));
+}

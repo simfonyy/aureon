@@ -50,9 +50,11 @@ export const useGeniusStore = defineStore("genius", {
 
     hits: [] as GeniusHit[],
     hitsLoading: false,
+    hitsRequest: 0,
 
-    people: [] as GeniusPersonHit[],
+    peopleHits: [] as GeniusPersonHit[],
     peopleLoading: false,
+    peopleRequest: 0,
 
     person: null as GeniusArtist | null,
     personLoading: false,
@@ -109,10 +111,15 @@ export const useGeniusStore = defineStore("genius", {
     },
 
     forget() {
+      this.hitsRequest++;
+      this.peopleRequest++;
       this.song = null;
       this.songKey = "";
       this.error = "";
       this.hits = [];
+      this.hitsLoading = false;
+      this.peopleHits = [];
+      this.peopleLoading = false;
       this.person = null;
       this.personError = "";
     },
@@ -147,7 +154,9 @@ export const useGeniusStore = defineStore("genius", {
       this.song = null;
       this.error = "";
       this.person = null;
+      this.hitsRequest++;
       this.hits = [];
+      this.hitsLoading = false;
       this.loading = true;
 
       try {
@@ -177,35 +186,47 @@ export const useGeniusStore = defineStore("genius", {
     },
 
     async searchHits(query: string) {
+      const request = ++this.hitsRequest;
       const value = query.trim();
+      const token = this.token.trim();
       if (!this.ready || !value) {
         this.hits = [];
+        this.hitsLoading = false;
         return;
       }
+      const current = () => request === this.hitsRequest && token === this.token.trim() && this.ready;
       this.hitsLoading = true;
+      this.error = "";
       try {
-        this.hits = await api.geniusSearch(this.token.trim(), value);
+        const hits = await api.geniusSearch(token, value);
+        if (current()) this.hits = hits;
       } catch (error) {
+        if (!current()) return;
         this.hits = [];
         this.error = message(error);
       } finally {
-        this.hitsLoading = false;
+        if (request === this.hitsRequest) this.hitsLoading = false;
       }
     },
 
     async searchPeople(query: string) {
+      const request = ++this.peopleRequest;
       const value = query.trim();
+      const token = this.token.trim();
       if (!this.ready || value.length < 2) {
-        this.people = [];
+        this.peopleHits = [];
+        this.peopleLoading = false;
         return;
       }
+      const current = () => request === this.peopleRequest && token === this.token.trim() && this.ready;
       this.peopleLoading = true;
       try {
-        this.people = await api.geniusSearchPeople(this.token.trim(), value);
+        const hits = await api.geniusSearchPeople(token, value);
+        if (current()) this.peopleHits = hits;
       } catch {
-        this.people = [];
+        if (current()) this.peopleHits = [];
       } finally {
-        this.peopleLoading = false;
+        if (request === this.peopleRequest) this.peopleLoading = false;
       }
     },
 
@@ -213,7 +234,9 @@ export const useGeniusStore = defineStore("genius", {
       if (!this.ready) return;
       this.loading = true;
       this.error = "";
+      this.hitsRequest++;
       this.hits = [];
+      this.hitsLoading = false;
       try {
         this.song = await api.geniusSong(this.token.trim(), hit.id);
       } catch (error) {

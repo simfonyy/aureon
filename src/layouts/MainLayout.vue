@@ -22,6 +22,7 @@
               placeholder="Трек, артист или строчка песни"
               @keyup.enter="submitSearch"
             />
+            <button type="button" class="command-shortcut" aria-label="Команды и плейлисты" @click="tools.open='commands'">Ctrl K</button>
             <div v-if="query" class="icon-btn xs round" @click="query = ''">
               <Icon name="close" :size="13" />
             </div>
@@ -115,17 +116,30 @@
       <div class="column full-height">
         <div class="brand"><span>Aureon</span></div>
 
-        <div class="nav-group">
-          <div
+        <div ref="navGroup" class="nav-group nav-group-motion">
+          <motion.div
+            v-if="navIndicator"
+            :key="navMotionAllowed ? 'moving' : 'still'"
+            class="nav-active-pill"
+            :initial="false"
+            :animate="navIndicator"
+            :transition="navTransition"
+            aria-hidden="true"
+          />
+          <button
             v-for="item in nav"
             :key="item.to"
-            class="nav"
+            :ref="element => setNavElement(item.to, element)"
+            type="button"
+            class="nav nav-motion-item"
             :class="{ on: route.path === item.to }"
+            :aria-current="route.path === item.to ? 'page' : undefined"
             @click="router.push(item.to)"
           >
             <Icon :name="item.icon" :size="18" />
             <span>{{ item.label }}</span>
-          </div>
+          </button>
+          <button type="button" class="nav nav-motion-item" @click="tools.open='library'"><Icon name="library" :size="18"/><span>Локальная музыка</span></button>
         </div>
 
         <div class="nav-sep" />
@@ -138,6 +152,7 @@
         </div>
 
         <q-scroll-area class="col">
+          <PlaylistFolders />
           <div
             v-for="pl in sidebarPlaylists"
             :key="pl.kind"
@@ -383,6 +398,7 @@
         <LyricsPanel
           v-if="lyricsVisible"
           :style="player.lyricsFullscreen ? undefined : lyricsBox"
+          @clip-ready="lyricsClipReady = $event"
         />
       </Transition>
     </q-page-container>
@@ -391,23 +407,51 @@
 
     <q-footer
       class="main-player-footer"
+      :class="{ 'is-player-covered': playerFooterBlocked }"
+      :inert="playerFooterBlocked"
       v-if="!panels.hidden && !panels.mini"
       style="background: var(--bg); border-top: 1px solid var(--line)"
     >
       <PlayerBar />
     </q-footer>
 
-    <MiniPlayer v-if="panels.mini && !panels.hidden" />
+    <CassetteMiniPlayer v-if="panels.mini && !panels.hidden && creative.miniSkin==='cassette'" />
+    <MiniPlayer v-else-if="panels.mini && !panels.hidden" />
 
     <TogetherDock />
+    <AlbumCoverTransition />
     <FullscreenPlayer />
+    <CreativeFeedback />
+    <CommandPalette v-if="commandsOpen" v-model="commandsOpen" />
+    <ScreenshotSearchDialog v-if="ocrOpen" v-model="ocrOpen" />
+    <LibraryToolsDialog v-if="localLibraryOpen" v-model="localLibraryOpen" />
+    <AudioToolsDialog v-if="audioToolsOpen" v-model="audioToolsOpen" />
+    <MusicClipDialog v-if="musicClips.target" />
     <TrackLyricsDialog />
     <AppDialog />
   </q-layout>
 </template>
 
 <script setup lang="ts">
+import {defineAsyncComponent} from 'vue';
+import {useWorkspaceToolsStore,type WorkspaceTool} from '@/stores/workspaceTools';
+import {useCreativeStore} from '@/stores/creative';
+import {usePlaylistFoldersStore} from '@/stores/playlistFolders';
+import {useScrobble} from '@/composables/useScrobble';
+import {useMusicClipsStore} from '@/stores/musicClips';
+const musicClips = useMusicClipsStore();
+onBeforeUnmount(() => musicClips.reset());
+const MusicClipDialog=defineAsyncComponent(()=>import('@/components/clips/MusicClipDialog.vue'));
+import PlaylistFolders from '@/components/library/PlaylistFolders.vue';
+import CreativeFeedback from '@/components/creative/CreativeFeedback.vue';
+const CassetteMiniPlayer=defineAsyncComponent(()=>import('@/components/creative/CassetteMiniPlayer.vue'));
+const CommandPalette=defineAsyncComponent(()=>import('@/components/commands/CommandPalette.vue'));
+const ScreenshotSearchDialog=defineAsyncComponent(()=>import('@/components/search/ScreenshotSearchDialog.vue'));
+const LibraryToolsDialog=defineAsyncComponent(()=>import('@/components/library/LibraryToolsDialog.vue'));
+const AudioToolsDialog=defineAsyncComponent(()=>import('@/components/audio/AudioToolsDialog.vue'));
 import { useBackgroundStore } from '@/stores/background';
+import { motion } from 'motion-v';
+import AlbumCoverTransition from '@/components/AlbumCoverTransition.vue';
 import LiquidMetalBackground from "@/components/LiquidMetalBackground.vue";
 import { isLightColor, lightThemes, themePalettes } from "@/stores/ui/themes";
 import {
@@ -418,6 +462,11 @@ import {
   ref,
   watch,
 } from "vue";
+const tools=useWorkspaceToolsStore(),creative=useCreativeStore(),playlistFolders=usePlaylistFoldersStore();
+function toolModel(name:WorkspaceTool){return computed({get:()=>tools.open===name,set:(value:boolean)=>{if(value)tools.open=name;else if(tools.open===name)tools.open='';}});}
+const commandsOpen=toolModel('commands'),ocrOpen=toolModel('ocr'),localLibraryOpen=toolModel('library'),audioToolsOpen=toolModel('audio');
+useScrobble();
+function commandKey(event:KeyboardEvent){if((event.ctrlKey||event.metaKey)&&!event.altKey&&!event.shiftKey&&event.code==='KeyK'){if(document.querySelector('.q-dialog')&&tools.open!=='commands')return;event.preventDefault();event.stopImmediatePropagation();tools.open=tools.open==='commands'?'':'commands';}}
 import { useRoute, useRouter } from "vue-router";
 import ArtistsLine from "@/components/ArtistsLine.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
@@ -449,12 +498,14 @@ import { useLibraryStore } from "@/stores/library";
 import { useHotkeysStore } from "@/stores/hotkeys";
 import { usePanelsStore } from "@/stores/panels";
 import { usePlayerStore } from "@/stores/player/index";
+import { useLyricsFxStore } from "@/stores/lyricsFx";
 import { useUiStore } from "@/stores/ui/index";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const player = usePlayerStore();
+useLyricsFxStore();
 const library = useLibraryStore();
 const ui = useUiStore();
 const background = useBackgroundStore();
@@ -503,7 +554,7 @@ const profileLinks = [
 ];
 
 const showHidden = ref(false);
-const sidebarPlaylists = computed(() => library.visiblePlaylists);
+const sidebarPlaylists = computed(() => library.visiblePlaylists.filter(p=>!playlistFolders.contains(p.kind)));
 
 const query = ref("");
 const rightPanel = computed({
@@ -520,12 +571,36 @@ function freezeLyricsBounds(element: Element) {
 }
 
 const lyricsVisible = computed(() => player.showLyrics && !!player.current);
+const lyricsClipReady = ref(false);
+watch(() => [lyricsVisible.value, player.current?.id] as const, () => { lyricsClipReady.value = false; }, { flush: 'sync' });
+
+function guardFooterDuringPlayerOverlay() {
+  const blocked = ref(false);
+  let releaseTimer: ReturnType<typeof setTimeout> | undefined;
+  let releaseVersion = 0;
+  function clearRelease() { releaseVersion++; if (releaseTimer !== undefined) clearTimeout(releaseTimer); releaseTimer = undefined; }
+  watch(() => player.fullscreen || lyricsVisible.value, open => {
+    clearRelease();
+    if (open) { blocked.value = true; return; }
+    // Both overlay leave transitions take at most 320ms. Keep clicks and Tab
+    // out of the lower player until the fading overlay has actually left.
+    const version = releaseVersion;
+    if (blocked.value) releaseTimer = setTimeout(() => {
+      if (version !== releaseVersion) return;
+      releaseTimer = undefined;
+      if (!player.fullscreen && !lyricsVisible.value) blocked.value = false;
+    }, 340);
+  }, { immediate: true, flush: 'sync' });
+  onBeforeUnmount(clearRelease);
+  return blocked;
+}
+const playerFooterBlocked = guardFooterDuringPlayerOverlay();
 
 const lyricsBox = computed(() => ({
   top: "40px",
-  bottom: "77px",
-  left: `${ui.settings.sidebarWidth}px`,
-  right: rightPanel.value ? "300px" : "0px",
+  bottom: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : "77px",
+  left: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : `${ui.settings.sidebarWidth}px`,
+  right: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : rightPanel.value ? "300px" : "0px",
 }));
 
 const nav = [
@@ -537,6 +612,43 @@ const nav = [
   { to: "/library", label: "Поиск в библиотеке", icon: "filter" },
   { to: "/stats", label: "Статистика", icon: "stats" },
 ];
+
+const navGroup = ref<HTMLElement | null>(null);
+const navElements = new Map<string, HTMLElement>();
+const navIndicator = ref<{ top: number; left: number; width: number; height: number } | null>(null);
+const navMotionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+const navReducedMotion = ref(navMotionPreference.matches);
+const navMotionAllowed = computed(() => ui.settings.animations && !navReducedMotion.value);
+const navTransition = computed(() => ({ type: 'tween' as const, duration: navMotionAllowed.value ? .18 : 0, ease: 'easeOut' as const }));
+let navResizeObserver: ResizeObserver | undefined;
+
+function setNavElement(path: string, element: unknown) {
+  if (element instanceof HTMLElement) navElements.set(path, element);
+  else navElements.delete(path);
+}
+
+function updateNavIndicator() {
+  const group = navGroup.value;
+  const active = navElements.get(route.path);
+  if (!group || !active?.isConnected) { navIndicator.value = null; return; }
+  const groupBounds = group.getBoundingClientRect();
+  const itemBounds = active.getBoundingClientRect();
+  navIndicator.value = {
+    top: itemBounds.top - groupBounds.top,
+    left: itemBounds.left - groupBounds.left,
+    width: itemBounds.width,
+    height: itemBounds.height,
+  };
+}
+
+function updateNavMotionPreference() { navReducedMotion.value = navMotionPreference.matches; }
+
+watch(() => route.path, () => { void nextTick(updateNavIndicator); }, { flush: 'post' });
+watch(navGroup, group => {
+  navResizeObserver?.disconnect();
+  if (group) navResizeObserver?.observe(group);
+  void nextTick(updateNavIndicator);
+}, { flush: 'post' });
 
 type ScrollAreaRef = {
   getScrollTarget: () => HTMLElement;
@@ -660,6 +772,11 @@ const hotkeyHandlers = {
 
 
 onMounted(() => {
+  window.addEventListener('keydown',commandKey,true);
+  navMotionPreference.addEventListener('change', updateNavMotionPreference);
+  navResizeObserver = new ResizeObserver(updateNavIndicator);
+  if (navGroup.value) navResizeObserver.observe(navGroup.value);
+  updateNavIndicator();
   hotkeys.load();
   bindLocalHotkeys((signature) => hotkeys.resolve(signature), hotkeyHandlers);
   void bindGlobalHotkeyEvents(hotkeyHandlers);
@@ -720,6 +837,9 @@ watch(
 window.addEventListener("focus", onWindowFocus);
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown',commandKey,true);
+  navResizeObserver?.disconnect();
+  navMotionPreference.removeEventListener('change', updateNavMotionPreference);
   window.removeEventListener("focus", onWindowFocus);
   unbindLocalHotkeys();
   unbindGlobalHotkeyEvents();
@@ -727,6 +847,45 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.main-player-footer.is-player-covered { pointer-events:none; }
+.command-shortcut{border:1px solid var(--line);border-radius:5px;white-space:nowrap;background:transparent;color:var(--fg-dim);font-size:10px;padding:3px 5px;cursor:pointer}
+.nav-group-motion {
+  position: relative;
+  isolation: isolate;
+}
+.nav-active-pill {
+  position: absolute;
+  z-index: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  pointer-events: none;
+}
+.nav.nav-motion-item {
+  position: relative;
+  z-index: 1;
+  width: calc(100% - 20px);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+.nav.nav-motion-item:hover {
+  background: var(--hover);
+}
+.nav.nav-motion-item.on {
+  background: transparent;
+  box-shadow: none;
+}
+.nav.nav-motion-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.liquid-shell .nav-active-pill {
+  background: linear-gradient(130deg, rgba(186, 181, 202, .19), rgba(71, 69, 84, .2));
+  box-shadow: inset 0 0 0 1px rgba(218, 208, 239, .25), inset 0 1px 0 rgba(255, 255, 255, .13);
+}
 .queue-head {
   display: flex;
   align-items: center;

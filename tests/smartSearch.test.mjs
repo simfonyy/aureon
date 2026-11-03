@@ -39,7 +39,7 @@ test('lyric matching requires both title and artist, never just the first catalo
 test('lyric transliteration fallback resolves playable songs and retains unmatched hits',async()=>{
  const song={id:1,title:'Песня',artist:'Исполнитель'};
  const found=await lyricSearch('moya stroka',{
- searchLyrics:async q=>q==='моя строка'?[{song,fragment:'моя строка'},{song:{...song,id:2,title:'Другое'},fragment:'Ещё'}]:[],
+ searchLyrics:async q=>q==='моя строка'?[{song,fragment:'моя строка'},{song:{...song,id:2,title:'Другое'},fragment:'Моя строка звучит иначе'}]:[],
  search:async()=>({...empty(),tracks:[track('play','Песня','Исполнитель')]})
  });
  assert.equal(found.length,2); assert.equal(found[0].track.id,'play'); assert.equal(found[1].track,null);

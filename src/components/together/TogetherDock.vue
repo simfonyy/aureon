@@ -76,6 +76,7 @@
         :host-id="together.hostId"
         @handoff="together.handoff"
       />
+      <div class="room-reactions"><button v-for="emoji in ['❤️','🔥','👏','😂']" :key="emoji" :aria-label="`Отправить реакцию ${emoji}`" @click="together.react(emoji)">{{emoji}}</button><EmojiButton label="Другие реакции" @select="together.react"/></div>
 
       <p v-if="together.waitingNicks.length" class="together-dock-wait">
         Ждём загрузку: {{ together.waitingNicks.join(", ") }}
@@ -97,6 +98,7 @@
         </button>
       </div>
     </div>
+    <div class="room-reaction-feed" aria-live="polite"><div v-for="item in together.reactions" :key="item.id" @animationend="together.clearReaction(item.id)"><b>{{item.emoji}}</b><span>{{item.nick}}</span></div></div>
   </div>
 </template>
 
@@ -105,6 +107,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import Icon from "@/components/Icon.vue";
 import TogetherPeers from "@/components/together/TogetherPeers.vue";
+import EmojiButton from '@/components/EmojiButton.vue';
 import { copyText } from "@/lib/clipboard";
 import { clampPlace, loadPlace, savePlace } from "@/lib/dock-place";
 import { usePanelsStore } from "@/stores/panels";
@@ -128,6 +131,7 @@ const place = ref(loadPlace(DOCK_POS_KEY));
 
 let from = { x: 0, y: 0, left: 0, top: 0 };
 let moved = false;
+let reactionTimer: ReturnType<typeof setInterval> | undefined;
 
 const mask = "\u2022".repeat(12);
 const waiting = computed(() => together.waiting.length > 0);
@@ -157,6 +161,7 @@ const style = computed(() =>
 );
 
 onMounted(() => {
+  reactionTimer=setInterval(()=>{together.reactions=together.reactions.filter(r=>Date.now()-r.at<5000);},1000);
   void together.init();
   try {
     open.value = localStorage.getItem(DOCK_KEY) === "1";
@@ -164,7 +169,7 @@ onMounted(() => {
   window.addEventListener("resize", keepInside);
 });
 
-onBeforeUnmount(() => window.removeEventListener("resize", keepInside));
+onBeforeUnmount(() => { clearInterval(reactionTimer); window.removeEventListener("resize", keepInside); });
 
 function toggle() {
   open.value = !open.value;
@@ -430,4 +435,8 @@ function openSettings() {
   padding: 0 5px;
   font-size: 10px;
 }
+</style>
+
+<style scoped>
+.room-reactions{display:flex;gap:8px;align-items:center;margin:12px 0}.room-reactions>button{border:1px solid var(--line);background:transparent;border-radius:7px;min-width:31px;height:32px;font-size:19px;cursor:pointer}.room-reaction-feed{position:absolute;left:0;bottom:100%;width:100%;pointer-events:none;display:flex;justify-content:center;gap:10px}.room-reaction-feed>div{display:grid;justify-items:center;gap:4px;animation:room-reaction-rise 3.2s ease-out forwards}.room-reaction-feed b{font-size:31px;text-shadow:0 2px 10px #0008}.room-reaction-feed span{font-size:10px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);background:var(--surface);border-radius:8px;padding:3px 6px}@keyframes room-reaction-rise{0%{opacity:0;transform:translateY(10px)}10%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(-60px)}}@media(prefers-reduced-motion:reduce){.room-reaction-feed>div{animation-name:room-reaction-fade}}@keyframes room-reaction-fade{0%,85%{opacity:1}100%{opacity:0}}
 </style>

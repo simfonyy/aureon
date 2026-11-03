@@ -79,6 +79,7 @@ import { readCache, writeCache } from "@/lib/cache";
 import { trackLyricsDialog } from "@/lib/dialogs";
 import { artistNames } from "@/lib/format";
 import { useGeniusStore } from "@/stores/genius";
+import { lyricsMode } from "@/lib/lyricsSource";
 
 const loading = ref(false);
 const error = ref("");
@@ -148,7 +149,7 @@ async function load(id: string, force = false) {
       loading.value = false;
       if (
         genius.ready &&
-        genius.lyricsMode !== "off" &&
+        ["auto", "genius"].includes(lyricsMode()) &&
         !toBlocks(lyrics.value).length
       ) {
         source.value = "genius";
@@ -167,7 +168,7 @@ watch(
   ([isOpen, id]) => {
     if (!isOpen || !id) return;
     source.value =
-      genius.ready && genius.lyricsMode === "always" ? "genius" : "yandex";
+      genius.ready && lyricsMode() === "genius" ? "genius" : "yandex";
     void load(String(id));
   },
   { immediate: true },

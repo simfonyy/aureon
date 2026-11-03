@@ -3,7 +3,7 @@ import type { InterfaceSettings, LyricsFont } from "./defaults";
 import { isLightColor, lightThemes, themePalettes } from "./themes";
 
 const lyricsFonts: Record<LyricsFont, string> = {
-  sans: "inherit",
+  sans: '"Onest Variable", "Segoe UI", sans-serif',
   serif:
     '"Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif',
   mono: 'ui-monospace, "JetBrains Mono", "Cascadia Code", Consolas, monospace',

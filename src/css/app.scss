@@ -1,6 +1,7 @@
 @use "base/reset";
 @use "base/tokens";
 @use "base/typography";
+@use "base/creative-typography";
 
 @use "layout/titlebar";
 @use "layout/sidebar";
@@ -40,3 +41,4 @@
 @use "components/lyrics-aureon";
 @use "components/matte";
 @use "overrides/readability";
+@use "components/player-polish";

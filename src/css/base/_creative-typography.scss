@@ -1,0 +1,9 @@
+// Fontsource bundles these subsets locally; no network font requests.
+@import '@fontsource-variable/onest/wght.css';
+
+:root { --font-creative: 'Onest Variable', 'Segoe UI', sans-serif; }
+.h1, .h2, .lyrics-artwork-title, .mini-title, .creative-title { font-family: var(--font-creative); font-synthesis: none; }
+// Honour the existing serif, mono and custom lyrics-font choice.
+.lyrics-wrap .lyrics-line { font-synthesis: none; }
+.lyrics-seek, .mini-time, .pb-time, .creative-time { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+.creative-karaoke, .creative-cassette { font-family: var(--font-creative); }

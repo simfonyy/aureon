@@ -1,0 +1,10 @@
+{
+  "error": "",
+  "content": {
+    "duration": 164,
+    "streams": [
+      { "stream_type": "DASH", "url": "https://strm.yandex.ru/vod/clip624687/manifest.mpd?ysign1=fixture" },
+      { "stream_type": "HLS", "url": "https://strm.yandex.ru/vod/clip624687/master.m3u8?ysign1=fixture" }
+    ]
+  }
+}

@@ -47,6 +47,7 @@
         <div class="search-modes q-mt-md" aria-label="Тип поиска">
           <button :class="{active:mode==='all'}" :aria-pressed="mode==='all'" @click="setMode('all')">Всё</button>
           <button :class="{active:mode==='lyrics'}" :aria-pressed="mode==='lyrics'" @click="setMode('lyrics')">По строчке</button>
+          <button @click="tools.open='ocr'">По скриншоту</button>
         </div>
         <p v-if="!searched" class="faint t-13 q-mt-md">Можно с опечаткой, латиницей или в другой раскладке.</p>
         <div v-if="alternatives.length && mode==='all'" class="search-alternatives q-mt-md">
@@ -101,10 +102,10 @@
             </div>
           </template>
 
-          <template v-if="genius.ready && genius.people.length">
+          <template v-if="genius.ready && genius.peopleHits.length">
             <div class="h2 q-mt-xl q-mb-md">Авторы и продюсеры</div>
             <div class="row q-col-gutter-md">
-              <div v-for="p in genius.people" :key="p.id" class="col-auto">
+              <div v-for="p in genius.peopleHits" :key="p.id" class="col-auto">
                 <div
                   class="card text-center"
                   style="width: 132px"
@@ -184,6 +185,8 @@ import LazyTracks from "@/components/LazyTracks.vue";
 import TrackRow from "@/components/TrackRow.vue";
 import { api } from "@/api/client";
 import type { Artist, SearchResult, Track } from "@/api/types";
+import {useWorkspaceToolsStore} from '@/stores/workspaceTools';
+const tools=useWorkspaceToolsStore();
 import { smartCatalog, lyricSearch, queryVariants, bounded, type LyricMatch } from '@/lib/smartSearch';
 import { cachedAvatar, fetchAvatars } from "@/lib/artistAvatar";
 import { usePlayerStore } from "@/stores/player/index";
@@ -197,7 +200,7 @@ const genius = useGeniusStore();
 const text = ref("");
 const result = ref<SearchResult | null>(null);
 const loading = ref(false);
-const mode = ref<'all'|'lyrics'>('all');
+const mode = ref<'all'|'lyrics'>(route.query.mode==='lyrics'?'lyrics':'all');
 const searched = ref(false);
 const error = ref('');
 const lyricError = ref('');
@@ -329,8 +332,9 @@ function openPerson(id: number) {
 }
 
 watch(
-  () => route.query.q,
-  (q) => {
+  () => [route.query.q,route.query.mode],
+  ([q,nextMode]) => {
+    mode.value=nextMode==='lyrics'?'lyrics':'all';
     if (typeof q === "string" && q) {
       text.value = q;
       void run();

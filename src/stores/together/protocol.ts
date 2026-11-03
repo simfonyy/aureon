@@ -51,6 +51,7 @@ export interface NotePayload {
   kind: "note";
   text: string;
 }
+export interface ReactionPayload {kind:'reaction';emoji:string}
 
 export interface HandoffPayload {
   kind: "handoff";
@@ -61,7 +62,7 @@ export interface HandoffPayload {
 }
 
 export type TogetherPayload =
-  StatePayload | ReadyPayload | NotePayload | HandoffPayload;
+  StatePayload | ReadyPayload | NotePayload | HandoffPayload | ReactionPayload;
 
 export interface TogetherMessage {
   from: number;

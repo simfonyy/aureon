@@ -55,6 +55,12 @@
         description="Нажатие открывает плеер, правая кнопка — альбом."
         @update:model-value="ui.set('showPlayerArtwork', $event)"
       />
+      <SettingToggle
+        :model-value="ui.settings.musicVideoBackground"
+        label="Клип на фоне плеера"
+        description="В большой обложке и за текстом песни. Звук остаётся от трека."
+        @update:model-value="ui.set('musicVideoBackground', $event)"
+      />
     </div>
 
     <div class="settings-subgroup">

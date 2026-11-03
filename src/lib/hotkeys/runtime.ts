@@ -3,7 +3,7 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { createLogger } from "@/lib/log";
 import { HOTKEYS } from "./defaults";
 import type { HotkeyAction } from "./defaults";
-import { eventSignature, isModifierEvent, isTypingTarget } from "./keys";
+import { eventSignature, isModifierEvent, isTypingTarget, isControlActivation } from "./keys";
 
 const log = createLogger("hotkeys");
 
@@ -19,7 +19,7 @@ export function bindLocalHotkeys(
   unbindLocalHotkeys();
   localHandler = (event: KeyboardEvent) => {
     if (event.repeat || isModifierEvent(event)) return;
-    if (isTypingTarget(event.target)) return;
+    if (isTypingTarget(event.target) || isControlActivation(event)) return;
     const action = resolve(eventSignature(event));
     if (!action) return;
     const run = handlers[action];

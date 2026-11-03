@@ -1,0 +1,14 @@
+@floating-ui/vue 2.0.1 — MIT. https://www.npmjs.com/package/@floating-ui/vue/v/2.0.1
+@fontsource-variable/onest 5.3.1 — OFL-1.1. https://www.npmjs.com/package/@fontsource-variable/onest/v/5.3.1
+@soundtouchjs/audio-worklet 2.1.1 — MPL-2.0. https://www.npmjs.com/package/@soundtouchjs/audio-worklet/v/2.1.1
+@soundtouchjs/core 2.1.1 — MPL-2.0. https://www.npmjs.com/package/@soundtouchjs/core/v/2.1.1
+@soundtouchjs/worklet-base 2.1.1 — MPL-2.0. https://www.npmjs.com/package/@soundtouchjs/worklet-base/v/2.1.1
+@soundtouchjs/interpolation-strategy-lanczos 2.1.1 — MPL-2.0. https://www.npmjs.com/package/@soundtouchjs/interpolation-strategy-lanczos/v/2.1.1
+emoji-picker-element 1.29.1 — Apache-2.0. https://www.npmjs.com/package/emoji-picker-element/v/1.29.1
+emoji-picker-element-data 1.8.0 — Apache-2.0. https://www.npmjs.com/package/emoji-picker-element-data/v/1.8.0
+tesseract.js 7.0.0 — Apache-2.0. https://www.npmjs.com/package/tesseract.js/v/7.0.0
+tesseract.js-core 7.0.0 — Apache-2.0. https://www.npmjs.com/package/tesseract.js-core/v/7.0.0
+hls.js 1.7.4 — Apache-2.0. https://github.com/video-dev/hls.js/tree/v1.7.4
+
+SoundTouch source (MPL-2.0): https://github.com/cutterbl/SoundTouchJS/tree/v2.1.1
+Distributed worklet: public/licenses/source/soundtouch-processor.js

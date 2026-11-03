@@ -1,3 +1,26 @@
 Based on Mashiro. Copyright (C) 2026 elytrya.
 Nightlezz Devs modifications, 2026.
 Licensed under GPL-3.0-or-later. See LICENSE.
+
+Motion for Vue — Copyright (c) 2024 Rick Huang. MIT.
+License: public/licenses/motion-v.txt.
+
+Embla Carousel — Copyright (c) David Jerleke. MIT.
+License: public/licenses/embla-carousel.txt.
+
+Vue.Draggable — Copyright (c) 2016-2019 David Desmaisons. MIT.
+SortableJS — Copyright (c) 2019 All contributors to Sortable. MIT.
+Licenses: public/licenses/vuedraggable.txt, public/licenses/sortablejs.txt.
+
+Color Thief — MIT.
+License: public/licenses/colorthief.txt.
+
+Onest — SIL Open Font License 1.1.
+Floating UI — MIT.
+HLS.js — Apache-2.0. License: public/licenses/hls-js.txt.
+Tesseract.js, Tesseract.js Core, emoji-picker-element and emoji data — Apache-2.0.
+SoundTouchJS packages — MPL-2.0; unmodified worklet source is included.
+Versions, upstream sources and license files: public/licenses/feature-sources.txt.
+
+Local library: Lofty, Symphonia, RustFFT, Rubato, RFD and Rusty Chromaprint.
+Versions, upstream sources and license files: public/licenses/rust/sources.txt.

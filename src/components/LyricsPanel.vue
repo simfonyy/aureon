@@ -2,10 +2,13 @@
   <div
     ref="root"
     class="lyrics-wrap"
-    :class="{ 'lyrics-fs': player.lyricsFullscreen, glow: s.glow, 'has-queue': showQueue, 'lyrics-still': !motionAllowed }"
+    :data-fx-status="fx.status"
+    :data-fx-events="fx.events.length"
+    :class="{ 'lyrics-fs': player.lyricsFullscreen, glow: s.glow, 'has-queue': showQueue, 'lyrics-still': !motionAllowed, 'has-video-background': clipReady, 'clip-subtitles': clipReady && synced && !searchText && !clipBrowsing }"
     :style="visualStyle"
   >
     <LyricsBackdrop :cover="coverUrl" :mode="s.backdrop" :blur="s.backgroundBlur" :opacity="s.backgroundOpacity" :motion="motionAllowed" />
+    <MusicClipBackdrop class="lyrics-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :active="player.showLyrics && !player.fullscreen && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipBackgroundReady" @loading="clipAligning = $event" @error="clipError" />
 
     <header class="lyrics-navigation" @mousedown.self="startWindowDrag">
       <nav class="lyrics-tabs" aria-label="Разделы плеера">
@@ -53,6 +56,8 @@
       </div>
 
       <div class="lyrics-tools">
+        <ClipBackgroundControl v-if="player.current" :track="player.current" :active="player.showLyrics && !player.fullscreen" />
+        <span v-if="clipAligning" class="clip-alignment-status" role="status"><q-spinner size="12px" />Синхронизация клипа…</span>
         <div
           class="icon-btn round"
           data-no-drag
@@ -74,24 +79,27 @@
           <Icon name="settings" :size="17" />
           <q-tooltip>Вид текста</q-tooltip>
         </div>
-        <div
+        <button
+          type="button"
           class="icon-btn round"
-          :class="{ on: player.lyricsFullscreen }"
+          :class="{ on: nativeFullscreen }"
+          :aria-label="nativeFullscreen ? 'Выйти из полного экрана' : 'На полный экран'"
+          :aria-pressed="nativeFullscreen"
           data-no-drag
           @click="toggleWindow"
         >
           <Icon
-            :name="player.lyricsFullscreen ? 'restore' : 'maximize'"
+            :name="nativeFullscreen ? 'restore' : 'expand'"
             :size="15"
           />
           <q-tooltip>
             {{
-              player.lyricsFullscreen
+              nativeFullscreen
                 ? "Выйти из полного экрана"
                 : "На полный экран"
             }}
           </q-tooltip>
-        </div>
+        </button>
         <div
           class="icon-btn round"
           data-no-drag
@@ -119,7 +127,7 @@
             :class="{ playing: player.isPlaying && motionAllowed }"
             @click="toggleWindow"
           >
-            <Transition name="lyrics-art-swap"><img :key="coverUrl" decoding="async" :src="coverUrl" alt="Обложка трека" /></Transition>
+            <Transition name="lyrics-art-swap"><img :key="coverUrl" decoding="async" :src="coverUrl" alt="Обложка трека" @error="coverFailed = true" /></Transition>
             <div class="lyrics-artwork-side">
               <button
                 type="button"
@@ -127,7 +135,7 @@
                 :class="{ on: isLiked }"
                 @click.stop="toggleLike"
               >
-                <Icon :name="isLiked ? 'heartFilled' : 'heart'" :size="17" />
+                <FeedbackHeart :active="isLiked" :size="17" />
                 <q-tooltip>
                   {{ isLiked ? "Убрать из любимых" : "Мне нравится" }}
                 </q-tooltip>
@@ -145,7 +153,7 @@
 
           </div>
           <Transition name="lyrics-meta-swap" mode="out-in"><div :key="player.current?.id" class="lyrics-artwork-meta">
-            <div class="lyrics-artwork-title">{{ player.current?.title }}</div>
+            <div class="lyrics-artwork-title" :title="player.current?.title">{{ player.current?.title }}</div>
             <div class="lyrics-subtitle ellipsis">{{ artistLabel }}</div>
           </div>
           </Transition>
@@ -199,7 +207,7 @@
                 <q-tooltip>Повтор</q-tooltip>
               </button>
             </div>
-          <button v-if="player.current?.artists[0]?.id" type="button" class="lyrics-artist-link" @click="openArtist"><Icon name="artist" :size="16" /> Об исполнителе</button>
+          <button v-if="player.current?.artists[0]?.id && !player.current.artists[0].id.startsWith('local')" type="button" class="lyrics-artist-link" @click="openArtist"><Icon name="artist" :size="16" /> Об исполнителе</button>
         </div>
 
         <div class="lyrics-content">
@@ -261,7 +269,7 @@
                 @click="seekTo(line.time_ms)"
                 @contextmenu.stop.prevent="onLineMenu($event, i)"
               >
-                <span class="lyric-text"><span v-for="(word, wordIndex) in words[i]" :key="wordIndex" class="lyric-word" :class="{ 'word-singing': karaoke && clockMs >= word.start && clockMs < word.end }" :style="{ '--word-fill': `${wordFill(word, clockMs)}%`, '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word.text }}</span></span>
+                <span class="lyric-text"><span v-for="(word, wordIndex) in words[i]" :key="wordIndex" :ref="el => setWordRef(el, i, wordIndex)" :data-word-id="fxWordId(i, wordIndex)" class="lyric-word" :class="{ 'word-singing': karaoke && clockMs >= word.start && clockMs < word.end }" :style="{ '--word-fill': `${wordFill(word, clockMs)}%`, '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word.text }}</span></span>
                 <span
                   v-if="lineAnnotations[i]"
                   class="lyric-note"
@@ -302,6 +310,7 @@
             </div>
           </div>
         </q-scroll-area>
+        <LyricsEffectsLayer ref="effectsLayer" :now-ms="clockMs" :frames="effectFrames" :enabled="fxAllowed" :track-key="fxTrackKey" />
         <div v-if="countdown" class="lyrics-countdown" aria-label="До начала вокала">
           <Transition name="countdown-number" mode="out-in"><span :key="countdown">{{ countdown }}</span></Transition>
         </div>
@@ -309,7 +318,7 @@
         <LyricsQueue v-show="showQueue" @close="showQueue = false" />
       </div>
 
-      <div v-if="footVisible" class="lyrics-foot">
+      <div v-if="footVisible && !clipReady" class="lyrics-foot">
         <span v-if="originTag && ui.settings.lyricsShowOrigin"
           >Источник: <b>{{ originTag }}</b></span
         >
@@ -390,12 +399,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, shallowReactive, watch } from "vue";
 import type { QScrollArea } from "quasar";
+import { Notify } from 'quasar';
 import { useRoute, useRouter } from "vue-router";
 import Icon from "@/components/Icon.vue";
+import ClipBackgroundControl from '@/components/clips/ClipBackgroundControl.vue';
+import MusicClipBackdrop from '@/components/clips/MusicClipBackdrop.vue';
+import FeedbackHeart from '@/components/creative/FeedbackHeart.vue';
 import LyricsBackdrop from "@/components/lyrics/LyricsBackdrop.vue";
 import LyricsQueue from "@/components/lyrics/LyricsQueue.vue";
+import LyricsEffectsLayer from "@/components/lyrics/LyricsEffectsLayer.vue";
+import type { FxFrame } from "@/lib/lyricsFx/rendererTypes";
+import { fingerprint } from "@/lib/lyricsFx/planner";
+import { useLyricsFxStore } from "@/stores/lyricsFx";
 import WindowControls from "@/components/WindowControls.vue";
 import { startWindowDrag } from "@/lib/window";
 import { useWindowState } from "@/composables/useWindowState";
@@ -407,6 +424,7 @@ import { audio } from "@/lib/audio";
 import { lineWords, vocalCountdown, wordFill } from "@/lib/karaoke";
 import { createScrollFollower } from "@/lib/smoothScroll";
 import { artistNames, formatDuration } from "@/lib/format";
+import { largeCoverUrl } from '@/lib/coverArtwork';
 import { ORIGIN_LABEL } from "@/lib/lyricsSource";
 import { useGeniusStore } from "@/stores/genius";
 import { useLibraryStore } from "@/stores/library";
@@ -418,15 +436,30 @@ type Credit = { id: number; name: string; role: string; image: string };
 type SourcePick = "auto" | "lrclib" | "genius";
 
 const player = usePlayerStore();
-const { expanded: windowExpanded, ready: windowReady, toggle: toggleWindow } = useWindowState();
+const emit = defineEmits<{ 'clip-ready': [value: boolean] }>();
+const clipReady = ref(false), clipBrowsing = ref(false), coverFailed = ref(false);
+const clipAligning = ref(false);
+function clipBackgroundReady(value: boolean) { clipReady.value = value; emit('clip-ready', value); }
+watch(clipReady, async () => { await nextTick(); if (synced.value && !searchText.value.trim()) scrollToLine(activeIndex.value); });
+watch(() => [player.current?.id, player.current?.cover_url], () => { coverFailed.value = false; clipBackgroundReady(false); clipBrowsing.value = false; });
+function clipError(message: string) { Notify.create({ message, group: `clip-background-${player.current?.id}`, timeout: 5000 }); }
+const {
+  expanded: windowExpanded,
+  fullscreen: nativeFullscreen,
+  ready: windowReady,
+  toggleFullscreen: toggleWindow,
+  exitFullscreen,
+} = useWindowState();
 watch([windowExpanded, windowReady], ([expanded, ready]) => {
   if (ready) player.lyricsFullscreen = expanded;
 }, { immediate: true });
 const router = useRouter();
 const route = useRoute();
 const ui = useUiStore();
+watch(() => [ui.settings.musicVideoBackground, player.showLyrics], () => clipBackgroundReady(false));
 const genius = useGeniusStore();
 const library = useLibraryStore();
+const fx = useLyricsFxStore();
 
 const s = computed(() => ({
   fontSize: ui.settings.lyricsFontSize,
@@ -472,7 +505,7 @@ function scrollToLine(index: number) {
   if (!el || !area) return;
   const scrollTarget = area.getScrollTarget() as HTMLElement;
   const target = Math.max(0, Math.min(scrollTarget.scrollHeight - scrollTarget.clientHeight, el.offsetTop - area.$el.clientHeight * 0.36));
-  scrollFollower.move(target, motionAllowed.value);
+  scrollFollower.move(target, motionAllowed.value && !audio.paused && !audio.seeking);
 }
 function findNext() {
   if (!searchMatches.value.length) return;
@@ -521,7 +554,7 @@ watch(searchMatches, async () => {
   else if (!searchText.value.trim()) scrollToLine(activeIndex.value);
 });
 const synced = computed(() => Boolean(player.lyrics?.synced));
-const coverUrl = computed(() => player.current?.cover_url || "");
+const coverUrl = computed(() => coverFailed.value ? player.current?.cover_url || '' : largeCoverUrl(player.current?.cover_url));
 const artistLabel = computed(() =>
   player.current ? artistNames(player.current.artists) : "",
 );
@@ -640,11 +673,17 @@ function closeHint(event?: Event) {
 }
 
 function onHintKey(event: KeyboardEvent) {
+  if (event.key === 'F11' && !event.defaultPrevented && !event.repeat && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    void toggleWindow();
+    return;
+  }
   if (event.key !== "Escape" || event.repeat || event.defaultPrevented) return;
   if (annotationOpen.value || document.querySelector('.q-dialog, .q-menu')) return;
   event.preventDefault();
   if (hint.value) hint.value = null;
   else if (showSettings.value) showSettings.value = false;
+  else if (nativeFullscreen.value) void exitFullscreen();
   else player.closeLyrics();
 }
 
@@ -673,7 +712,7 @@ function openUrl(url: string) {
 watch(
   () => [player.showLyrics, player.current?.id] as const,
   ([shown, id]) => {
-    if (shown && id && genius.ready) void genius.fetchSong(player.current);
+    if (shown && id && !id.startsWith('local:') && genius.ready) void genius.fetchSong(player.current);
   },
   { immediate: true },
 );
@@ -753,6 +792,30 @@ const countdown = computed(() => synced.value ? vocalCountdown(firstVocal.value,
 const karaoke = computed(
   () => synced.value && player.showLyrics,
 );
+const effectsLayer = ref<InstanceType<typeof LyricsEffectsLayer> | null>(null);
+const wordRefs = shallowReactive(new Map<string, HTMLElement>());
+function fxWordId(line: number, word: number) { return `l${line}-w${word}`; }
+function setWordRef(element: unknown, line: number, word: number) {
+  const id=fxWordId(line,word);
+  if (element instanceof HTMLElement) wordRefs.set(id,element); else wordRefs.delete(id);
+}
+const fxAllowed=computed(()=>fx.enabled && motionAllowed.value && synced.value && player.showLyrics && !player.pendingResume);
+const fxTrackKey=computed(()=>`${fx.sourceKey}|${fingerprint(JSON.stringify(fx.document.words))}`);
+const fxWords=computed(()=>new Map(fx.document.words.map(word=>[word.id,word])));
+const effectFrames=computed<FxFrame[]>(()=>fxAllowed.value?fx.events.flatMap(event=>{
+  if (clockMs.value<event.startMs || clockMs.value>=event.startMs+event.durationMs) return [];
+  const word=fxWords.value.get(event.wordId),element=wordRefs.get(event.wordId);
+  return word && element ? [{event,word,element,fill:Math.max(0,Math.min(1,(clockMs.value-word.startMs)/Math.max(1,word.endMs-word.startMs)))}] : [];
+}):[]);
+watch(lines,()=>{ wordRefs.clear(); effectsLayer.value?.clear(); },{flush:'pre'});
+
+function syncEffectClock() {
+  clockMs.value=(player.pendingResume?player.progress:audio.currentTime)*1000;
+  if (audio.paused || audio.seeking) scrollFollower.stop();
+  void nextTick(()=>effectsLayer.value?.render());
+}
+audio.addEventListener('pause',syncEffectClock);audio.addEventListener('seeked',syncEffectClock);
+onBeforeUnmount(()=>{audio.removeEventListener('pause',syncEffectClock);audio.removeEventListener('seeked',syncEffectClock)});
 
 let raf = 0;
 
@@ -785,7 +848,7 @@ function openAlbum() {
 
 function openArtist() {
   const id = player.current?.artists[0]?.id;
-  if (id) void router.push(`/artist/${id}`);
+  if (id && !id.startsWith('local')) void router.push(`/artist/${id}`);
 }
 
 function setLineRef(el: unknown, i: number) {
@@ -809,9 +872,11 @@ function lineClass(i: number) {
 function onStageWheel(event: WheelEvent) {
   scrollFollower.stop();
   manualScrolling = true;
+  clipBrowsing.value = clipReady.value;
   clearTimeout(manualScrollTimer);
   manualScrollTimer = setTimeout(() => {
     manualScrolling = false;
+    clipBrowsing.value = false;
     if (!searchText.value.trim()) scrollToLine(activeIndex.value);
   }, 3000);
   const area = scroller.value;
@@ -848,3 +913,9 @@ watch(
   },
 );
 </script>
+
+<style scoped>
+.lyrics-clip-backdrop { z-index:-2; }
+.clip-alignment-status { display:inline-flex;align-items:center;gap:6px;max-width:170px;color:#ffffffb3;font-size:11px; }
+.lyrics-wrap { --clip-control-fg:#ffffffb3;--clip-control-hover:#fff;--clip-control-hover-bg:#ffffff18;--clip-control-on:#fff; }
+</style>

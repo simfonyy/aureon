@@ -1,5 +1,5 @@
 <template>
-  <div v-if="id === 'play'" class="play play-sm" @click="player.toggle()">
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop v-if="id === 'play'" class="play play-sm" @click="player.toggle()">
     <Transition name="ic-pop" mode="out-in">
       <q-spinner v-if="player.loading" key="load" size="14px" color="dark" />
       <Icon
@@ -9,9 +9,9 @@
         :size="18"
       />
     </Transition>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'shuffle'"
     class="icon-btn"
     :class="{ on: player.shuffle }"
@@ -19,9 +19,9 @@
   >
     <Icon name="shuffle" :size="18" />
     <q-tooltip>Перемешать</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'prev'"
     class="icon-btn"
     :class="{ off: !player.hasPrev }"
@@ -29,14 +29,14 @@
   >
     <Icon name="prev" :size="19" />
     <q-tooltip>Предыдущий</q-tooltip>
-  </div>
+  </button>
 
-  <div v-else-if="id === 'next'" class="icon-btn" @click="player.next(false)">
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop v-else-if="id === 'next'" class="icon-btn" @click="player.next(false)">
     <Icon name="next" :size="19" />
     <q-tooltip>Следующий</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'repeat'"
     class="icon-btn"
     :class="{ on: player.repeat !== 'off' }"
@@ -44,9 +44,9 @@
   >
     <Icon :name="player.repeat === 'one' ? 'repeatOne' : 'repeat'" :size="18" />
     <q-tooltip>{{ repeatLabel }}</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'like'"
     class="icon-btn"
     :class="{ on: isLiked, off: !player.current }"
@@ -56,9 +56,9 @@
     <q-tooltip>
       {{ isLiked ? "Убрать из «Мне нравится»" : "Нравится" }}
     </q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'dislike'"
     class="icon-btn"
     :class="{ off: !player.current }"
@@ -66,9 +66,9 @@
   >
     <Icon name="heartOff" :size="18" />
     <q-tooltip>Не нравится</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'lyrics'"
     class="icon-btn"
     :class="{ on: player.showLyrics, off: !player.current }"
@@ -76,9 +76,9 @@
   >
     <Icon name="lyrics" :size="18" />
     <q-tooltip>Текст песни</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'queue'"
     class="icon-btn"
     :class="{ on: panels.queueOpen }"
@@ -86,14 +86,14 @@
   >
     <Icon name="queue" :size="18" />
     <q-tooltip>Очередь треков</q-tooltip>
-  </div>
+  </button>
 
-  <div v-else-if="id === 'mini'" class="icon-btn" @click="panels.enterMini()">
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop v-else-if="id === 'mini'" class="icon-btn" @click="panels.enterMini()">
     <Icon name="mini" :size="18" />
     <q-tooltip>Мини-плеер поверх окон</q-tooltip>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'sleep'"
     class="icon-btn"
     :class="{ on: sleep.active }"
@@ -125,9 +125,9 @@
         </div>
       </div>
     </q-menu>
-  </div>
+  </button>
 
-  <div
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop
     v-else-if="id === 'speed'"
     class="icon-btn"
     :class="{ on: player.playbackRate !== 1 }"
@@ -149,9 +149,9 @@
         </div>
       </div>
     </q-menu>
-  </div>
+  </button>
 
-  <div v-else-if="id === 'quality'" class="icon-btn">
+  <button type="button" :aria-label="buttonLabel" :aria-pressed="buttonPressed" :disabled="buttonDisabled" @keydown.space.stop @keydown.enter.stop v-else-if="id === 'quality'" class="icon-btn">
     <Icon name="quality" :size="18" />
     <q-tooltip>{{ player.qualityLabel || "Качество" }}</q-tooltip>
     <q-menu class="panel menu" anchor="top middle" self="bottom middle">
@@ -169,30 +169,22 @@
         </div>
       </div>
     </q-menu>
-  </div>
+  </button>
 
-  <div v-else-if="id === 'volume'" class="player-volume">
-    <div class="icon-btn" @click="player.toggleMute()">
+  <div v-else-if="id === 'volume'" ref="volumeArea" class="player-volume" @pointerenter="openVolume" @pointerleave="scheduleVolumeClose" @focusin="openVolume" @focusout="scheduleVolumeClose" @wheel.prevent.stop="onVolumeWheel">
+    <button type="button" class="icon-btn" aria-label="Громкость" :aria-expanded="volumeOpen" aria-haspopup="dialog" @click="player.toggleMute()" @keydown.space.stop @keydown.enter.stop @keydown.tab.exact.prevent="focusVolumeSlider">
       <Icon :name="player.muted ? 'volumeOff' : 'volume'" :size="18" />
-      <q-tooltip>{{
-        player.muted ? "Включить звук" : "Выключить звук"
-      }}</q-tooltip>
-    </div>
-    <q-slider
-      class="player-volume-slider"
-      :model-value="player.muted ? 0 : player.volume"
-      :min="0"
-      :max="1"
-      :step="0.01"
-      dense
-      color="primary"
-      @update:model-value="(v) => player.setVolume(Number(v ?? 0))"
-    />
+      <q-menu v-model="volumeOpen" class="player-volume-menu" anchor="top middle" self="bottom middle" :offset="[0, 8]" no-parent-event no-focus no-refocus transition-show="player-volume" transition-hide="player-volume" :transition-duration="180" @pointerenter="openVolume" @pointerleave="scheduleVolumeClose" @show="focusPendingVolumeSlider" @hide="onVolumeHide">
+        <div ref="volumePanel" class="player-volume-panel" role="dialog" aria-label="Настройка громкости" @focusin="openVolume" @focusout="scheduleVolumeClose" @wheel.prevent.stop="onVolumeWheel" @keydown.space.stop>
+          <q-slider class="player-volume-slider" aria-label="Уровень громкости" :aria-valuetext="`${Math.round((player.muted ? 0 : player.volume) * 100)}%`" :model-value="player.muted ? 0 : player.volume" :min="0" :max="1" :step="0.01" vertical reverse dense thumb-size="12px" track-size="3px" color="primary" @update:model-value="(v) => applyVolume(Number(v ?? 0))" @pan="onVolumePan" />
+        </div>
+      </q-menu>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 import Icon from "@/components/Icon.vue";
 import type { Quality } from "@/api/types";
 import { useLibraryStore } from "@/stores/library";
@@ -201,12 +193,85 @@ import { usePlayerStore } from "@/stores/player/index";
 import { useSleepStore } from "@/stores/sleep";
 import type { PlayerButtonId } from "@/stores/ui/index";
 
-defineProps<{ id: PlayerButtonId }>();
+const props = defineProps<{ id: PlayerButtonId }>();
+const volumeOpen = ref(false);
+const volumeArea = ref<HTMLElement | null>(null);
+const volumePanel = ref<HTMLElement | null>(null);
+let volumeCloseTimer: ReturnType<typeof setTimeout> | undefined;
+let volumeDragging = false;
+let volumeFocusPending = false;
+
+function clearVolumeClose() {
+  if (volumeCloseTimer !== undefined) clearTimeout(volumeCloseTimer);
+  volumeCloseTimer = undefined;
+}
+function openVolume() {
+  clearVolumeClose();
+  volumeOpen.value = true;
+}
+function volumeHasFocus() {
+  const focused = document.activeElement;
+  return focused !== null && focused.matches(':focus-visible') && (volumeArea.value?.contains(focused) || volumePanel.value?.contains(focused));
+}
+function scheduleVolumeClose() {
+  clearVolumeClose();
+  volumeCloseTimer = setTimeout(() => {
+    volumeCloseTimer = undefined;
+    if (!volumeDragging && !volumeHasFocus() && !volumeArea.value?.matches(':hover') && !volumePanel.value?.closest('.player-volume-menu')?.matches(':hover')) volumeOpen.value = false;
+  }, 180);
+}
+async function focusVolumeSlider() {
+  volumeFocusPending = true;
+  openVolume();
+  await nextTick();
+  focusPendingVolumeSlider();
+}
+function focusPendingVolumeSlider() {
+  if (!volumeFocusPending) return;
+  const slider = volumePanel.value?.querySelector<HTMLElement>('[role="slider"]');
+  if (slider) { volumeFocusPending = false; slider.focus(); }
+}
+function onVolumeHide() {
+  volumeFocusPending = false;
+  clearVolumeClose();
+}
+function applyVolume(value: number) {
+  if (Number.isFinite(value)) player.setVolume(Math.max(0, Math.min(1, value)));
+}
+function onVolumeWheel(event: WheelEvent) {
+  if (!Number.isFinite(event.deltaY) || event.deltaY === 0) return;
+  openVolume();
+  const units = event.deltaMode === 1 ? 3 : event.deltaMode === 2 ? Math.abs(event.deltaY) : 100;
+  const notches = Math.max(1, Math.round(Math.abs(event.deltaY) / units));
+  const nextPercent = Math.round(player.volume * 100) - Math.sign(event.deltaY) * notches * 5;
+  applyVolume(nextPercent / 100);
+}
+function onVolumePan(phase: string) {
+  volumeDragging = phase === 'start';
+  if (volumeDragging) clearVolumeClose(); else scheduleVolumeClose();
+}
+onBeforeUnmount(clearVolumeClose);
 
 const player = usePlayerStore();
 const library = useLibraryStore();
 const panels = usePanelsStore();
 const sleep = useSleepStore();
+const buttonLabel = computed(() => ({
+  play: player.isPlaying ? 'Пауза' : 'Воспроизвести', shuffle: 'Перемешать',
+  prev: 'Предыдущий трек', next: 'Следующий трек', repeat: repeatLabel.value,
+  like: isLiked.value ? 'Убрать из «Мне нравится»' : 'Нравится', dislike: 'Не нравится',
+  lyrics: 'Текст песни', queue: 'Очередь треков', mini: 'Мини-плеер',
+  sleep: 'Таймер сна', speed: 'Скорость воспроизведения', quality: 'Качество звука', volume: 'Громкость',
+}[props.id]));
+const buttonPressed = computed(() => {
+  if (props.id === 'shuffle') return player.shuffle;
+  if (props.id === 'repeat') return player.repeat !== 'off';
+  if (props.id === 'like') return isLiked.value;
+  if (props.id === 'lyrics') return player.showLyrics;
+  if (props.id === 'queue') return panels.queueOpen;
+  return undefined;
+});
+const buttonDisabled = computed(() => props.id === 'prev' ? !player.hasPrev : ['play', 'like', 'dislike', 'lyrics'].includes(props.id) && !player.current);
 
 const sleepPresets = [15, 30, 45, 60];
 const rates = [0.75, 1, 1.25, 1.5, 1.75, 2];

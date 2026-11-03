@@ -12,17 +12,17 @@
         <span>{{ isLiked ? "Убрать из «Мне нравится»" : "Нравится" }}</span>
       </div>
 
-      <div class="menu-item" v-close-popup @click="player.waveByTrack(track)">
+      <div v-if="!isLocal" class="menu-item" v-close-popup @click="player.waveByTrack(track)">
         <Icon name="wave" :size="18" />
         <span>Моя волна по треку</span>
       </div>
 
-      <div class="menu-item" v-close-popup @click="playSimilar">
+      <div v-if="!isLocal" class="menu-item" v-close-popup @click="playSimilar">
         <Icon name="paths" :size="18" />
         <span>Похожие треки</span>
       </div>
 
-      <div class="menu-item" v-close-popup @click="download">
+      <div v-if="!isLocal" class="menu-item" v-close-popup @click="download">
         <Icon name="download" :size="18" />
         <span>Скачать</span>
       </div>
@@ -42,7 +42,7 @@
         <span>Не нравится</span>
       </div>
 
-      <div class="menu-item">
+      <div v-if="!isLocal" class="menu-item">
         <Icon name="playlistAdd" :size="18" />
         <span class="col">Добавить в плейлист</span>
         <Icon name="chevronRight" :size="15" />
@@ -96,13 +96,18 @@
         <span>Показать текст песни</span>
       </div>
 
-      <div class="menu-item" v-close-popup @click="share">
+      <div v-if="!isLocal && (track.clip_ids === undefined || track.clip_ids.length || musicClips.knownClipIds[musicTrackId(track.id) || '']?.length)" class="menu-item" v-close-popup @click="musicClips.open(track)">
+        <Icon name="musicVideo" :size="18" />
+        <span>Клипы к треку</span>
+      </div>
+
+      <div v-if="!isLocal" class="menu-item" v-close-popup @click="share">
         <Icon name="share" :size="18" />
         <span>Поделиться</span>
       </div>
 
       <div
-        v-if="track.album_id"
+        v-if="!isLocal && track.album_id"
         class="menu-item"
         v-close-popup
         @click="goAlbum"
@@ -112,23 +117,23 @@
       </div>
 
       <div
-        v-if="track.artists.length === 1"
+        v-if="!isLocal && remoteArtists.length === 1"
         class="menu-item"
         v-close-popup
-        @click="goArtist(track.artists[0]?.id)"
+        @click="goArtist(remoteArtists[0]?.id)"
       >
         <Icon name="artist" :size="18" />
         <span>Перейти к исполнителю</span>
       </div>
 
-      <div v-else-if="track.artists.length > 1" class="menu-item">
+      <div v-else-if="!isLocal && remoteArtists.length > 1" class="menu-item">
         <Icon name="artist" :size="18" />
         <span class="col">Перейти к исполнителям</span>
         <Icon name="chevronRight" :size="15" />
         <q-menu anchor="top end" self="top start" class="panel menu">
           <div class="menu-body">
             <div
-              v-for="a in track.artists"
+              v-for="a in remoteArtists"
               :key="a.id"
               class="menu-item"
               v-close-popup
@@ -140,7 +145,7 @@
         </q-menu>
       </div>
 
-      <template v-if="playlistKind !== null && playlistKind !== undefined">
+      <template v-if="!isLocal && playlistKind !== null && playlistKind !== undefined">
         <div class="sep" style="margin: 6px 4px" />
         <div class="menu-item danger" v-close-popup @click="emit('remove')">
           <Icon name="trash" :size="18" />
@@ -164,7 +169,7 @@
         }}</span>
       </div>
 
-      <div class="menu-item" v-close-popup @click="openReplace">
+      <div v-if="!isLocal" class="menu-item" v-close-popup @click="openReplace">
         <Icon name="upload" :size="18" />
         <span>{{
           hasReplacement ? "Своя версия — настроить" : "Подменить версию"
@@ -276,6 +281,10 @@ import { usePlayerStore } from "@/stores/player/index";
 import { clearOverride, getOverride, setOverride } from "@/lib/censorOverrides";
 import { ensureCensorList, isCensored, prefersOriginal } from "@/lib/censor";
 import { useUiStore } from "@/stores/ui/index";
+import { isRemoteArtist } from '@/lib/artistAvatar';
+import { useMusicClipsStore } from '@/stores/musicClips';
+import { musicTrackId } from '@/lib/musicClips';
+const musicClips = useMusicClipsStore();
 
 const props = withDefaults(
   defineProps<{
@@ -298,6 +307,8 @@ const info = ref(false);
 const loading = ref(false);
 const error = ref("");
 const details = ref<TrackInfo | null>(null);
+const isLocal = computed(() => props.track.id.startsWith('local:'));
+const remoteArtists = computed(() => props.track.artists.filter(artist => isRemoteArtist(artist.id)));
 
 function formatReleaseDate(value: string | null | undefined): string {
   if (!value) return "";
@@ -345,6 +356,7 @@ const rows = computed(() => {
 });
 
 async function playSimilar() {
+  if (isLocal.value) return;
   try {
     const list = await api.similarTracks(props.track.id);
     if (!list.length) {
@@ -363,6 +375,10 @@ async function openInfo() {
   error.value = "";
   loading.value = true;
   try {
+    if (isLocal.value) {
+      details.value = { track_id: props.track.id, title: props.track.title, artists: props.track.artists.map(artist => artist.name), album: props.track.album_title, duration_ms: props.track.duration_ms, source: 'Локальный файл', version: null, label: null, composers: [], lyricists: [], year: null, release_date: null, genre: null, explicit: false };
+      return;
+    }
     details.value = await api.trackInfo(props.track.id);
     if (!rows.value.length)
       error.value = "Яндекс не отдал информацию о этом треке";
@@ -388,7 +404,7 @@ const censorTick = ref(0);
 
 const cleanAvailable = computed(() => {
   void censorTick.value;
-  return ui.settings.censorBypass && isCensored(props.track.id);
+  return !isLocal.value && ui.settings.censorBypass && isCensored(props.track.id);
 });
 
 const playsOriginal = computed(() => {
@@ -397,6 +413,7 @@ const playsOriginal = computed(() => {
 });
 
 async function toggleCensorVersion() {
+  if (isLocal.value) return;
   const next = !playsOriginal.value;
   await player.useOriginalVersion(props.track.id, next);
   censorTick.value += 1;
@@ -409,10 +426,11 @@ async function toggleCensorVersion() {
 
 const hasReplacement = computed(() => {
   void replaceSaved.value;
-  return Boolean(getOverride(props.track.id));
+  return !isLocal.value && Boolean(getOverride(props.track.id));
 });
 
 function openReplace() {
+  if (isLocal.value) return;
   const saved = getOverride(props.track.id);
   replaceSource.value = saved?.source ?? "";
   replaceLabel.value = saved?.label ?? "без цензуры";
@@ -420,6 +438,7 @@ function openReplace() {
 }
 
 function saveReplace() {
+  if (isLocal.value) return;
   const source = replaceSource.value.trim();
   if (!source) {
     Notify.create({
@@ -436,6 +455,7 @@ function saveReplace() {
 }
 
 function dropReplace() {
+  if (isLocal.value) return;
   clearOverride(props.track.id);
   replaceSaved.value += 1;
   replaceSource.value = "";
@@ -445,6 +465,7 @@ function dropReplace() {
 }
 
 async function download() {
+  if (isLocal.value) return;
   Notify.create({ message: "Скачивание началось" });
   try {
     const path = await api.download(
@@ -461,6 +482,7 @@ async function download() {
 }
 
 async function share() {
+  if (isLocal.value) return;
   const link = props.track.album_id
     ? `https://music.yandex.ru/album/${props.track.album_id}/track/${props.track.id}`
     : `https://music.yandex.ru/track/${props.track.id}`;
@@ -477,14 +499,15 @@ function showLyrics() {
 }
 
 function goAlbum() {
-  if (props.track.album_id) void router.push(`/album/${props.track.album_id}`);
+  if (!isLocal.value && props.track.album_id) void router.push(`/album/${props.track.album_id}`);
 }
 
 function goArtist(id?: string) {
-  if (id) void router.push(`/artist/${id}`);
+  if (!isLocal.value && isRemoteArtist(id)) void router.push(`/artist/${id}`);
 }
 
 onMounted(() => {
+  if (isLocal.value) return;
   if (!library.playlists.length) void library.init();
   if (ui.settings.censorBypass) {
     void ensureCensorList().then(() => {

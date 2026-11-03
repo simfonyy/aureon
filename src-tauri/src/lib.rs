@@ -1,10 +1,17 @@
 mod commands;
+mod clip_sync;
+mod clip_sync_media;
+mod clip_sync_match;
 mod updates;
 mod gpu;
 mod files;
+mod library_tools;
+mod listenbrainz;
+mod audio_tools;
 mod genius;
 mod hotkeys;
 mod lrclib;
+mod lyrics_fx;
 mod mini;
 mod oauth;
 mod presence;
@@ -59,6 +66,23 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            clip_sync::get_clip_alignment,
+            listenbrainz::listenbrainz_status,
+            listenbrainz::listenbrainz_connect,
+            listenbrainz::listenbrainz_set_enabled,
+            listenbrainz::listenbrainz_disconnect,
+            listenbrainz::listenbrainz_submit,
+            listenbrainz::listenbrainz_recent,
+            audio_tools::save_microphone_recording,
+            library_tools::library_catalog,
+            library_tools::library_import,
+            library_tools::library_track_path,
+            library_tools::library_lyrics,
+            library_tools::library_remove,
+            library_tools::library_edit_tags,
+            library_tools::library_analyze,
+            library_tools::library_duplicate_groups,
+            library_tools::library_identify,
             gpu::detect_gpu,
             updates::check_update,
             updates::download_update,
@@ -74,6 +98,7 @@ pub fn run() {
             commands::get_artist,
             commands::get_artist_tracks,
             commands::get_album,
+            commands::get_home_discovery,
             commands::wave_feedback,
             commands::search_tracks,
             commands::get_liked_tracks,
@@ -100,8 +125,12 @@ pub fn run() {
             commands::get_similar_tracks,
             commands::get_track,
             commands::get_track_info,
+            commands::get_track_clips,
+            commands::get_clip_stream,
             commands::get_stream,
             commands::get_lyrics,
+            lyrics_fx::analyze_lyrics_fx,
+            lyrics_fx::cancel_lyrics_fx,
             commands::download_track,
             commands::download_image,
             commands::ai_check_artists,

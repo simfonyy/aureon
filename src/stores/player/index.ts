@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import {isLibraryTrack,localTrackSource,localTrackLyrics} from '@/lib/libraryTools/playback';
 import { watch } from "vue";
 import { bindMediaSession } from "@/lib/mediaSession";
 import { Notify } from "quasar";
@@ -138,6 +139,10 @@ let skipGuard = 0;
 let lyricsRequest = 0;
 
 let clearPendingSeek: (() => void) | null = null;
+let pendingSeek: { token: number; trackId: string; seconds: number } | null = null;
+let retryPendingSeek: (() => void) | null = null;
+let currentLoadToken = 0;
+let attachedSourceToken = 0;
 let playbackWanted = true;
 let lastLoadAt = 0;
 let stallTimer: number | null = null;
@@ -146,6 +151,45 @@ let stallSince = 0;
 let recoverStep = 0;
 let lastRecover = 0;
 let radioStarted = false;
+
+function cancelPendingAudioSeek() {
+  clearPendingSeek?.();
+  clearPendingSeek = null;
+  retryPendingSeek = null;
+  pendingSeek = null;
+}
+
+// Keep the latest requested position until this source can accept it. Setting
+// currentTime before metadata is available can throw or silently do nothing.
+function requestAudioSeek(player: PlayerState, seconds: number, token: number) {
+  cancelPendingAudioSeek();
+  if (!player.current) return;
+  const requested = { token, trackId: player.current.id, seconds };
+  pendingSeek = requested;
+  const retry = () => {
+    if (pendingSeek !== requested) return;
+    if (!isCurrentToken(token) || player.current?.id !== requested.trackId) {
+      cancelPendingAudioSeek();
+      return;
+    }
+    if (attachedSourceToken !== token || !audio.getAttribute('src') || audio.readyState === 0) return;
+    const duration = audio.duration;
+    const target = Number.isFinite(duration) && duration > 0 ? Math.min(requested.seconds, duration) : requested.seconds;
+    try { audio.currentTime = target; }
+    catch { return; }
+    if (Math.abs(audio.currentTime - target) > 0.25) return;
+    player.progress = target;
+    lastProgress = target;
+    stallAt = target;
+    stallSince = 0;
+    cancelPendingAudioSeek();
+  };
+  const events = ['loadedmetadata', 'loadeddata', 'durationchange', 'canplay', 'progress'];
+  for (const event of events) audio.addEventListener(event, retry);
+  clearPendingSeek = () => { for (const event of events) audio.removeEventListener(event, retry); };
+  retryPendingSeek = retry;
+  retry();
+}
 
 export const usePlayerStore = defineStore("player", {
   state: (): PlayerState => {
@@ -245,6 +289,10 @@ export const usePlayerStore = defineStore("player", {
       audio.playbackRate = this.playbackRate;
       if (useUiStore().settings.trimSilence) ensureAnalyser();
       audio.ontimeupdate = () => {
+        retryPendingSeek?.();
+        // A timeupdate from the empty/old media must not undo a user seek made
+        // while its replacement source is still being resolved.
+        if (pendingSeek?.trackId === this.current?.id) return;
         const previous = lastProgress;
         this.progress = audio.currentTime;
         this.duration = audio.duration || 0;
@@ -280,7 +328,8 @@ export const usePlayerStore = defineStore("player", {
         }
       };
       audio.onended = () => {
-        if (useSleepStore().onTrackEnded()) return;
+        const sleep = useSleepStore();
+        if (sleep.onTrackEnded() || sleep.firing) return;
         if (useTogetherStore().isGuest) return;
         void this.next(true);
       };
@@ -585,11 +634,12 @@ export const usePlayerStore = defineStore("player", {
       this.lyricsLoading = false;
 
       const token = nextSourceToken();
+      currentLoadToken = token;
+      attachedSourceToken = 0;
       playbackWanted = opts?.autoplay ?? true;
       playDiagnostic(token, this.queue[this.index]?.id ?? '', 'select');
       cancelFade(this.muted ? 0 : this.volume);
-      clearPendingSeek?.();
-      clearPendingSeek = null;
+      cancelPendingAudioSeek();
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
@@ -598,13 +648,16 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async performLoad(opts?: { startAt?: number; autoplay?: boolean }, token = nextSourceToken()) {
+      if (currentLoadToken !== token) cancelPendingAudioSeek();
+      currentLoadToken = token;
+      attachedSourceToken = 0;
       let track = this.queue[this.index];
       if (!track) return;
-      if (useUiStore().settings.skipAiTracks) {
+      if (useUiStore().settings.skipAiTracks && !isLibraryTrack(track.id)) {
         this.loading = true;
         // Bound the search to this queue; an all-AI queue must stop, not loop.
         let extended = false;
-        while (track && useUiStore().settings.skipAiTracks) {
+        while (track && useUiStore().settings.skipAiTracks && !isLibraryTrack(track.id)) {
           const result = await api.aiCheckTracks([track.id]).catch(() => []);
           if (!isCurrentToken(token)) return;
           if (!useUiStore().settings.skipAiTracks || !result.some(item => item.id === track!.id && item.ai)) break;
@@ -650,6 +703,7 @@ export const usePlayerStore = defineStore("player", {
       quietSince = 0;
       useStatsStore().begin(track);
       this.duration = (track.duration_ms ?? 0) / 1000;
+      if (startAt > 0) requestAudioSeek(this, startAt, token);
       this.loading = true;
       this.lyrics = null;
       this.lyricsError = null;
@@ -675,7 +729,13 @@ export const usePlayerStore = defineStore("player", {
         this.censorReplaced = false;
         this.censorAvailable = false;
 
-        const custom = overrideUrl(track.id);
+        if(isLibraryTrack(track.id)) {
+          source=await localTrackSource(track.id);
+          if(!isCurrentToken(token))return;
+          this.playingLocal=true;this.currentCodec=null;this.currentBitrate=null;this.currentSource='local-library';
+        }
+
+        const custom = isLibraryTrack(track.id) ? null : overrideUrl(track.id);
         if (custom) {
           source = custom;
           this.censorReplaced = true;
@@ -764,19 +824,9 @@ export const usePlayerStore = defineStore("player", {
         audio.src = source;
         audio.playbackRate = this.playbackRate;
         useEqualizerStore().apply();
-        if (startAt > 0) {
-          const seekOnce = () => {
-            audio.removeEventListener("loadedmetadata", seekOnce);
-            clearPendingSeek = null;
-            if (!isCurrentToken(token)) return;
-            try {
-              audio.currentTime = startAt;
-            } catch {}
-          };
-          audio.addEventListener("loadedmetadata", seekOnce);
-          clearPendingSeek = () => audio.removeEventListener("loadedmetadata", seekOnce);
-        }
         audio.load();
+        attachedSourceToken = token;
+        retryPendingSeek?.();
         if (autoplay && playbackWanted) {
           await withDeadline(safePlay(token), 15000, 'Загрузка аудио');
           if (!isCurrentToken(token)) return;
@@ -785,7 +835,6 @@ export const usePlayerStore = defineStore("player", {
             void fadeIn(target, Math.min(fadeMs, 2500));
           }
         } else {
-          audio.load();
           this.isPlaying = false;
         }
         this.persistSession();
@@ -793,7 +842,7 @@ export const usePlayerStore = defineStore("player", {
         void this.syncTray();
         void this.syncPresence(true);
         void this.prefetchNext();
-        if (this.isWave) {
+        if (this.isWave && !isLibraryTrack(track.id)) {
           void api.sendFeedback({
             type: "trackStarted",
             track_id: track.id,
@@ -815,6 +864,8 @@ export const usePlayerStore = defineStore("player", {
           return;
         }
         cancelFade(this.muted ? 0 : this.volume);
+        cancelPendingAudioSeek();
+        attachedSourceToken = 0;
         audio.pause();
         audio.removeAttribute('src');
         audio.load();
@@ -866,7 +917,7 @@ export const usePlayerStore = defineStore("player", {
       }
       const targets = [this.queue[this.index + 1], this.queue[this.index + 2]]
         .filter((track): track is Track => Boolean(track))
-        .filter((track) => !prefetched.has(track.id));
+        .filter((track) => !isLibraryTrack(track.id) && !prefetched.has(track.id));
       await Promise.all(
         targets.map(async (next) => {
           if (ui.censorBypass && !prefersOriginal(next.id)) {
@@ -927,6 +978,14 @@ export const usePlayerStore = defineStore("player", {
       if (!force && this.lyrics?.track_id === track.id) return;
       const request = ++lyricsRequest;
       const isLatest = () => request === lyricsRequest && this.current?.id === track.id;
+
+      if(isLibraryTrack(track.id)) {
+        this.lyricsLoading=true;this.lyricsError=null;this.lyricsOrigin=null;
+        try {const lyrics=await localTrackLyrics(track.id);if(!isLatest())return;this.lyrics=lyrics;this.lyricsOrigin=lyrics?'local':null;this.lyricsError=lyrics?null:'В файле нет текста песни';}
+        catch {if(isLatest()){this.lyrics=null;this.lyricsError='Не удалось прочитать текст из файла';}}
+        finally {if(isLatest())this.lyricsLoading=false;}
+        return;
+      }
 
       const pick = mode ?? this.lyricsPick ?? undefined;
       this.lyricsLoading = true;
@@ -1136,12 +1195,13 @@ export const usePlayerStore = defineStore("player", {
     async next(auto = false) {
       if (useTogetherStore().isGuest) return;
       if (auto && this.repeat === "one") {
-        audio.currentTime = 0;
+        if(this.current)useStatsStore().begin(this.current);
+        this.seek(0);
         await safePlay();
         return;
       }
 
-      if (this.isWave && this.current) {
+      if (this.isWave && this.current && !isLibraryTrack(this.current.id)) {
         await api
           .sendFeedback({
             type: auto ? "trackFinished" : "skip",
@@ -1212,7 +1272,7 @@ export const usePlayerStore = defineStore("player", {
       try {
         const res = await api.wave(
           this.waveSessionId
-            ? { station, sessionId: this.waveSessionId, queue: this.queue.map((t) => t.id) }
+            ? { station, sessionId: this.waveSessionId, queue: this.queue.filter(t=>!isLibraryTrack(t.id)).map((t) => t.id) }
             : { station },
         );
         if (res.radio_session_id) this.waveSessionId = res.radio_session_id;
@@ -1242,7 +1302,7 @@ export const usePlayerStore = defineStore("player", {
       if (useTogetherStore().isGuest) return false;
       const ui = useUiStore().settings;
       const seed = this.queue[this.index] ?? this.current;
-      const personal = ui.autoWaveSource === "personal" || !seed;
+      const personal = ui.autoWaveSource === "personal" || !seed || isLibraryTrack(seed.id);
       const station = personal ? DEFAULT_STATION : `track:${seed?.id}`;
       try {
         const res = await api.wave({ station });
@@ -1308,7 +1368,9 @@ export const usePlayerStore = defineStore("player", {
       lastRecover = now;
       const track = this.current;
       if (!track) return;
-      const position = Number.isFinite(at) && at > 0 ? at : this.progress;
+      const position = pendingSeek?.trackId === track.id
+        ? pendingSeek.seconds
+        : Number.isFinite(at) && at > 0 ? at : this.progress;
       recoverStep = hard ? 3 : recoverStep + 1;
       log.warn(
         "playback stuck, recovering",
@@ -1318,9 +1380,11 @@ export const usePlayerStore = defineStore("player", {
       );
 
       if (recoverStep < 3) {
-        try {
-          audio.currentTime = Math.max(0, position + 0.4);
-        } catch {}
+        if (pendingSeek?.trackId === track.id) retryPendingSeek?.();
+        else {
+          try { audio.currentTime = Math.max(0, position + 0.4); }
+          catch {}
+        }
         await safePlay().catch(() => undefined);
         return;
       }
@@ -1344,7 +1408,7 @@ export const usePlayerStore = defineStore("player", {
               ? {
                   station,
                   sessionId: this.waveSessionId,
-                  queue: this.queue.map((t) => t.id),
+                  queue: this.queue.filter(t=>!isLibraryTrack(t.id)).map((t) => t.id),
                 }
               : { station },
           );
@@ -1382,7 +1446,7 @@ export const usePlayerStore = defineStore("player", {
 
     async prev() {
       if (this.progress > 3) {
-        audio.currentTime = 0;
+        this.seek(0);
         return;
       }
       if (this.hasPrev) {
@@ -1392,15 +1456,15 @@ export const usePlayerStore = defineStore("player", {
     },
 
     seek(seconds: number) {
-      const limit = this.duration > 0 ? this.duration : seconds;
+      if (!this.current || !Number.isFinite(seconds)) return;
+      const limit = Number.isFinite(this.duration) && this.duration > 0 ? this.duration : seconds;
       const target = Math.max(0, Math.min(seconds, limit));
       this.progress = target;
       lastProgress = target;
-      try {
-        audio.currentTime = target;
-      } catch {}
+      if (!this.pendingResume) requestAudioSeek(this, target, currentLoadToken);
       stallAt = target;
       stallSince = 0;
+      this.persistSession();
       void this.syncPresence(true);
     },
 
@@ -1440,6 +1504,7 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async waveByTrack(track: Track) {
+      if(isLibraryTrack(track.id))return;
       await this.startWave(`track:${track.id}`, `Волна по «${track.title}»`);
     },
 
@@ -1452,7 +1517,7 @@ export const usePlayerStore = defineStore("player", {
       if (!this.current) return;
       const track = this.current;
       await useLibraryStore().dislike(track);
-      if (this.isWave) {
+      if (this.isWave && !isLibraryTrack(track.id)) {
         await api
           .sendFeedback({
             type: "dislike",

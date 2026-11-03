@@ -15,7 +15,7 @@
       <p v-if="updates.downloaded" class="update-file">{{ updates.downloaded }}</p>
       <p v-if="updates.error" class="update-error" role="alert">{{ updates.error }}</p>
       <div class="update-actions">
-        <button class="btn" :disabled="updates.downloading" @click="updates.remindLater()">{{ updates.downloaded ? 'Закрыть' : 'Через 2 дня' }}</button>
+        <button class="btn" :disabled="updates.downloading" @click="updates.remindLater()">{{ updates.downloaded ? 'Закрыть' : 'Позже' }}</button>
         <button v-if="!updates.downloaded" class="btn primary" :disabled="updates.downloading" @click="updates.download()">{{ updates.downloading ? 'Скачивание…' : updates.release.canInstall ? 'Скачать и обновить' : updates.release.packageName ? 'Скачать' : 'Открыть релиз' }}</button>
       </div>
     </div>
@@ -28,14 +28,14 @@ import { api } from '@/api/client';
 import { useUpdatesStore } from '@/stores/updates';
 defineProps<{ blocked?: boolean }>();
 const updates = useUpdatesStore();
-let initial: ReturnType<typeof setTimeout>, timer: ReturnType<typeof setInterval>;
+let timer: ReturnType<typeof setInterval>;
 const check = () => { if (document.visibilityState === 'visible') void updates.check(); };
 onMounted(() => {
-  initial = setTimeout(check, 15000);
+  void updates.check('startup');
   timer = setInterval(check, 60000);
   document.addEventListener('visibilitychange', check);
 });
-onBeforeUnmount(() => { clearTimeout(initial); clearInterval(timer); document.removeEventListener('visibilitychange', check); });
+onBeforeUnmount(() => { clearInterval(timer); document.removeEventListener('visibilitychange', check); });
 </script>
 
 <style scoped>

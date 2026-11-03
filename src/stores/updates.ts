@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { readSchedule, shouldCheck, UPDATE_SNOOZE } from '@/lib/updateSchedule';
+import { readSchedule, shouldCheck, UPDATE_SNOOZE, type UpdateCheckReason } from '@/lib/updateSchedule';
 import { api } from '@/api/client';
 
 interface Release { version: string; releaseUrl: string; packageName: string | null; canInstall: boolean }
@@ -15,10 +15,11 @@ export const useUpdatesStore = defineStore('updates', {
   state: () => ({ schedule: savedSchedule(), release: null as Release | null, checking: false, downloading: false, progress: 0, open: false, checked: false, error: '', downloaded: '' }),
   actions: {
     persist() { try { localStorage.setItem(KEY, JSON.stringify(this.schedule)); } catch { /* Remains deferred in this session. */ } },
-    async check(manual = false) {
+    async check(reason: UpdateCheckReason = 'scheduled') {
+      const manual = reason === 'manual';
       if (this.checking || this.downloading) return;
       if (!isTauri()) { if (manual) this.error = 'Проверка доступна в приложении Aureon.'; return; }
-      if (!manual && !shouldCheck(this.schedule, Date.now())) return;
+      if (!shouldCheck(this.schedule, Date.now(), reason)) return;
       this.checking = true; this.error = ''; this.downloaded = '';
       try {
         this.release = await invoke<Release | null>('check_update');

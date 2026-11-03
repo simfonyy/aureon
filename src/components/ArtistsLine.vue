@@ -1,7 +1,8 @@
 <template>
   <span class="artists-line">
     <span v-for="(a, i) in shown" :key="a.id || a.name">
-      <span class="link" @click.stop="open(a.id)">{{ a.name }}</span>
+      <span v-if="isRemoteArtist(a.id)" class="link" @click.stop="open(a.id)">{{ a.name }}</span>
+      <span v-else>{{ a.name }}</span>
       <span v-if="i < shown.length - 1">, </span>
     </span>
     <span v-if="hidden > 0" class="more-link" @click.stop>
@@ -20,6 +21,7 @@
             v-for="a in artists"
             :key="a.id || a.name"
             class="menu-item"
+            :class="{ 'local-artist': !isRemoteArtist(a.id) }"
             v-close-popup
             @click="open(a.id)"
           >
@@ -45,7 +47,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import Icon from "@/components/Icon.vue";
 import type { Artist } from "@/api/types";
-import { cachedAvatar, fetchAvatars } from "@/lib/artistAvatar";
+import { cachedAvatar, fetchAvatars, isRemoteArtist } from "@/lib/artistAvatar";
 
 const props = withDefaults(
   defineProps<{ artists: Artist[]; limit?: number }>(),
@@ -63,7 +65,7 @@ const hidden = computed(() => Math.max(0, props.artists.length - props.limit));
 const avatars = ref<Record<string, string | null>>({});
 
 async function loadAvatars() {
-  const ids = props.artists.map((a) => a.id).filter(Boolean);
+  const ids = props.artists.map((a) => a.id).filter(isRemoteArtist);
   const local: Record<string, string | null> = { ...avatars.value };
   for (const id of ids) {
     const cached = cachedAvatar(id);
@@ -78,6 +80,9 @@ async function loadAvatars() {
 }
 
 function open(id: string) {
-  if (id) void router.push(`/artist/${id}`);
+  if (isRemoteArtist(id)) void router.push(`/artist/${id}`);
 }
 </script>
+<style scoped>
+.menu-item.local-artist { cursor: default; }
+</style>

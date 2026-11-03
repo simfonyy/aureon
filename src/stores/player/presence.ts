@@ -91,10 +91,10 @@ export async function syncDiscordPresence(
     details: clampLine(template(settings.discordDetails, track), track.title),
     state: stateText,
     album: clampLine(track.album_title || track.title, track.title),
-    coverUrl: settings.discordShowArtwork
+    coverUrl: settings.discordShowArtwork && !track.id.startsWith('local:')
       ? normalizeCover(track.cover_url)
       : null,
-    trackUrl: TRACK_BASE + track.id,
+    trackUrl: track.id.startsWith('local:') ? '' : TRACK_BASE + track.id,
     buttonLabel: clampLine(
       settings.discordButtonLabel,
       "Слушать в Яндекс Музыке",

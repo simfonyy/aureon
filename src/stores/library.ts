@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import {readLocalRatings,saveLocalRatings} from '@/lib/localRatings';
 import { Notify } from "quasar";
 import { api } from "@/api/client";
 import type { AlbumPage, Playlist, Track } from "@/api/types";
@@ -22,11 +23,13 @@ interface LibraryState {
   likedAlbums: LikedAlbum[];
   playlists: Playlist[];
   pinned: number[];
+  homePinOrder: number[];
   hidden: number[];
   loading: boolean;
 }
 
 const PIN_KEY = "mashiro.pinned";
+const HOME_PIN_KEY = "mashiro.homePinnedOrder";
 const HIDE_KEY = "mashiro.hiddenPlaylists";
 const ALBUM_KEY = "mashiro.likedAlbums";
 
@@ -66,6 +69,22 @@ function writeKinds(key: string, kinds: number[]): boolean {
   }
 }
 
+function cleanHomePinOrder(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(
+    (kind): kind is number =>
+      typeof kind === "number" && Number.isSafeInteger(kind) && kind >= 0,
+  ))];
+}
+
+function readHomePinOrder(): number[] {
+  try {
+    return cleanHomePinOrder(JSON.parse(localStorage.getItem(HOME_PIN_KEY) || "[]"));
+  } catch {
+    return [];
+  }
+}
+
 function notifyError(e: unknown, fallback: string) {
   Notify.create({
     type: "negative",
@@ -83,6 +102,7 @@ export const useLibraryStore = defineStore("library", {
     likedAlbums: readLikedAlbums(),
     playlists: [],
     pinned: readKinds(PIN_KEY),
+    homePinOrder: readHomePinOrder(),
     hidden: readKinds(HIDE_KEY),
     loading: false,
   }),
@@ -131,8 +151,9 @@ export const useLibraryStore = defineStore("library", {
         api.dislikedIds().catch(() => [] as string[]),
         api.playlists().catch(() => [] as Playlist[]),
       ]);
-      this.likedIds = ids;
-      this.dislikedIds = disliked.map((id) => String(id));
+      const local=readLocalRatings();
+      this.likedIds = [...ids,...local.liked];
+      this.dislikedIds = [...disliked.map((id) => String(id)),...local.disliked];
       this.playlists = playlists;
       this.loading = false;
     },
@@ -185,9 +206,10 @@ export const useLibraryStore = defineStore("library", {
 
     togglePin(kind: number | string) {
       const id = Number(kind);
-      if (this.pinned.includes(id))
+      if (this.pinned.includes(id)) {
         this.pinned = this.pinned.filter((v) => v !== id);
-      else this.pinned = [...this.pinned, id];
+        this.forgetHomePinOrder(id);
+      } else this.pinned = [...this.pinned, id];
       if (!writeKinds(PIN_KEY, this.pinned)) {
         Notify.create({
           type: "negative",
@@ -202,6 +224,26 @@ export const useLibraryStore = defineStore("library", {
       });
     },
 
+    setHomePinOrder(kinds: readonly number[]): boolean {
+      const allowed = new Set(this.pinned.filter((kind) => !this.hidden.includes(kind)));
+      const next = cleanHomePinOrder([...kinds, ...this.homePinOrder, ...this.pinned])
+        .filter((kind) => allowed.has(kind));
+      if (next.length === this.homePinOrder.length &&
+          next.every((kind, index) => kind === this.homePinOrder[index])) return true;
+      if (!writeKinds(HOME_PIN_KEY, next)) {
+        Notify.create({ type: "negative", message: "Не удалось сохранить порядок плейлистов" });
+        return false;
+      }
+      this.homePinOrder = next;
+      return true;
+    },
+
+    forgetHomePinOrder(kind: number) {
+      if (!this.homePinOrder.includes(kind)) return;
+      this.homePinOrder = this.homePinOrder.filter((item) => item !== kind);
+      writeKinds(HOME_PIN_KEY, this.homePinOrder);
+    },
+
     toggleHidden(kind: number | string) {
       const id = Number(kind);
       const wasHidden = this.hidden.includes(id);
@@ -213,6 +255,7 @@ export const useLibraryStore = defineStore("library", {
         this.pinned = this.pinned.filter((v) => v !== id);
         writeKinds(PIN_KEY, this.pinned);
       }
+      if (!wasHidden) this.forgetHomePinOrder(id);
 
       if (!writeKinds(HIDE_KEY, this.hidden)) {
         Notify.create({
@@ -277,6 +320,7 @@ export const useLibraryStore = defineStore("library", {
         this.playlists = this.playlists.filter((p) => p.kind !== kind);
         this.pinned = this.pinned.filter((v) => v !== Number(kind));
         this.hidden = this.hidden.filter((v) => v !== Number(kind));
+        this.forgetHomePinOrder(Number(kind));
         writeKinds(PIN_KEY, this.pinned);
         writeKinds(HIDE_KEY, this.hidden);
         Notify.create({ message: "Удалил плейлист" });
@@ -303,6 +347,12 @@ export const useLibraryStore = defineStore("library", {
     },
 
     async toggleLike(track: Track) {
+      if(track.id.startsWith('local:')) {
+        const liked=this.likedIds.includes(track.id)?this.likedIds.filter(id=>id!==track.id):[track.id,...this.likedIds];
+        const disliked=this.dislikedIds.filter(id=>id!==track.id);
+        if(saveLocalRatings(liked,disliked)){this.likedIds=liked;this.dislikedIds=disliked;}else Notify.create({message:'Не удалось сохранить оценку'});
+        return;
+      }
       this.dislikedIds = this.dislikedIds.filter(
         (id) => id !== String(track.id),
       );
@@ -323,6 +373,12 @@ export const useLibraryStore = defineStore("library", {
     },
 
     async dislike(track: Track) {
+      if(track.id.startsWith('local:')) {
+        const disliked=this.dislikedIds.includes(track.id)?this.dislikedIds.filter(id=>id!==track.id):[...this.dislikedIds,track.id];
+        const liked=this.likedIds.filter(id=>id!==track.id);
+        if(saveLocalRatings(liked,disliked)){this.likedIds=liked;this.dislikedIds=disliked;}else Notify.create({message:'Не удалось сохранить оценку'});
+        return;
+      }
       const already = this.dislikedIds.includes(String(track.id));
       try {
         await api.setDislike(track.id, already);

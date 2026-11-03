@@ -1,5 +1,15 @@
 use serde::Deserialize;
 
+fn deserialize_clip_ids<'de, D>(deserializer: D) -> Result<Vec<serde_json::Value>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Array(values) => values,
+        _ => Vec::new(),
+    })
+}
+
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct YArtist {
@@ -28,6 +38,8 @@ pub struct YTrack {
     pub cover_uri: Option<String>,
     pub duration_ms: Option<i64>,
     pub available: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_clip_ids")]
+    pub clip_ids: Vec<serde_json::Value>,
 }
 
 #[derive(Deserialize, Default)]

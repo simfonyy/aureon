@@ -51,3 +51,7 @@ build-logs/
 artifacts/
 *.AppImage
 *.deb
+
+# Recreated from locked packages before dev/build.
+/public/ocr/
+/public/emoji-ru.json

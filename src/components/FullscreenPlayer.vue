@@ -3,7 +3,7 @@
     <div
       v-if="player.fullscreen && player.current"
       class="fs-player"
-      :class="{ 'with-queue': showQueue }"
+      :class="{ 'with-queue': showQueue, 'has-clip-background': clipReady }"
     >
       <div
         v-if="coverUrl"
@@ -11,10 +11,13 @@
         :style="{ backgroundImage: `url(${coverUrl})` }"
       />
       <div class="fs-shade" />
+      <MusicClipBackdrop class="fs-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :active="player.fullscreen && !player.showLyrics && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipReady = $event" @loading="clipAligning = $event" @error="clipError" />
 
       <div class="fs-top">
         <div class="fs-drag" @mousedown="onDrag" @dblclick="toggleNative" />
         <div class="fs-top-actions">
+          <ClipBackgroundControl :track="player.current" :active="player.fullscreen && !player.showLyrics" />
+          <span v-if="clipAligning" class="clip-alignment-status" role="status"><q-spinner size="12px" />Синхронизация клипа…</span>
           <button class="icon-btn round" @click="openLyrics">
             <Icon name="lyrics" :size="18" />
             <q-tooltip>Текст трека</q-tooltip>
@@ -42,6 +45,7 @@
 
       <div class="fs-body">
         <div class="fs-stage">
+          <div class="fs-dock">
           <div class="fs-art">
             <Transition name="fs-swap">
               <img
@@ -50,6 +54,7 @@
                 :src="coverUrl"
                 decoding="async"
                 alt=""
+                @error="coverFailed = true"
                 @click="openLyrics"
               />
               <Icon v-else name="note" :size="72" class="faint" />
@@ -140,6 +145,7 @@
               formatDuration(player.duration * 1000)
             }}</span>
           </div>
+          </div>
         </div>
 
         <Transition name="fs-q">
@@ -197,7 +203,11 @@ import { useRoute } from "vue-router";
 import ArtistsLine from "@/components/ArtistsLine.vue";
 import Icon from "@/components/Icon.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
+import ClipBackgroundControl from '@/components/clips/ClipBackgroundControl.vue';
+import MusicClipBackdrop from '@/components/clips/MusicClipBackdrop.vue';
+import { Notify } from 'quasar';
 import { formatDuration } from "@/lib/format";
+import { largeCoverUrl } from '@/lib/coverArtwork';
 import {
   isNativeFullscreen,
   setNativeFullscreen,
@@ -205,16 +215,31 @@ import {
 } from "@/lib/window";
 import { useLibraryStore } from "@/stores/library";
 import { usePlayerStore } from "@/stores/player/index";
+import { useUiStore } from '@/stores/ui';
 
 const player = usePlayerStore();
+const ui = useUiStore();
+function clipError(message: string) { Notify.create({ message, group: `clip-background-${player.current?.id}`, timeout: 5000 }); }
 const library = useLibraryStore();
 const route = useRoute();
+const clipReady = ref(false);
+const clipAligning = ref(false);
+const coverFailed = ref(false);
+watch(() => [player.current?.id, player.current?.cover_url], () => { coverFailed.value = false; clipReady.value = false; });
+watch(() => [ui.settings.musicVideoBackground, player.fullscreen], () => { clipReady.value = false; });
 
 const showQueue = ref(false);
 const native = ref(false);
 const dotsButton = ref<HTMLElement | null>(null);
+let nativeCloseTimer: number | undefined;
+let nativeReadVersion = 0;
 
-const coverUrl = computed(() => player.current?.cover_url || "");
+function cancelNativeClose() {
+  if (nativeCloseTimer !== undefined) window.clearTimeout(nativeCloseTimer);
+  nativeCloseTimer = undefined;
+}
+
+const coverUrl = computed(() => coverFailed.value ? player.current?.cover_url || '' : largeCoverUrl(player.current?.cover_url));
 
 const scrubbing = ref<number | null>(null);
 const seekValue = computed(() => scrubbing.value ?? player.progress);
@@ -273,26 +298,35 @@ async function toggleNative() {
 
 function close() {
   const wasNative = native.value;
+  cancelNativeClose();
   showQueue.value = false;
   player.closeFullscreen();
   if (!wasNative) return;
   native.value = false;
-  window.setTimeout(() => {
-    void setNativeFullscreen(false);
+  nativeCloseTimer = window.setTimeout(() => {
+    nativeCloseTimer = undefined;
+    if (!player.fullscreen) void setNativeFullscreen(false);
   }, 340);
 }
 
 function onKey(event: KeyboardEvent) {
-  if (!player.fullscreen) return;
+  if (!player.fullscreen || event.defaultPrevented || event.repeat) return;
+  if (event.key === 'F11' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    void toggleNative();
+    return;
+  }
   if (event.key === "Escape") close();
 }
 
 watch(
   () => player.fullscreen,
   (open) => {
+    const request = ++nativeReadVersion;
     if (open) {
+      cancelNativeClose();
       void isNativeFullscreen().then((value) => {
-        native.value = value;
+        if (request === nativeReadVersion && player.fullscreen) native.value = value;
       });
       return;
     }
@@ -316,6 +350,23 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  nativeReadVersion++;
+  const shouldExit = native.value || nativeCloseTimer !== undefined;
+  cancelNativeClose();
+  if (shouldExit) void setNativeFullscreen(false);
   window.removeEventListener("keydown", onKey);
 });
 </script>
+
+<style scoped>
+.fs-player { overflow:clip;--clip-control-fg:#ffffffb3;--clip-control-hover:#fff;--clip-control-hover-bg:#ffffff18;--clip-control-on:#fff; }
+.fs-clip-backdrop { z-index:1; }
+.clip-alignment-status { display:inline-flex;align-items:center;gap:7px;color:#ffffffb3;font-size:12px;margin-inline:4px 10px; }
+.fs-stage { container-type:inline-size; }
+.fs-dock { display:flex;flex-direction:column;align-items:center;gap:22px;width:min(560px,100%);min-width:0;transform:translateX(0);transition:transform 560ms cubic-bezier(.22,.65,.28,1),width 560ms cubic-bezier(.22,.65,.28,1); }
+.fs-dock .fs-art { flex-shrink:0;transition:width 560ms cubic-bezier(.22,.65,.28,1),height 560ms cubic-bezier(.22,.65,.28,1); }
+.fs-dock .fs-meta,.fs-dock .fs-progress { width:100%;max-width:100%; }
+.has-clip-background .fs-dock { width:min(420px,100%);transform:translateX(calc(-1 * min(24cqw,max(0px,calc((100cqw - 420px) / 2 - 48px))))); }
+.has-clip-background .fs-art { width:min(44vh,360px);height:min(44vh,360px); }
+@media (prefers-reduced-motion:reduce) { .fs-dock,.fs-dock .fs-art { transition:none; } }
+</style>

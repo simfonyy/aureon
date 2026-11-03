@@ -55,6 +55,7 @@
       <div class="row-track-title">
         <span class="ellipsis t-13 w-500">{{ displayTitle }}</span>
         <AiTag :show="isAi" />
+        <MusicClipButton :track="track" />
 
         <Icon
           v-if="downloaded"
@@ -139,6 +140,7 @@ import { computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import ArtistsLine from "@/components/ArtistsLine.vue";
 import AiTag from "@/components/AiTag.vue";
+import MusicClipButton from '@/components/clips/MusicClipButton.vue';
 import Icon from "@/components/Icon.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
 import type { Track } from "@/api/types";

@@ -1,0 +1,7 @@
+{
+  "error": "old_browser",
+  "content": {
+    "streams": [{ "options": [] }, { "options": [] }],
+    "stream": { "trackings": { "trackingEvents": [] }, "withCredentials": true }
+  }
+}

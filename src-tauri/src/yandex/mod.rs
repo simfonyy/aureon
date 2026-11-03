@@ -1,6 +1,8 @@
 mod account;
 mod catalog;
+mod clips;
 mod dto;
+mod discovery;
 mod library;
 mod lrc;
 mod playback;

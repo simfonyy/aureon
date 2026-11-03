@@ -204,6 +204,9 @@
         />
       </label>
 
+      <button type="button" class="lset-switch" :class="{ on: s.musicVideoBackground }" role="switch" :aria-checked="s.musicVideoBackground" @click="ui.set('musicVideoBackground', !s.musicVideoBackground)">
+        <span>Клип на фоне</span><span class="lset-track" aria-hidden="true"><i /></span>
+      </button>
       <button
         type="button"
         class="lset-switch"
@@ -233,6 +236,19 @@
         <span>Плавные переходы</span>
         <span class="lset-track"><i /></span>
       </button>
+
+      <button
+        type="button"
+        class="lset-switch"
+        :class="{ on: s.lyricsFxEnabled }"
+        role="switch"
+        :aria-checked="s.lyricsFxEnabled"
+        @click="ui.set('lyricsFxEnabled', !s.lyricsFxEnabled)"
+      >
+        <span>Акценты в тексте</span>
+        <span class="lset-track" aria-hidden="true"><i /></span>
+      </button>
+      <div class="lset-hint">Редкие эффекты на отдельных словах.</div>
     </div>
 
     <div class="lset-group">

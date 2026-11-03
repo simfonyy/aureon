@@ -2,192 +2,41 @@
   <q-page class="home-page">
     <q-scroll-area class="home-scroll">
       <div class="home-content">
-        <div class="h1">{{ greeting }}</div>
-
-        <div class="home-actions">
-          <button class="btn-solid" type="button" @click="openWave">
-            <Icon name="wave" :size="15" />
-            <span>Моя волна</span>
+        <header class="home-topline">
+          <h1>{{ greeting }}</h1>
+          <button class="home-library-link" type="button" @click="router.push('/library')">
+            <Icon name="search" :size="15" /><span>В библиотеке</span>
           </button>
+        </header>
 
-          <button class="btn" type="button" @click="router.push('/library')">
-            <Icon name="search" :size="15" />
-            <span>Поиск в библиотеке</span>
-          </button>
-        </div>
+        <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
+          @open-playlist="openPlaylist">
+          <template #playlist-menu="{ playlist }">
+            <HomePlaylistMenu :pl="playlist" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
+          </template>
+        </HomeQuickLaunch>
 
-        <template v-if="visiblePlaylists.length">
-          <div class="home-section-head">
-            <div class="h2">Твои плейлисты</div>
-            <button
-              class="more-link"
-              type="button"
-              @click="router.push('/playlists')"
-            >
-              <span>Вся коллекция</span>
-              <Icon name="chevronRight" :size="14" />
-            </button>
-          </div>
+        <HomeDiscovery />
 
-          <div class="row q-col-gutter-md">
-            <div v-for="pl in visiblePlaylists" :key="pl.kind" class="col-auto">
-              <div
-                class="card home-card"
-                style="width: 150px"
-                @click="router.push(`/playlists/${pl.kind}`)"
-              >
-                <div class="cover home-card-art">
-                  <img
-                    v-if="pl.cover_url"
-                    loading="lazy"
-                    decoding="async"
-                    :src="pl.cover_url"
-                  />
-                  <Icon v-else name="queue" :size="24" class="faint" />
-
-                  <button
-                    class="home-card-play"
-                    type="button"
-                    title="Слушать"
-                    @click.stop="playPlaylist(pl)"
-                  >
-                    <Icon name="play" :size="16" />
-                  </button>
-
-                  <span
-                    v-if="library.isPinned(pl.kind)"
-                    class="home-card-pin"
-                    title="Закреплён в боковой панели"
-                  >
-                    <Icon name="pin" :size="11" />
-                  </span>
-                </div>
-
-                <div class="t-13 w-500 ellipsis q-mt-sm">{{ pl.title }}</div>
-                <div class="faint t-11">
-                  {{ plural(pl.track_count, "трек", "трека", "треков") }}
-                </div>
-
-                <q-menu context-menu touch-position class="menu">
-                  <div class="menu-body" style="min-width: 216px">
-                    <div
-                      class="menu-item"
-                      v-close-popup
-                      @click="playPlaylist(pl)"
-                    >
-                      <Icon name="play" :size="17" />
-                      <span>Слушать</span>
-                    </div>
-                    <div
-                      class="menu-item"
-                      v-close-popup
-                      @click="router.push(`/playlists/${pl.kind}`)"
-                    >
-                      <Icon name="queue" :size="17" />
-                      <span>Открыть плейлист</span>
-                    </div>
-                    <div
-                      class="menu-item"
-                      v-close-popup
-                      @click="library.togglePin(pl.kind)"
-                    >
-                      <Icon
-                        :name="library.isPinned(pl.kind) ? 'pinOff' : 'pin'"
-                        :size="17"
-                      />
-                      <span>{{
-                        library.isPinned(pl.kind) ? "Открепить" : "Закрепить"
-                      }}</span>
-                    </div>
-
-                    <div class="menu-sep" />
-
-                    <div class="menu-item" v-close-popup @click="rename(pl)">
-                      <Icon name="name" :size="17" />
-                      <span>Переименовать</span>
-                    </div>
-                    <div
-                      class="menu-item"
-                      v-close-popup
-                      @click="library.setPlaylistPublic(pl.kind, true)"
-                    >
-                      <Icon name="share" :size="17" />
-                      <span>Сделать публичным</span>
-                    </div>
-                    <div
-                      class="menu-item"
-                      v-close-popup
-                      @click="library.setPlaylistPublic(pl.kind, false)"
-                    >
-                      <Icon name="person" :size="17" />
-                      <span>Сделать личным</span>
-                    </div>
-
-                    <div class="menu-sep" />
-
-                    <div
-                      class="menu-item danger"
-                      v-close-popup
-                      @click="removePlaylist(pl)"
-                    >
-                      <Icon name="trash" :size="17" />
-                      <span>Удалить плейлист</span>
-                    </div>
-                  </div>
-                </q-menu>
-              </div>
+        <HomeShelf v-if="picks.length" id="home-picks" label="Новое для тебя">
+          <article v-for="p in picks" :key="`${p.kind}-${p.id}`" class="home-card">
+            <div class="home-card-art" :class="{ round: p.kind === 'artist' }"
+              :data-home-album-cover="p.kind === 'album' ? String(p.id) : undefined"
+              :style="p.color ? { background: p.color } : {}">
+              <button class="home-cover-open" type="button" :aria-label="`Открыть: ${p.name}`" @click="openPick(p, $event)">
+                <img v-if="p.cover_url" loading="lazy" decoding="async" :src="p.cover_url" alt="" />
+                <Icon v-else :name="p.kind === 'artist' ? 'person' : 'album'" :size="38" class="faint" />
+              </button>
+              <HomePlayingBadge v-if="p.kind === 'album' && String(player.current?.album_id) === String(p.id)" />
+              <button class="home-card-play" type="button" :aria-label="`Слушать: ${p.name}`" @click.stop="playPick(p)">
+                <Icon name="play" :size="18" />
+              </button>
             </div>
-          </div>
-        </template>
-
-        <template v-if="picks.length">
-          <div class="home-section-head">
-            <div class="h2">Новое для тебя</div>
-          </div>
-
-          <div class="row q-col-gutter-md">
-            <div v-for="p in picks" :key="`${p.kind}-${p.id}`" class="col-auto">
-              <div
-                class="card home-card"
-                style="width: 150px"
-                @click="openPick(p)"
-              >
-                <div
-                  class="cover home-card-art"
-                  :class="{ round: p.kind === 'artist' }"
-                  :style="p.color ? { background: p.color } : {}"
-                >
-                  <img
-                    v-if="p.cover_url"
-                    loading="lazy"
-                    decoding="async"
-                    :src="p.cover_url"
-                  />
-                  <Icon
-                    v-else
-                    :name="p.kind === 'artist' ? 'person' : 'album'"
-                    :size="24"
-                    class="faint"
-                  />
-
-                  <button
-                    class="home-card-play"
-                    type="button"
-                    title="Слушать"
-                    @click.stop="playPick(p)"
-                  >
-                    <Icon name="play" :size="16" />
-                  </button>
-                </div>
-
-                <div class="t-13 w-500 ellipsis q-mt-sm">{{ p.name }}</div>
-                <div class="faint t-11 ellipsis">
-                  {{
-                    p.artists.length ? artistNames(p.artists) : p.description
-                  }}
-                </div>
-
-                <q-menu context-menu touch-position class="menu">
+            <button class="home-card-title" type="button" :title="p.name" @click="openPick(p, $event)"><span>{{ p.name }}</span></button>
+            <p class="home-card-subtitle" :title="p.artists.length ? artistNames(p.artists) : p.description || ''">
+              {{ p.artists.length ? artistNames(p.artists) : p.description }}
+            </p>
+                            <q-menu context-menu touch-position class="menu">
                   <div class="menu-body" style="min-width: 212px">
                     <div class="menu-item" v-close-popup @click="playPick(p)">
                       <Icon name="play" :size="17" />
@@ -210,52 +59,20 @@
                     </div>
                   </div>
                 </q-menu>
-              </div>
-            </div>
-          </div>
-        </template>
+          </article>
+        </HomeShelf>
 
-        <template v-if="waves.length">
-          <div class="home-section-head">
-            <div class="h2">Волны по настроению</div>
-            <button
-              class="more-link"
-              type="button"
-              @click="router.push('/wave')"
-            >
-              <span>Все станции</span>
-              <Icon name="chevronRight" :size="14" />
+        <HomeShelf v-if="waves.length" id="home-stations" label="Станции" more-label="Все станции" @more="openWave">
+          <div v-for="w in waves" :key="w.id" class="home-station">
+            <button class="home-station-open" type="button" @click="playWave(w)">
+              <span class="home-station-art" :style="w.color ? { background: w.color } : {}">
+                <img v-if="w.cover_url" loading="lazy" decoding="async" :src="w.cover_url" alt="" />
+                <Icon v-else name="wave" :size="24" />
+                <span class="home-station-play"><Icon name="play" :size="18" /></span>
+              </span>
+              <span class="home-station-copy"><strong :title="w.name">{{ w.name }}</strong><small :title="w.description || ''">{{ w.description }}</small></span>
             </button>
-          </div>
-
-          <div class="row q-col-gutter-md">
-            <div v-for="w in waves" :key="w.id" class="col-auto">
-              <div
-                class="card home-card"
-                style="width: 150px"
-                @click="playWave(w)"
-              >
-                <div
-                  class="cover round home-card-art"
-                  :style="w.color ? { background: w.color } : {}"
-                >
-                  <img
-                    v-if="w.cover_url"
-                    loading="lazy"
-                    decoding="async"
-                    :src="w.cover_url"
-                  />
-                  <Icon v-else name="wave" :size="22" class="faint" />
-
-                  <span class="home-card-play" title="Запустить">
-                    <Icon name="play" :size="16" />
-                  </span>
-                </div>
-
-                <div class="t-13 w-500 clamp-2 q-mt-sm">{{ w.name }}</div>
-                <div class="faint t-11 ellipsis">{{ w.description }}</div>
-
-                <q-menu context-menu touch-position class="menu">
+                            <q-menu context-menu touch-position class="menu">
                   <div class="menu-body" style="min-width: 200px">
                     <div class="menu-item" v-close-popup @click="playWave(w)">
                       <Icon name="play" :size="17" />
@@ -271,26 +88,56 @@
                     </div>
                   </div>
                 </q-menu>
-              </div>
+          </div>
+        </HomeShelf>
+
+        <section v-if="otherPlaylists.length" class="home-playlists" aria-labelledby="home-playlists-title">
+          <div class="home-section-head">
+            <h2 id="home-playlists-title">Твои плейлисты</h2>
+            <button class="more-link" type="button" @click="router.push('/playlists')">
+              <span>Все плейлисты</span><Icon name="chevronRight" :size="14" />
+            </button>
+          </div>
+          <div class="home-playlist-grid">
+            <div v-for="pl in otherPlaylists" :key="pl.kind" class="home-playlist-tile">
+              <button class="home-playlist-open" type="button" @click="openPlaylist(pl)">
+                <span class="home-playlist-art">
+                  <img v-if="pl.cover_url" loading="lazy" decoding="async" :src="pl.cover_url" alt="" />
+                  <Icon v-else name="queue" :size="22" />
+                </span>
+                <span class="home-playlist-copy">
+                  <strong :title="pl.title">{{ pl.title }}</strong>
+                  <small>{{ plural(pl.track_count, 'трек', 'трека', 'треков') }}</small>
+                </span>
+              </button>
+              <button class="home-playlist-listen" type="button" :aria-label="`Слушать: ${pl.title}`" @click="playPlaylist(pl)">
+                <Icon name="play" :size="16" />
+              </button>
+                            <HomePlaylistMenu :pl="pl" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
             </div>
           </div>
-        </template>
+        </section>
 
-        <div v-if="loading" class="q-mt-xl">
-          <q-spinner size="24px" color="primary" />
-        </div>
+
+        <div v-if="loading" class="home-loading" role="status" aria-label="Загрузка подборок"><q-spinner size="24px" color="primary" /></div>
       </div>
     </q-scroll-area>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Notify } from "quasar";
 import { api } from "@/api/client";
 import type { Playlist, Track, WheelItem } from "@/api/types";
 import Icon from "@/components/Icon.vue";
+import HomeQuickLaunch from "@/components/home/HomeQuickLaunch.vue";
+import HomeDiscovery from "@/components/home/HomeDiscovery.vue";
+import HomeShelf from "@/components/home/HomeShelf.vue";
+import HomePlaylistMenu from "@/components/home/HomePlaylistMenu.vue";
+import HomePlayingBadge from "@/components/home/HomePlayingBadge.vue";
+import { beginAlbumCoverTransition, arriveHomeAlbumCoverTransition } from "@/lib/albumCoverTransition";
 import { artistNames, plural } from "@/lib/format";
 import { askConfirm, askText } from "@/lib/dialogs";
 import { readCache, swr, writeCache } from "@/lib/cache";
@@ -307,6 +154,7 @@ const loading = ref(false);
 const visiblePlaylists = computed(() =>
   playlists.value.filter((pl) => !library.isHidden(pl.kind)),
 );
+const otherPlaylists = computed(() => visiblePlaylists.value.filter((pl) => !library.isPinned(pl.kind)));
 
 const waves = computed(() =>
   wheel.value.filter((item) => item.kind === "wave"),
@@ -322,6 +170,10 @@ const greeting = computed(() => {
   if (hour < 18) return "Добрый день";
   return "Добрый вечер";
 });
+
+function openPlaylist(pl: Playlist) {
+  void router.push(`/playlists/${pl.kind}`);
+}
 
 function openWave() {
   void router.push("/wave");
@@ -371,8 +223,13 @@ function playWave(item: WheelItem) {
   void router.push("/wave");
 }
 
-function openPick(item: WheelItem) {
-  if (item.kind === "album") void router.push(`/album/${item.id}`);
+function openPick(item: WheelItem, event?: Event) {
+  if (item.kind === "album") {
+    const card = event?.currentTarget as HTMLElement | null;
+    const cover = card?.closest('.home-card')?.querySelector<HTMLElement>('.home-card-art');
+    beginAlbumCoverTransition(String(item.id), cover ?? null, 'album');
+    void router.push(`/album/${item.id}`);
+  }
   else if (item.kind === "artist") void router.push(`/artist/${item.id}`);
 }
 
@@ -410,6 +267,7 @@ async function removePlaylist(pl: Playlist) {
 onMounted(() => {
   playlists.value = readCache<Playlist[]>("home.playlists") ?? [];
   wheel.value = readCache<WheelItem[]>("home.wheel") ?? [];
+  void nextTick(arriveHomeAlbumCoverTransition);
   loading.value = !playlists.value.length && !wheel.value.length;
 
   void swr<Playlist[]>("home.playlists", () => api.playlists(), {

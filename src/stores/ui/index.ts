@@ -321,6 +321,7 @@ export const useUiStore = defineStore("ui", {
       this.settings.lyricsGlow = d.lyricsGlow;
       this.settings.lyricsShowArtwork = d.lyricsShowArtwork;
       this.settings.lyricsMotion = d.lyricsMotion;
+      this.settings.lyricsFxEnabled = d.lyricsFxEnabled;
       this.settings.lyricsShowCredits = d.lyricsShowCredits;
       this.settings.lyricsShowOrigin = d.lyricsShowOrigin;
       this.settings.lyricsAnnotations = d.lyricsAnnotations;

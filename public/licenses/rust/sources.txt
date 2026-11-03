@@ -1,0 +1,21 @@
+lofty-0.22.4 — MIT OR Apache-2.0
+Source commit: d9eb83ba614001973f9ba3663c9f3e10dd27a702 (.cargo_vcs_info.json)
+lofty-0.22.4-LICENSE-MIT.txt — https://raw.githubusercontent.com/Serial-ATA/lofty-rs/d9eb83ba614001973f9ba3663c9f3e10dd27a702/LICENSE-MIT
+lofty-0.22.4-LICENSE-APACHE.txt — https://raw.githubusercontent.com/Serial-ATA/lofty-rs/d9eb83ba614001973f9ba3663c9f3e10dd27a702/LICENSE-APACHE
+
+symphonia-0.5.5 — MPL-2.0
+Source commit: 6d533f26150953a882a6a111ebd13f0abf7129d5 (.cargo_vcs_info.json)
+symphonia-0.5.5-LICENSE.txt — https://raw.githubusercontent.com/pdeljanov/Symphonia/6d533f26150953a882a6a111ebd13f0abf7129d5/LICENSE
+Source code for the unmodified Symphonia crates used by Aureon: https://github.com/pdeljanov/Symphonia/tree/6d533f26150953a882a6a111ebd13f0abf7129d5
+
+rusty-chromaprint-0.3.0 — MIT (upstream Cargo.toml declaration)
+Source commit: 97d67dfed02854ac5d5eaa9ac965b9abe3dff690 (.cargo_vcs_info.json)
+rusty-chromaprint-0.3.0-license-declaration.txt — https://raw.githubusercontent.com/darksv/rusty-chromaprint/97d67dfed02854ac5d5eaa9ac965b9abe3dff690/chromaprint/Cargo.toml
+The published crate and the complete upstream tree at this commit contain no separate LICENSE, LICENCE, COPYING or NOTICE file. The included file preserves the upstream MIT declaration; it is not a substitute upstream license text.
+
+rustfft-6.4.1 — MIT OR Apache-2.0 — https://github.com/ejmahler/RustFFT
+rustfft-6.4.1-LICENSE-MIT.txt and rustfft-6.4.1-LICENSE-APACHE.txt copied from the installed crate.
+rubato-0.16.2 — MIT — https://github.com/HEnquist/rubato
+rubato-0.16.2-LICENSE.txt copied from the installed crate.
+rfd-0.15.4 — MIT — https://github.com/PolyMeilex/rfd
+rfd-0.15.4-LICENSE.txt copied from the installed crate.

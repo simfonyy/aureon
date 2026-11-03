@@ -5,7 +5,7 @@ import { useGeniusStore } from "@/stores/genius";
 import type { LyricsSource } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
 
-export type LyricsOrigin = "lrclib" | "genius" | "yandex";
+export type LyricsOrigin = "lrclib" | "genius" | "yandex" | "local";
 
 export interface LyricsResult {
   lyrics: Lyrics;
@@ -13,6 +13,7 @@ export interface LyricsResult {
 }
 
 export const ORIGIN_LABEL: Record<LyricsOrigin, string> = {
+  local: 'файл',
   lrclib: "lrclib",
   genius: "genius",
   yandex: "яндекс",

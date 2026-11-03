@@ -300,6 +300,7 @@ fn whole(body: Vec<u8>, mime: String, range: Option<String>) -> Response<Vec<u8>
     let total = body.len();
     let mut builder = Response::builder()
         .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length")
         .header("Accept-Ranges", "bytes")
         .header("Content-Type", mime);
     if let Some((start, end)) = range.as_deref().and_then(|value| parse_range(value, total)) {
@@ -402,6 +403,7 @@ async fn fetch(target: String, range: Option<String>) -> Response<Vec<u8>> {
     Response::builder()
         .status(206)
         .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length")
         .header("Accept-Ranges", "bytes")
         .header("Content-Type", mime)
         .header("Content-Length", body.len().to_string())

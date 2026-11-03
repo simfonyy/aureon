@@ -10,6 +10,7 @@ type Player = ReturnType<typeof usePlayerStore>;
 
 
 export function buildState(player: Player, withQueue = true): StatePayload {
+  if(player.current?.id.startsWith('local:'))return {kind:'state',trackId:null,positionMs:0,paused:true,updatedAt:Date.now(),title:null,track:null,queue:[],index:0};
   const base: StatePayload = {
     kind: "state",
     trackId: player.current?.id ?? null,
@@ -25,8 +26,8 @@ export function buildState(player: Player, withQueue = true): StatePayload {
   if (!withQueue) return base;
 
   const slice = fitBudget(
-    base,
-    trimQueue(player.queue, player.index),
+    {...base},
+    trimQueue(player.queue.filter(t=>!t.id.startsWith('local:')), Math.max(0,player.queue.filter(t=>!t.id.startsWith('local:')).findIndex(t=>t.id===player.current?.id))),
     SYNC_BUDGET,
   );
 
@@ -45,7 +46,7 @@ export async function applyState(
   player: Player,
   payload: StatePayload,
 ): Promise<void> {
-  if (!payload.trackId) return;
+  if (!payload.trackId || payload.trackId.startsWith('local:')) return;
 
   const target = expectedPosition(payload);
 

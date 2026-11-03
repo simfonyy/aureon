@@ -1,4 +1,4 @@
-import { defineBoot } from "#q-app/wrappers";
+import { defineBoot } from "@quasar/app-vite/wrappers";
 
 function isEditable(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;

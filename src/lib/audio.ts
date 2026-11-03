@@ -101,19 +101,70 @@ interface Graph {
   preamp: GainNode;
   filters: BiquadFilterNode[];
   routed: boolean;
+  routedPitch: AudioNode | null;
+  pitch: PitchProcessor | null;
+}
+
+export interface PitchProcessor extends AudioWorkletNode {
+  pitchSemitones: AudioParam;
+  playbackRate: AudioParam;
 }
 
 let graph: Graph | null = null;
 let failed = false;
+let pitchSemitones = 0;
+let pitchRequest = 0;
+let pitchFactory: ((context: AudioContext) => PitchProcessor) | null = null;
+let pitchLoading: Promise<void> | null = null;
+const pitchListeners = new Set<(value: number, error?: string) => void>();
+
+export function onPitchChange(listener: (value: number, error?: string) => void): () => void {
+  pitchListeners.add(listener);
+  return () => pitchListeners.delete(listener);
+}
+
+function notifyPitch(error?: string) { for (const listener of pitchListeners) listener(pitchSemitones, error); }
+
+function configurePitch(current: Graph): void {
+  if (!current.pitch) return;
+  current.pitch.playbackRate.value = audio.playbackRate || 1;
+  current.pitch.pitchSemitones.value = pitchSemitones;
+}
+
+function replacePitch(current: Graph): void {
+  if (!pitchFactory || pitchSemitones === 0) return;
+  const previous = current.pitch;
+  current.pitch = pitchFactory(current.context);
+  current.pitch.addEventListener('processorerror', () => {
+    if (graph !== current || current.pitch !== processor) return;
+    pitchSemitones = 0;
+    audio.preservesPitch = true;
+    route(current, current.routed);
+    current.pitch = null;
+    processor.port.close();
+    notifyPitch('Обработка звука остановлена. Включён обычный звук.');
+  });
+  const processor = current.pitch;
+  configurePitch(current);
+  route(current, current.routed);
+  previous?.disconnect();
+  previous?.port.close();
+}
 
 function route(current: Graph, throughFilters: boolean): void {
-  if (current.routed === throughFilters) return;
+  const processor = pitchSemitones !== 0 ? current.pitch : null;
+  if (current.routed === throughFilters && current.routedPitch === processor) return;
   current.routed = throughFilters;
+  current.routedPitch?.disconnect();
+  current.routedPitch = processor;
   try {
     current.source.disconnect();
   } catch {}
-  if (throughFilters) current.source.connect(current.preamp);
-  else current.source.connect(current.context.destination);
+  const output = throughFilters ? current.preamp : current.context.destination;
+  if (processor) {
+    current.source.connect(processor);
+    if (!audio.paused) processor.connect(output);
+  } else current.source.connect(output);
   if (analyser) {
     try {
       current.source.connect(analyser);
@@ -149,14 +200,80 @@ function build(): Graph | null {
     }
     node.connect(context.destination);
 
-    graph = { context, source, preamp, filters, routed: false };
+    graph = { context, source, preamp, filters, routed: false, routedPitch: null, pitch: null };
     source.connect(context.destination);
+    audio.addEventListener('ratechange', () => { if (graph) configurePitch(graph); });
+    audio.addEventListener('pause', () => { graph?.pitch?.disconnect(); });
+    audio.addEventListener('play', () => {
+      if (graph && pitchSemitones !== 0) {
+        try { replacePitch(graph); } catch { void setPitchSemitones(0); }
+      }
+    });
+    // A fresh processor prevents samples from before a seek/track switch
+    // remaining in SoundTouch's short internal time-stretch buffer.
+    for (const event of ['seeking', 'emptied']) audio.addEventListener(event, () => {
+      if (graph && pitchSemitones !== 0) {
+        try { replacePitch(graph); } catch { void setPitchSemitones(0); }
+      }
+    });
     void context.resume().catch(() => undefined);
     return graph;
   } catch {
     failed = true;
     return null;
   }
+}
+
+export function currentPitchSemitones(): number { return pitchSemitones; }
+
+export async function setPitchSemitones(value: number): Promise<void> {
+  const next = Math.max(-12, Math.min(12, Math.round(Number.isFinite(value) ? value : 0)));
+  const request = ++pitchRequest;
+  if (next === 0) {
+    pitchSemitones = 0;
+    audio.preservesPitch = true;
+    if (graph) {
+      route(graph, graph.routed);
+      graph.pitch?.disconnect(); graph.pitch?.port.close(); graph.pitch = null;
+    }
+    notifyPitch();
+    return;
+  }
+  const current = build();
+  if (!current || !current.context.audioWorklet) throw new Error('Изменение тональности недоступно в этой версии приложения.');
+  await current.context.resume();
+  if (!pitchFactory) {
+    pitchLoading ??= import('./pitchProcessor').then(async module => {
+      pitchFactory = await module.preparePitchProcessor(current.context);
+    }).finally(() => { pitchLoading = null; });
+    await pitchLoading;
+  }
+  if (request !== pitchRequest) return;
+  const previous = pitchSemitones;
+  try {
+    pitchSemitones = next;
+    if (!current.pitch) replacePitch(current);
+    configurePitch(current);
+    audio.preservesPitch = false;
+    route(current, current.routed);
+    notifyPitch();
+  } catch (error) {
+    pitchSemitones = previous;
+    audio.preservesPitch = previous === 0;
+    route(current, current.routed);
+    throw error;
+  }
+}
+
+type SinkContext = AudioContext & { setSinkId?: (deviceId: string) => Promise<void>; sinkId?: string };
+export function audioOutputSupported(): boolean {
+  return typeof (AudioContext.prototype as SinkContext).setSinkId === 'function';
+}
+export async function setAudioOutput(deviceId: string): Promise<void> {
+  const current = build();
+  const context = current?.context as SinkContext | undefined;
+  if (!context?.setSinkId) throw new Error('Выбор выхода недоступен в этой системе.');
+  await context.setSinkId(deviceId);
 }
 
 export function equalizerAvailable(): boolean {

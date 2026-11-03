@@ -1,0 +1,1 @@
+{"result":{"id":"chart","type":"chart","title":"Чарт","entities":[{"type":"chart-item","data":{"track":{"id":100,"title":"Track A","artists":[{"id":1,"name":"Artist A"}],"durationMs":180000},"chart":{"position":1,"progress":"same"}}}]}}

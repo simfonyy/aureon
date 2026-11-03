@@ -26,6 +26,22 @@ test('update dismissal survives restart for exactly two days and checks are thro
  assert.equal(shouldCheck({checkedAt:now,remindAt:0},now+UPDATE_INTERVAL),true);
  assert.deepEqual(readSchedule({checkedAt:now+1,remindAt:'bad'},now),{checkedAt:0,remindAt:0});
 });
+test('every launch checks for updates even when the previous session just checked',()=>{
+ const now=1800000000000;
+ const restored=readSchedule(JSON.parse(JSON.stringify({checkedAt:now-1000,remindAt:0})),now);
+ assert.equal(shouldCheck(restored,now,'scheduled'),false);
+ assert.equal(shouldCheck(restored,now,'startup'),true);
+});
+
+test('launch respects the two-day reminder while manual checking can override it',()=>{
+ const now=1800000000000;
+ const restored=readSchedule({checkedAt:now,remindAt:now+UPDATE_SNOOZE},now+1000);
+ assert.equal(shouldCheck(restored,now+1000,'startup'),false);
+ assert.equal(shouldCheck(restored,now+1000,'manual'),true);
+ assert.equal(shouldCheck(restored,now+UPDATE_SNOOZE-1,'startup'),false);
+ assert.equal(shouldCheck(restored,now+UPDATE_SNOOZE,'startup'),true);
+});
+
 test('spectrum responds to bass, vocals and high frequencies without inventing sound',()=>{
  for(const hz of [80,440,2500,10000]) {
   const data=new Uint8Array(1024), output=new Float32Array(56);

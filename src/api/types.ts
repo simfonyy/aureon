@@ -26,6 +26,46 @@ export interface Track {
   cover_url: string | null;
   duration_ms: number | null;
   available: boolean;
+  clip_ids?: string[];
+}
+
+export interface MusicClip {
+  id: string;
+  title: string;
+  artists: Artist[];
+  thumbnail_url: string | null;
+  preview_url: string | null;
+  duration_ms: number | null;
+  track_ids: string[];
+}
+
+export interface MusicClipStream {
+  clip_id: string;
+  url: string;
+  kind: 'hls' | 'mp4';
+}
+
+export interface ClipAlignment {
+  offsetSeconds: number;
+  confidence: number;
+  matchedWindows: number;
+  analyzedSeconds: number;
+}
+
+export interface DiscoveryAlbum {
+  id: string;
+  title: string;
+  cover_url: string | null;
+  artists: Artist[];
+  year: number | null;
+  release_date: string | null;
+}
+
+export interface HomeDiscovery {
+  new_releases: DiscoveryAlbum[];
+  chart: Track[];
+  new_releases_error: string | null;
+  chart_error: string | null;
 }
 
 export interface Profile {

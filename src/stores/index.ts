@@ -1,4 +1,4 @@
-import { defineStore } from "#q-app/wrappers";
+import { defineStore } from "@quasar/app-vite/wrappers";
 import { createPinia } from "pinia";
 
 export default defineStore(() => {

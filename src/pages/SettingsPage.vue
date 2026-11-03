@@ -95,6 +95,9 @@ import MiniPlayerSection from "@/components/settings/sections/MiniPlayerSection.
 import PlayerSection from "@/components/settings/sections/PlayerSection.vue";
 import PlaylistToolsSection from "@/components/settings/sections/PlaylistToolsSection.vue";
 import TogetherSection from "@/components/settings/sections/TogetherSection.vue";
+import ListenBrainzSection from '@/components/settings/sections/ListenBrainzSection.vue';
+import AudioToolsSection from '@/components/settings/sections/AudioToolsSection.vue';
+import LocalLibrarySection from '@/components/settings/sections/LocalLibrarySection.vue';
 import { matchItems } from "@/lib/settings-catalog";
 import { useEqualizerStore } from "@/stores/equalizer";
 import { usePlayerStore } from "@/stores/player/index";
@@ -110,6 +113,9 @@ const query = ref("");
 const GROUPS = ["Основное", "Плеер", "Библиотека", "Сеть", "Система"];
 
 const sections = [
+  {id:'audio',label:'Звук и запись',icon:'wave',group:'Плеер',hint:'темп тональность микрофон выход устройство soundtouch',component:AudioToolsSection},
+  {id:'local',label:'Локальная музыка',icon:'library',group:'Библиотека',hint:'файлы теги обложки дубли умные плейлисты bpm тональность',component:LocalLibrarySection},
+  {id:'listenbrainz',label:'ListenBrainz',icon:'stats',group:'Сеть',hint:'история прослушиваний синхронизация скробблинг',component:ListenBrainzSection},
   {id:'backgrounds',label:'Фон',icon:'wave',group:'Основное',hint:'фон живой матовый матовая чёрный графит рисунок скорость цвет liquid metal beauty optimized gpu видеокарта первая настройка',component:BackgroundSection},
   {
     id: "theme",
@@ -264,7 +270,7 @@ function sectionFromQuery(): string | null {
   return sections.some((s) => s.id === id) ? id : null;
 }
 
-const active = ref(sectionFromQuery() ?? sections[0]!.id);
+const active = ref(sectionFromQuery() ?? 'backgrounds');
 
 watch(
   () => route.query.section,

@@ -1,0 +1,3 @@
+export interface RoomReaction {id:number;emoji:string;nick:string;at:number}
+export function validReaction(value:unknown):value is string{return typeof value==='string'&&value.length>0&&value.length<=32&&(/^[#*0-9]\uFE0F?\u20E3$/u.test(value)||(!/[\p{L}\p{N}\p{Cc}]/u.test(value)&&/[\p{Extended_Pictographic}\p{Regional_Indicator}]/u.test(value)));}
+export function appendReaction(items:RoomReaction[],emoji:unknown,nick:unknown,now=Date.now()):RoomReaction[]{if(!validReaction(emoji)||typeof nick!=='string')return items;return [...items.filter(r=>now-r.at<5000),{id:now+Math.random(),emoji,nick:nick.slice(0,60),at:now}].slice(-8);}

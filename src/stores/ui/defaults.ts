@@ -88,6 +88,7 @@ export interface InterfaceSettings {
   miniWidth: number;
   miniHeight: number;
   playerVisualizer: boolean;
+  musicVideoBackground: boolean;
   lyricsFontSize: number;
   lyricsLineHeight: number;
   lyricsWeight: number;
@@ -103,6 +104,7 @@ export interface InterfaceSettings {
   lyricsGlow: boolean;
   lyricsShowArtwork: boolean;
   lyricsMotion: boolean;
+  lyricsFxEnabled: boolean;
   lyricsShowCredits: boolean;
   lyricsShowOrigin: boolean;
   lyricsAnnotations: boolean;
@@ -197,6 +199,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   miniWidth: 396,
   miniHeight: 152,
   playerVisualizer: true,
+  musicVideoBackground: false,
   lyricsFontSize: 36,
   lyricsLineHeight: 1.18,
   lyricsWeight: 700,
@@ -212,6 +215,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   lyricsGlow: true,
   lyricsShowArtwork: true,
   lyricsMotion: true,
+  lyricsFxEnabled: true,
   lyricsShowCredits: true,
   lyricsShowOrigin: true,
   lyricsAnnotations: true,

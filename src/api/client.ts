@@ -7,6 +7,7 @@ import type {
   FeedbackPayload,
   GeniusArtist,
   GeniusHit,
+  GeniusPersonHit,
   LyricSearchHit,
   GeniusSong,
   LrcLyrics,
@@ -25,6 +26,10 @@ import type {
   TrackInfo,
   WaveResponse,
   WheelItem,
+  HomeDiscovery,
+  MusicClip,
+  MusicClipStream,
+  ClipAlignment,
 } from "./types";
 
 const TOKEN_KEY = "mashiro.token";
@@ -73,6 +78,10 @@ export const api = {
   },
 
   wheel: () => call<WheelItem[]>("get_wheel"),
+  homeDiscovery: () => call<HomeDiscovery>("get_home_discovery"),
+  trackClips: (id: string) => call<MusicClip[]>("get_track_clips", { id }),
+  clipStream: (id: string) => call<MusicClipStream>("get_clip_stream", { id }),
+  alignMusicClip: (trackId: string, clipId: string) => call<ClipAlignment>('get_clip_alignment', { trackId, clipId }),
 
   artist: (id: string) => call<ArtistPage>("get_artist", { id }),
 
@@ -268,14 +277,17 @@ export const api = {
   geniusSearch: (token: string, query: string) =>
     call<GeniusHit[]>("genius_search", { token, query }),
 
-  geniusSong: (token: string, id: number) =>
-    call<GeniusSong>("genius_song", { token, id }),
+  geniusSearchPeople: (token: string, query: string) =>
+    call<GeniusPersonHit[]>("genius_search_people", { token, query }),
+
+  geniusSong: (token: string, id: number, force = false) =>
+    call<GeniusSong>("genius_song", { token, id, force }),
 
   geniusLookup: (token: string, title: string, artist: string, force = false) =>
     call<GeniusSong | null>("genius_lookup", { token, title, artist, force }),
 
-  geniusArtist: (token: string, id: number) =>
-    call<GeniusArtist>("genius_artist", { token, id }),
+  geniusArtist: (token: string, id: number, force = false) =>
+    call<GeniusArtist>("genius_artist", { token, id, force }),
 
   geniusClearCache: () => call<void>("genius_clear_cache"),
 

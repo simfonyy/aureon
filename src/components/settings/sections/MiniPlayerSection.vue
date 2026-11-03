@@ -7,7 +7,9 @@
       </p>
     </div>
 
-    <MiniLayoutEditor />
+    <CreativePreferences />
+    <div v-if="creative.miniSkin==='cassette'" class="cassette-preview"><CassetteMiniPlayer preview/></div>
+    <MiniLayoutEditor v-else />
 
     <div class="setting-row">
       <div class="setting-copy">
@@ -27,7 +29,12 @@
 
 <script setup lang="ts">
 import MiniLayoutEditor from "@/components/player/MiniLayoutEditor.vue";
+import CreativePreferences from '@/components/creative/CreativePreferences.vue';
+import CassetteMiniPlayer from '@/components/creative/CassetteMiniPlayer.vue';
+import {useCreativeStore} from '@/stores/creative';
 import { useUiStore } from "@/stores/ui/index";
 
 const ui = useUiStore();
+const creative=useCreativeStore();
 </script>
+<style scoped>.cassette-preview{width:min(100%,460px);margin:24px 0;border-radius:12px;overflow:hidden}</style>

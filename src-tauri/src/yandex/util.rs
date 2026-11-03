@@ -77,6 +77,7 @@ pub fn map_track(t: &YTrack) -> TrackDto {
         })),
         duration_ms: t.duration_ms,
         available: t.available.unwrap_or(true),
+        clip_ids: super::clips::clip_ids(&t.clip_ids),
     }
 }
 

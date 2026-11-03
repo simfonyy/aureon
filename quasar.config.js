@@ -1,5 +1,6 @@
 import { defineConfig } from "@quasar/app-vite/wrappers";
 import { fileURLToPath } from "node:url";
+import { prepareFeatureAssets } from './scripts/prepare-feature-assets.mjs';
 
 export default defineConfig(() => {
   return {
@@ -10,6 +11,8 @@ export default defineConfig(() => {
     extras: ["roboto-font", "material-icons"],
 
     build: {
+      beforeDev: prepareFeatureAssets,
+      beforeBuild: prepareFeatureAssets,
       extendViteConf(config) {
 
         config.server ??= {};

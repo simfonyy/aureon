@@ -53,7 +53,7 @@
               :key="displayTitle"
               class="ellipsis t-13 w-600 player-title-text"
               :class="{ 'player-title-link': Boolean(trackTarget) }"
-              :title="trackTargetHint"
+              :title="trackTargetHint ? `${displayTitle}\n${trackTargetHint}` : displayTitle"
               @click="openTrackSource"
             >
               {{ displayTitle }}
@@ -94,6 +94,7 @@
             <q-tooltip>Действия с треком</q-tooltip>
             <TrackMenu :track="player.current" />
           </button>
+          <ClipBackgroundControl v-if="player.current" :track="player.current" :active="!player.fullscreen && !player.showLyrics && !editMode" open-player />
         </div>
         <div class="dim t-12 ellipsis">
           <Transition name="pb-swap" mode="out-in">
@@ -160,6 +161,7 @@
         </div>
         <q-slider
           class="col"
+          aria-label="Позиция воспроизведения"
           :model-value="seekValue"
           :min="0"
           :max="Math.max(player.duration, 1)"
@@ -200,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import ClipBackgroundControl from '@/components/clips/ClipBackgroundControl.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import ArtistsLine from "@/components/ArtistsLine.vue";

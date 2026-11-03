@@ -1,7 +1,7 @@
 {
   "name": "nightlezz-devs-desktop",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Aureon - music desktop client by Nightlezz Dev's",
   "type": "module",
   "scripts": {
@@ -10,20 +10,34 @@
     "build": "quasar build",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@floating-ui/vue": "2.0.1",
+    "@fontsource-variable/onest": "5.3.1",
     "@quasar/extras": "^1.16.13",
+    "@soundtouchjs/audio-worklet": "2.1.1",
     "@tauri-apps/api": "2.11.1",
+    "colorthief": "3.5.0",
+    "embla-carousel-vue": "8.6.0",
+    "emoji-picker-element": "1.29.1",
+    "hls.js": "1.7.4",
+    "motion-v": "2.10.0",
     "pinia": "^2.2.6",
+    "pixi-filters": "6.1.5",
+    "pixi.js": "8.22.0",
     "quasar": "^2.17.4",
+    "tesseract.js": "7.0.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vuedraggable": "4.1.0"
   },
   "devDependencies": {
     "@quasar/app-vite": "^2.0.6",
     "@tauri-apps/cli": "^2.1.0",
     "autoprefixer": "^10.4.20",
+    "emoji-picker-element-data": "1.8.0",
     "typescript": "^5.7.2",
     "vue-tsc": "^2.1.10"
   },

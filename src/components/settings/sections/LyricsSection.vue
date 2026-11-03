@@ -202,6 +202,13 @@
     />
 
     <SettingToggle
+      :model-value="ui.settings.lyricsFxEnabled"
+      label="Акценты в тексте"
+      description="Редкие эффекты на отдельных словах."
+      @update:model-value="ui.set('lyricsFxEnabled', $event)"
+    />
+
+    <SettingToggle
       :model-value="ui.settings.lyricsShowCredits"
       label="Участники записи"
       description="Авторы и продюсеры из Genius под текстом песни."

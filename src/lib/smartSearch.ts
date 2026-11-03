@@ -74,42 +74,170 @@ export async function smartCatalog(query:string, api:SearchApi, current=()=>true
   },alternatives:candidates.map(c=>c.label)};
 }
 export interface LyricMatch extends LyricSearchHit { track:Track|null; lookupFailed:boolean }
-function withoutTranslation(value:string):string { return value.replace(/\([^)]*\)|\[[^\]]*\]/g,'').trim(); }
+const editionWords = /\b(?:live|remix|remixed|mix|acoustic|instrumental|demo|cover|remaster(?:ed)?|radio\s+edit|extended|sped\s+up|speed\s+up|slowed|reverb)\b|(?:ремикс|акустик|концерт|лайв|ускоренн|замедленн|инструментал|минусовк)/iu;
+function withoutTranslation(value:string):string {
+  const base = value.replace(/\([^)]*\)|\[[^\]]*\]/g, '');
+  return value.replace(/\(([^)]*)\)|\[([^\]]*)\]/g, (whole, round:string|undefined, square:string|undefined) => {
+    const note = round ?? square ?? '';
+    // Genius often adds a Latin translation to a Russian title/artist. A live,
+    // remix or other edition label is part of the identity, not a translation.
+    if (editionWords.test(note)) return whole;
+    const translated = /[а-яё]/iu.test(base) && /[a-z]/iu.test(note) && !/[а-яё]/iu.test(note)
+      || /[a-z]/iu.test(base) && /[а-яё]/iu.test(note) && !/[a-z]/iu.test(note);
+    return translated ? '' : whole;
+  }).trim();
+}
+function edition(value:string):string[] {
+  const n = normalize(value);
+  const groups:Array<[string,RegExp]> = [
+    ['live', /\blive\b|лайв|концерт/u], ['remix', /\b(?:remix|remixed|mix)\b|ремикс/u],
+    ['acoustic', /\bacoustic\b|акустик/u], ['instrumental', /\binstrumental\b|инструментал|минусовк/u],
+    ['demo', /\bdemo\b|демо/u], ['cover', /\bcover\b|кавер/u],
+    ['remaster', /\bremaster(?:ed)?\b|ремастер/u], ['edit', /\bradio edit\b|\bextended\b/u],
+    ['sped', /\b(?:sped|speed) up\b|ускоренн/u], ['slowed', /\bslowed\b|замедленн/u],
+    ['reverb', /\breverb\b/u],
+  ];
+  return groups.filter(([,pattern])=>pattern.test(n)).map(([name])=>name);
+}
+function spellingScore(wanted:string, candidate:string):number {
+  const forms=queryVariants(candidate).slice(0,2);
+  return Math.max(0,...queryVariants(wanted).flatMap((variant,index)=>forms.map((form,formIndex)=>similarity(variant,form)-(index+formIndex)*0.008)));
+}
+function artistParts(value:string):string[] {
+  return withoutTranslation(value).split(/\s+(?:feat(?:uring)?|ft|with|and|и)\.?\s+|\s*[,;&×]\s*|\s+x\s+/iu).map(name=>name.trim()).filter(Boolean);
+}
+function artistScore(wanted:string, artists:Track['artists']):number {
+  if (!artists.length) return 0;
+  const names = artists.map(artist=>withoutTranslation(artist.name));
+  const full = Math.max(...names.map(name=>spellingScore(withoutTranslation(wanted),name)), spellingScore(withoutTranslation(wanted),names.join(' ')));
+  const parts = artistParts(wanted);
+  if (parts.length <= 1) return full;
+  const scores = parts.map(part=>Math.max(...names.map(name=>spellingScore(part,name))));
+  if (scores.some(score=>score < 0.72)) return full;
+  return Math.max(full,scores.reduce((sum,score)=>sum+score,0)/scores.length);
+}
 export function matchTrack(song:LyricSearchHit['song'],tracks:Track[]):Track|null {
-  const title=normalize(withoutTranslation(song.title));
-  const matches=tracks.filter(t=>t.available).map(track=>({track,
-    title:similarity(title,withoutTranslation(track.title)),
-    artist:Math.max(0,...track.artists.map(a=>Math.max(...queryVariants(withoutTranslation(song.artist)).map(v=>similarity(v,withoutTranslation(a.name))))))
-  })).filter(t=>t.title>=0.82 && t.artist>=0.72).sort((a,b)=>(b.title+b.artist)-(a.title+a.artist));
+  const title = withoutTranslation(song.title), wantedEdition = edition(title).join('|');
+  const matches=tracks.filter(track=>track.available && edition(track.title).join('|')===wantedEdition).map((track,index)=>({track,index,
+    title:Math.min(spellingScore(title,withoutTranslation(track.title)),phraseScore(queryVariants(title.replace(/['’]/gu,'')),withoutTranslation(track.title).replace(/['’]/gu,''))),
+    artist:artistScore(song.artist,track.artists),
+  })).filter(item=>item.title>=0.82 && item.artist>=0.72)
+    .sort((a,b)=>(b.title+b.artist)-(a.title+a.artist) || a.index-b.index);
   return matches[0]?.track ?? null;
 }
+
+interface RankedLyric { hit:LyricSearchHit; score:number; order:number }
+function phraseScore(queries:string[],fragment:string):number {
+  const plain=normalize(fragment);
+  const original=normalize(queries[0]??'');
+  if(original && ` ${plain} `.includes(` ${original} `)) return 1;
+  // Cyrillic й/ы and э/е have several Latin spellings. Comparing the native
+  // fragment in Latin too avoids choosing one irreversible reverse spelling.
+  const forms=[...new Set([plain,...(/[a-z]/iu.test(queries[0]??'') && /[а-яё]/iu.test(plain)?[normalize(transliterate(plain))]:[])])];
+  const cache=new Map<string,number>();
+  let best=0;
+  forms.forEach((form,formIndex)=>{
+    const words=form.split(' ').filter(Boolean).slice(0,80);
+    queries.forEach((query,variant)=>{
+      const wanted=normalize(query).split(' ').filter(Boolean).slice(0,32), count=wanted.length, phrase=wanted.join(' ');
+      if (!count || words.length < count) return;
+      const weights=wanted.map(word=>Math.max(0.35,Math.min(1,word.length/5)));
+      const total=weights.reduce((sum,weight)=>sum+weight,0);
+      for(let start=0;start<=words.length-count;start++) {
+        for(let length=count;length<=count+2 && start+length<=words.length;length++) {
+          const window=words.slice(start,start+length);
+          if(window.join(' ')===phrase) { best=Math.max(best,1-variant*0.025-formIndex*0.015); continue; }
+          const pairs:Array<{q:number;w:number;score:number}>=[];
+          for(let q=0;q<count;q++) for(let w=0;w<window.length;w++) {
+            const left=wanted[q]!,right=window[w]!, key=`${left}\0${right}`;
+            let score=cache.get(key);
+            if(score===undefined) { score=left===right?1:left.length<=2?0:similarity(left,right); cache.set(key,score); }
+            if(score >= (left.length===3?0.66:0.7)) pairs.push({q,w,score});
+          }
+          pairs.sort((a,b)=>b.score-a.score || a.q-b.q || a.w-b.w);
+          const chosen=new Map<number,{w:number;score:number}>(),used=new Set<number>();
+          for(const pair of pairs) if(!chosen.has(pair.q) && !used.has(pair.w)) { chosen.set(pair.q,pair); used.add(pair.w); }
+          if(chosen.size < (count<=2?count:Math.ceil(count*0.75))) continue;
+          let score=0,previous=-1,reordered=false;
+          for(let q=0;q<count;q++) {
+            const pair=chosen.get(q);
+            if(!pair) continue;
+            score+=pair.score*weights[q]!/total;
+            if(pair.w<previous) reordered=true;
+            previous=pair.w;
+          }
+          score-=(reordered?0.12:0)+(length-count)*0.025+variant*0.025+formIndex*0.015;
+          best=Math.max(best,score);
+        }
+      }
+    });
+  });
+  return best;
+}
+
 export async function lyricSearch(query:string,api:SearchApi,current=()=>true):Promise<LyricMatch[]> {
-  let hits=await bounded(api.searchLyrics(query));
-  // Latin fragments can return unrelated English hits; also check their Russian spelling.
-  const variants=queryVariants(query);
-  if((!hits.length || /^[a-z\s\p{P}]+$/iu.test(query)) && current()) {
-    const fallback=await Promise.allSettled(queryVariants(query).slice(1).map(q=>bounded(api.searchLyrics(q))));
-    hits.push(...fallback.flatMap(r=>r.status==='fulfilled'?r.value:[]));
-  }
+  const variants=queryVariants(query).slice(0,3);
+  if(!current() || !normalize(query) || !variants.length) return [];
+  const replies:Array<LyricSearchHit[]|undefined>=[];
+  let successful=0;
+  const searchSource=async(value:string,index:number)=>{
+    if(!current()) return;
+    try { const hits=await bounded(api.searchLyrics(value)); if(current()) { successful++;replies[index]=hits; } }
+    catch { /* Another spelling may still have a usable reply. */ }
+  };
+  await searchSource(variants[0]!,0);
   if(!current()) return [];
-  function fragmentScore(fragment:string):number {
-    const words=normalize(fragment).split(' ');
-    return Math.max(0,...variants.map(v=>{
-      const count=normalize(v).split(' ').length;
-      let best=0;
-      for(let i=0;i<words.length;i++) best=Math.max(best,similarity(v,words.slice(i,i+count).join(' ')));
-      return best;
-    }));
+  await Promise.all(variants.slice(1).map((value,index)=>searchSource(value,index+1)));
+  if(!current()) return [];
+  if(!successful) throw new Error('Не удалось выполнить поиск по тексту. Попробуй ещё раз.');
+  const count=normalize(query).split(' ').length, threshold=count>=3?0.65:count===2?0.62:0.72;
+  const ranked=replies.flatMap(hits=>hits??[]).slice(0,24).map((hit,order)=>({hit,order,score:phraseScore(variants,hit.fragment)}))
+    .filter(item=>item.score>=threshold).sort((a,b)=>b.score-a.score || a.order-b.order);
+  // Keep the first/best fragment. Constructing a Map from sorted entries would
+  // overwrite it with a weaker fragment of the same Genius song.
+  const bestSongs=new Map<number,RankedLyric>();
+  for(const item of ranked) if(!bestSongs.has(item.hit.song.id)) bestSongs.set(item.hit.song.id,item);
+  const candidates=[...bestSongs.values()].slice(0,8);
+  const catalogCache=new Map<string,Promise<SearchResult|null>>();
+  function catalog(value:string):Promise<SearchResult|null> {
+    const key=normalize(value),cached=catalogCache.get(key);
+    if(cached) return cached;
+    if(!current()) return Promise.resolve(null);
+    const request=(async()=>{ try { return await bounded(api.search(value)); } catch { return null; } })();
+    if(catalogCache.size<24) catalogCache.set(key,request);
+    return request;
   }
-  hits.sort((a,b)=>fragmentScore(b.fragment)-fragmentScore(a.fragment));
-  hits=[...new Map(hits.map(h=>[h.song.id,h])).values()].slice(0,6);
-  const results:LyricMatch[]=[];
-  for(let i=0;i<hits.length && current();i+=2) {
-    results.push(...await Promise.all(hits.slice(i,i+2).map(async hit=>{
-      try { const found=await bounded(api.search(`${withoutTranslation(hit.song.artist)} ${withoutTranslation(hit.song.title)}`));
-        return {...hit,track:matchTrack(hit.song,found.tracks),lookupFailed:false};
-      } catch { return {...hit,track:null,lookupFailed:true}; }
-    })));
+  async function resolve(item:RankedLyric):Promise<LyricMatch> {
+    const song=item.hit.song, artist=withoutTranslation(song.artist),title=withoutTranslation(song.title);
+    const queries=[`${artist} ${title}`,queryVariants(`${artist} ${title}`)[1],title]
+      .filter((value,index,all):value is string=>Boolean(value?.trim()) && all.findIndex(other=>other && normalize(other)===normalize(value!))===index);
+    let failed=true;
+    for(const value of queries) {
+      if(!current()) break;
+      const found=await catalog(value);
+      if(!current()) break;
+      if(!found) continue;
+      failed=false;
+      const track=matchTrack(song,found.tracks);
+      if(track) return {...item.hit,track,lookupFailed:false};
+    }
+    return {...item.hit,track:null,lookupFailed:failed};
   }
-  return results;
+  const results:Array<{item:RankedLyric;match:LyricMatch}>=[];
+  let next=0;
+  await Promise.all(Array.from({length:Math.min(3,candidates.length)},async()=>{
+    while(current()) {
+      const item=candidates[next++];
+      if(!item) return;
+      results.push({item,match:await resolve(item)});
+    }
+  }));
+  if(!current()) return [];
+  results.sort((a,b)=>Number(Boolean(b.match.track))-Number(Boolean(a.match.track)) || b.item.score-a.item.score || a.item.order-b.item.order);
+  const seen=new Set<string>();
+  return results.flatMap(({match})=>{
+    const id=match.track ? `track:${match.track.id.replace(/^(\d+):\d+$/,'$1')}` : `song:${match.song.id}`;
+    if(seen.has(id)) return [];
+    seen.add(id);return [match];
+  }).slice(0,6);
 }

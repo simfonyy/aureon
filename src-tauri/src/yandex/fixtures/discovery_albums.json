@@ -1,0 +1,1 @@
+{"result":[{"id":11,"title":"Album B","artists":[{"id":2,"name":"Artist B"}]},null,{"id":99,"title":"Not requested"},{"id":10,"title":"Album A","coverUri":"avatars.yandex.net/album/%%","artists":[{"id":1,"name":"Artist A"}],"year":2026,"releaseDate":"2026-11-03T00:00:00+03:00"},{"id":"10","title":"Duplicate"},{"id":12}]}

@@ -39,6 +39,7 @@ const glyphs: Record<string, Glyph> = {
     ],
   },
   wave: { paths: ["M3.5 10.5v3M8 6.5v11M12 3.5v17M16 7.5v9M20.5 10.5v3"] },
+  musicVideo: { paths: ["M3 5.5h18v13H3z", "m10 9 5 3-5 3z"] },
   search: {
     paths: [
       "M10.5 17.5a7 7 0 1 1 0-14 7 7 0 0 1 0 14z",

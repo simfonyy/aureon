@@ -17,6 +17,26 @@ pub struct TrackDto {
     pub cover_url: Option<String>,
     pub duration_ms: Option<i64>,
     pub available: bool,
+    pub clip_ids: Vec<String>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ClipDto {
+    pub id: String,
+    pub title: String,
+    pub artists: Vec<ArtistDto>,
+    pub thumbnail_url: Option<String>,
+    /// A short preview supplied by Yandex, not a verified full-length stream.
+    pub preview_url: Option<String>,
+    pub duration_ms: Option<i64>,
+    pub track_ids: Vec<String>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ClipStreamDto {
+    pub clip_id: String,
+    pub url: String,
+    pub kind: String,
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -179,4 +199,22 @@ pub struct StationInfoDto {
     pub languages: Vec<StationOptionDto>,
     pub moods: Vec<StationOptionDto>,
     pub diversities: Vec<StationOptionDto>,
+}
+
+#[derive(Serialize)]
+pub struct DiscoveryAlbumDto {
+    pub id: String,
+    pub title: String,
+    pub cover_url: Option<String>,
+    pub artists: Vec<ArtistDto>,
+    pub year: Option<i64>,
+    pub release_date: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct HomeDiscoveryDto {
+    pub new_releases: Vec<DiscoveryAlbumDto>,
+    pub chart: Vec<TrackDto>,
+    pub new_releases_error: Option<String>,
+    pub chart_error: Option<String>,
 }

@@ -5,6 +5,10 @@ const memory = new Map<string, string | null>();
 const pending = new Map<string, Promise<string | null>>();
 let loaded = false;
 
+export function isRemoteArtist(id: string | null | undefined): id is string {
+  return Boolean(id && !id.startsWith('local-artist:') && !id.startsWith('local:'));
+}
+
 function hydrate(): void {
   if (loaded) return;
   loaded = true;
@@ -27,13 +31,14 @@ function persist(): void {
 }
 
 export function cachedAvatar(id: string): string | null {
+  if (!isRemoteArtist(id)) return null;
   hydrate();
   return memory.get(id) ?? null;
 }
 
 export async function fetchAvatar(id: string): Promise<string | null> {
+  if (!isRemoteArtist(id)) return null;
   hydrate();
-  if (!id) return null;
   if (memory.has(id)) return memory.get(id) ?? null;
   const running = pending.get(id);
   if (running) return running;
@@ -56,7 +61,7 @@ export async function fetchAvatar(id: string): Promise<string | null> {
 export async function fetchAvatars(
   ids: string[],
 ): Promise<Record<string, string | null>> {
-  const unique = [...new Set(ids.filter(Boolean))].slice(0, 12);
+  const unique = [...new Set(ids.filter(isRemoteArtist))].slice(0, 12);
   const out: Record<string, string | null> = {};
   await Promise.all(
     unique.map(async (id) => {

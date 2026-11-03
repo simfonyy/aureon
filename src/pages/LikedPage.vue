@@ -75,16 +75,21 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
-import { onMounted, ref } from "vue";
+import { computed,onMounted, ref } from "vue";
 import TrackRow from "@/components/TrackRow.vue";
 import { api } from "@/api/client";
 import type { Track } from "@/api/types";
 import { plural } from "@/lib/format";
 import { readCache, swr } from "@/lib/cache";
 import { usePlayerStore } from "@/stores/player/index";
+import {useLibraryStore} from '@/stores/library';
+import {useLibraryToolsStore} from '@/stores/libraryTools';
+import {asTrack} from '@/lib/libraryTools/model';
+import {convertFileSrc} from '@tauri-apps/api/core';
 
 const player = usePlayerStore();
-const tracks = ref<Track[]>([]);
+const remoteTracks = ref<Track[]>([]),library=useLibraryStore(),local=useLibraryToolsStore();
+const tracks=computed<Track[]>(()=>[...local.entries.filter(row=>library.likedIds.includes(row.id)).map(row=>asTrack(row,convertFileSrc)),...remoteTracks.value]);
 const loading = ref(false);
 
 function playFrom(i: number) {
@@ -100,12 +105,13 @@ function shufflePlay() {
 }
 
 onMounted(() => {
-  tracks.value = readCache<Track[]>("liked.tracks") ?? [];
+  void local.init();
+  remoteTracks.value = readCache<Track[]>("liked.tracks") ?? [];
   loading.value = !tracks.value.length;
 
   void swr<Track[]>("liked.tracks", () => api.likedTracks(), {
     onData: (data) => {
-      tracks.value = data;
+      remoteTracks.value = data;
     },
     onSettled: () => {
       loading.value = false;
