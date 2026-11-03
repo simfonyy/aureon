@@ -24,6 +24,15 @@
 | **Текст с клипом** | **Статистика** |
 | [![Текст с клипом](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Статистика](docs/screenshots/statistics.png)](docs/screenshots/statistics.png) |
 
+<details>
+<summary>Поиск и исполнитель — предыдущая сборка</summary>
+
+| Поиск по строчке | Исполнитель |
+| --- | --- |
+| [![Поиск по строчке](docs/screenshots/search.png)](docs/screenshots/search.png) | [![Исполнитель](docs/screenshots/artist.png)](docs/screenshots/artist.png) |
+
+</details>
+
 [Все скриншоты](docs/screenshots/INDEX.md)
 
 ## Скачать
