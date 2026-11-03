@@ -12,15 +12,17 @@
   <img src="https://img.shields.io/github/downloads/simfonyy/aureon/total?style=flat-square&amp;label=скачиваний&amp;labelColor=252628&amp;color=786443" alt="Скачивания файлов из релизов">
 </p>
 
-![Aureon](docs/screenshots/home.png)
-
 Неофициальный клиент Яндекс Музыки для Windows и Linux. Для прослушивания нужны аккаунт Яндекса и Плюс.
 
 Караоке по словам, поиск по строчке и с опечатками, «Моя волна», плейлисты, мини-плеер, эквалайзер и статистика.
 
-| Караоке | Поиск по строчке |
+## Пробная сборка
+
+| Главная | Плеер с клипом |
 | --- | --- |
-| [![Караоке](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Поиск](docs/screenshots/search.png)](docs/screenshots/search.png) |
+| [![Главная](docs/screenshots/home.png)](docs/screenshots/home.png) | [![Плеер с клипом](docs/screenshots/player.png)](docs/screenshots/player.png) |
+| **Текст с клипом** | **Статистика** |
+| [![Текст с клипом](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Статистика](docs/screenshots/statistics.png)](docs/screenshots/statistics.png) |
 
 [Все скриншоты](docs/screenshots/INDEX.md)
 
