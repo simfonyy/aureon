@@ -1,6 +1,6 @@
 # Обновления
 
-## 1.1.0 — готовится
+## [1.1.0] — 4 ноября 2026
 
 - Клипы на фоне плеера и текста с подбором синхронизации.
 - Новые релизы и чарт России на главной.
@@ -29,6 +29,7 @@
 
 Первый публичный релиз для Windows.
 
+[1.1.0]: https://github.com/simfonyy/aureon/releases/tag/v1.1.0
 [1.0.3]: https://github.com/simfonyy/aureon/releases/tag/v1.0.3
 [1.0.2]: https://github.com/simfonyy/aureon/releases/tag/v1.0.2
 [1.0.1]: https://github.com/simfonyy/aureon/releases/tag/v1.0.1

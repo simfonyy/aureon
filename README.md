@@ -16,31 +16,24 @@
 
 Караоке по словам, поиск по строчке и с опечатками, «Моя волна», плейлисты, мини-плеер, эквалайзер и статистика.
 
-## Пробная сборка
+## Скриншоты
 
 | Главная | Плеер с клипом |
 | --- | --- |
 | [![Главная](docs/screenshots/home.png)](docs/screenshots/home.png) | [![Плеер с клипом](docs/screenshots/player.png)](docs/screenshots/player.png) |
 | **Текст с клипом** | **Статистика** |
 | [![Текст с клипом](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Статистика](docs/screenshots/statistics.png)](docs/screenshots/statistics.png) |
-
-<details>
-<summary>Поиск и исполнитель — предыдущая сборка</summary>
-
-| Поиск по строчке | Исполнитель |
-| --- | --- |
+| **Поиск по строчке** | **Исполнитель** |
 | [![Поиск по строчке](docs/screenshots/search.png)](docs/screenshots/search.png) | [![Исполнитель](docs/screenshots/artist.png)](docs/screenshots/artist.png) |
-
-</details>
 
 [Все скриншоты](docs/screenshots/INDEX.md)
 
 ## Скачать
 
-| Windows x64 | Linux x64 · экспериментально |
+| Windows x64 | Linux x64 |
 | --- | --- |
-| [Установщик MSI](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_x64_ru-RU.msi) | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_amd64.deb) |
-| [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_windows-x64_portable.zip) | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.0.3/Aureon_1.0.3_amd64.AppImage) |
+| [Установщик MSI](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_x64_ru-RU.msi) | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_amd64.deb) |
+| [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_windows-x64_portable.zip) | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_amd64.AppImage) |
 
 ZIP нужно распаковать. Для AppImage — разрешить выполнение файла. [Подробнее об установке](docs/DISTRIBUTION.md).
 

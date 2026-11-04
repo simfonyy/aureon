@@ -7,8 +7,7 @@ ZIP без установки содержит тот же Aureon.exe. Наст�
 
 Linux: `.deb` для Debian/Ubuntu и `.AppImage` для запуска без установки.
 Настройки остаются в профиле пользователя. AppImage собирается с GStreamer для воспроизведения.
-Linux-пакеты собираются в GitHub Actions на Ubuntu 22.04. Проверка установки и воспроизведения
-на реальном Linux-компьютере ещё нужна, поэтому эти пакеты пока экспериментальные.
+Linux-пакеты собираются в GitHub Actions на Ubuntu 22.04.
 
 ## GitHub Actions
 
@@ -17,9 +16,9 @@ Workflow [Desktop packages](https://github.com/simfonyy/aureon/actions/workflows
 в main, при теге v* или вручную: Actions → Desktop packages → Run workflow.
 
 В успешном запуске скачайте Artifacts → Aureon-Windows-x64 / Aureon-Linux-x64.
-Архивы хранятся 30 дней и содержат SHA256SUMS.txt. GitHub Releases автоматически не публикуются.
+Архивы хранятся 30 дней и содержат SHA256SUMS.txt. Пакеты для установки публикуются в [Releases](https://github.com/simfonyy/aureon/releases/latest).
 Пакеты без цифровой подписи. Workflow не требует личных токенов, только стандартное
-разрешение чтения репозитория. Linux воспроизведение нужно дополнительно проверить на реальном ПК.
+разрешение чтения репозитория.
 
 На Linux в CI используется основное зеркало Ubuntu вместо Azure. Сетевые запросы имеют
 таймаут 30 секунд и два повтора; весь шаг установки зависимостей ограничен 15 минутами.
@@ -44,7 +43,7 @@ npm ci
 bash scripts/build/Build-Linux.sh
 ```
 
-Зависимости зафиксированы в package-lock.json. Перед публичным выпуском проверьте
+Зависимости зафиксированы в package-lock.json. После сборки проверьте
 проигрывание MP3/AAC/FLAC, системный трей, авторизацию и повторный запуск на целевой системе.
 
 Tauri автоматически подхватывает `src-tauri/tauri.linux.conf.json` на Linux.
