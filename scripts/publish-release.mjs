@@ -208,6 +208,13 @@ async function publish(version, state) {
   const body = releaseBody(await readFile(join(ROOT, 'CHANGELOG.md'), 'utf8'), version, versionFiles(version));
   await verifyTag(version, state.current);
   let release = await api(`/releases/tags/v${version}`, { optional: true });
+  if (!release) {
+    // The tag endpoint returns published releases only. Drafts are in the list.
+    const recentReleases = await api('/releases?per_page=100');
+    const drafts = recentReleases.filter(item => item.draft && item.tag_name === `v${version}`);
+    if (drafts.length > 1) fail('Multiple drafts exist for this version.');
+    release = drafts[0];
+  }
   if (release) {
     if (release.tag_name !== `v${version}` || release.target_commitish !== state.current || release.prerelease) fail('An unexpected release already exists for this version.');
     if (!release.draft) {
