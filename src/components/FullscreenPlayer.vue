@@ -69,7 +69,7 @@
                     aria-label="Меню трека"
                     :aria-expanded="trackMenuOpen"
                   >
-                    <Icon name="more" :size="19" class="fs-menu-icon" />
+                    <Icon name="more" :size="19" />
                     <TrackMenu :track="player.current" @before-show="trackMenuOpen = true" @hide="trackMenuOpen = false" />
                   </button>
                   <div class="fs-art-row">
