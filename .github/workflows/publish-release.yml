@@ -6,12 +6,11 @@ on:
       version:
         description: Release version
         required: true
-        default: '1.1.0'
+        default: '1.2.0'
         type: string
       build_run_id:
         description: Successful Desktop packages run
         required: true
-        default: '41709297581'
         type: string
 
 permissions:

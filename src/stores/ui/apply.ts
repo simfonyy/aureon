@@ -97,7 +97,6 @@ export function applyInterfaceSettings(settings: InterfaceSettings): void {
     "--mini-icon": `${settings.miniIconSize}px`,
     "--mini-gap": `${settings.miniGap}px`,
     "--mini-pad": `${settings.miniPadding}px`,
-    "--mini-volume-height": `${settings.miniVolumeHeight}px`,
   };
 
   for (const [name, value] of Object.entries(vars)) {

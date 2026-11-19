@@ -113,6 +113,7 @@ pub fn run() {
             commands::get_playlist_tracks,
             commands::playlist_memberships,
             commands::playlist_add_track,
+            commands::playlist_fill_from_queue,
             commands::playlist_remove_track,
             commands::playlist_move_track,
             commands::playlist_create,

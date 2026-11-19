@@ -286,9 +286,9 @@ export const useUiStore = defineStore("ui", {
       this.settings.miniGap = d.miniGap;
       this.settings.miniPadding = d.miniPadding;
       this.settings.miniVolumeSlider = d.miniVolumeSlider;
-      this.settings.miniVolumeHeight = d.miniVolumeHeight;
       this.settings.miniShowTime = d.miniShowTime;
       this.settings.miniVisualizer = d.miniVisualizer;
+      this.settings.miniHoverControls = d.miniHoverControls;
       this.settings.miniWidth = d.miniWidth;
       this.settings.miniHeight = d.miniHeight;
       this.apply();

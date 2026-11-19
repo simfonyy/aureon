@@ -8,6 +8,7 @@ use std::{
 };
 
 use crate::yandex::Yandex;
+use futures_util::{stream, StreamExt, TryStreamExt};
 use reqwest::{Client, Url};
 
 const RATE: u32 = 4000;
@@ -18,7 +19,8 @@ const SEGMENT_BYTES: usize = 4 * 1024 * 1024;
 const AUDIO_BYTES: usize = 12 * 1024 * 1024;
 const PLAYLIST_BYTES: usize = 256 * 1024;
 const MAX_SEGMENTS: usize = 200;
-const DEADLINE: Duration = Duration::from_secs(90);
+const PARALLEL_SEGMENTS: usize = 8;
+const DEADLINE: Duration = Duration::from_secs(25);
 const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 fn media_url(raw: &str, base: Option<&Url>) -> Result<Url, String> {
@@ -581,7 +583,11 @@ fn decode_mono(
         .format(&hint, stream, &options, &MetadataOptions::default())
         .map_err(|_| "Не удалось прочитать звук для синхронизации")?
         .format;
-    let track = format.default_track().ok_or("В записи нет звука")?;
+    let track = format
+        .tracks()
+        .iter()
+        .find(|track| track.codec_params.sample_rate.is_some())
+        .ok_or("В записи нет звука")?;
     let track_id = track.id;
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
@@ -739,13 +745,15 @@ async fn clip_audio(http: &Client, url: Url) -> Result<(Vec<u8>, f64), String> {
     let mut demuxer = TsAudio::default();
     let mut raw_aac: Option<Vec<u8>> = None;
     let mut raw_seconds = 0.0;
-    for segment in segments {
-        let remaining = CLIP_BYTES.saturating_sub(spent).min(SEGMENT_BYTES);
-        if remaining == 0 {
+    let mut downloads = stream::iter(segments).map(|segment| async move {
+        let (body, _) = bytes_at(http, segment.url, SEGMENT_BYTES).await?;
+        Ok::<_, String>((body, segment.start))
+    }).buffered(PARALLEL_SEGMENTS);
+    while let Some((body, start)) = downloads.try_next().await? {
+        spent += body.len();
+        if spent > CLIP_BYTES {
             return Err("Клип слишком большой для синхронизации".into());
         }
-        let (body, _) = bytes_at(http, segment.url, remaining).await?;
-        spent += body.len();
         // AAC-only HLS has no video PES. Its concatenated frame durations must
         // agree with the playlist clock. ID3-packed audio and fMP4 stay unsupported.
         if body.starts_with(&[0xff, 0xf1]) {
@@ -753,7 +761,7 @@ async fn clip_audio(http: &Client, url: Url) -> Result<(Vec<u8>, f64), String> {
                 return Err("Контейнер звука меняется внутри клипа".into());
             }
             let (frames, rate) = adts_info(&body)?;
-            if (raw_seconds - segment.start).abs() > 0.06 {
+            if (raw_seconds - start).abs() > 0.06 {
                 return Err("Временная шкала AAC клипа меняется".into());
             }
             raw_seconds += frames as f64 / rate as f64;
@@ -767,7 +775,7 @@ async fn clip_audio(http: &Client, url: Url) -> Result<(Vec<u8>, f64), String> {
         if raw_aac.is_some() {
             return Err("Контейнер звука меняется внутри клипа".into());
         }
-        demuxer.push_segment(&body, segment.start)?;
+        demuxer.push_segment(&body, start)?;
     }
     if let Some(audio) = raw_aac {
         validate_adts(&audio)?;
@@ -803,27 +811,40 @@ pub async fn load_audio_pair(
             .map_err(|_| "Не удалось подготовить синхронизацию клипа")?;
         let (track, clip) =
             tokio::try_join!(yandex.stream(track_id, "low"), yandex.clip_stream(clip_id))?;
-        if track.track_id != track_id || clip.clip_id != clip_id || clip.kind != "hls" {
+        if track.track_id != track_id || clip.clip_id != clip_id {
             return Err("Не удалось сопоставить звук и клип".into());
         }
         let track_url = media_url(&track.url, None)?;
         let clip_url = media_url(&clip.url, None)?;
-        let ((track_bytes, _), (clip_bytes, lead)) = tokio::try_join!(
-            bytes_at(&http, track_url, TRACK_BYTES),
-            clip_audio(&http, clip_url)
-        )?;
+        let video = async {
+            match clip.kind.as_str() {
+                "hls" => {
+                    let (bytes, lead) = clip_audio(&http, clip_url).await?;
+                    Ok((bytes, "aac", lead))
+                }
+                "mp4" => {
+                    let (bytes, _) = bytes_at(&http, clip_url, CLIP_BYTES).await?;
+                    Ok((bytes, "mp4", 0.0))
+                }
+                _ => Err("Не удалось сопоставить звук и клип".into()),
+            }
+        };
+        let ((track_bytes, _), (clip_bytes, clip_extension, lead)) =
+            tokio::try_join!(bytes_at(&http, track_url, TRACK_BYTES), video)?;
         let extension = if track.codec.to_ascii_lowercase().contains("mp3") {
             "mp3"
         } else {
             "aac"
         };
-        tauri::async_runtime::spawn_blocking(move || {
-            let song = decode_mono(track_bytes, extension, 0.0, deadline)?;
-            let video = decode_mono(clip_bytes, "aac", lead, deadline)?;
-            Ok((song, video, RATE))
-        })
-        .await
-        .map_err(|_| "Не удалось обработать звук клипа".to_owned())?
+        let song = tauri::async_runtime::spawn_blocking(move || {
+            decode_mono(track_bytes, extension, 0.0, deadline)
+        });
+        let video = tauri::async_runtime::spawn_blocking(move || {
+            decode_mono(clip_bytes, clip_extension, lead, deadline)
+        });
+        let (song, video) = tokio::join!(song, video);
+        let decode_error = |_| "Не удалось обработать звук клипа".to_string();
+        Ok((song.map_err(decode_error)??, video.map_err(decode_error)??, RATE))
     };
     tokio::time::timeout(DEADLINE, work)
         .await
@@ -1045,7 +1066,9 @@ mod tests {
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .unwrap();
-        let url = media_url("https://frontend.vh.yandex.ru/player/7043311152126062465.json?service=ya-music&from=ya-music&hidden=*", None).unwrap();
+        let mut url = media_url("https://frontend.vh.yandex.ru/player/7043311152126062465.json?service=ya-music&from=ya-music&hidden=*", None).unwrap();
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
+        url.query_pairs_mut().append_pair("_", &now.as_millis().to_string());
         let (body, _) = bytes_at(&http, url, 2 * 1024 * 1024).await.unwrap();
         let document: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let hls = document["content"]["streams"]

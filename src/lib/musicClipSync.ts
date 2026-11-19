@@ -49,7 +49,7 @@ export function createMusicClipSynchronizer(media: ClipSyncMedia, options: Optio
     const finished = duration !== null && requested >= duration - .04;
     wantedPlaying = playing && !finished && !(Number.isFinite(position) && position < 0);
     const difference = target - media.currentTime;
-    const seek = force || !Number.isFinite(media.currentTime) || Math.abs(difference) > (wantedPlaying ? .45 : .04);
+    const seek = !Number.isFinite(media.currentTime) || Math.abs(difference) > (force || !wantedPlaying ? .04 : .45);
     // Setting currentTime before metadata exists throws in some WebViews.
     if (media.readyState >= 1 && duration !== null && seek && (force || !media.seeking)) {
       try { media.currentTime = target; } catch { /* Retry when metadata/seek ranges become available. */ }
@@ -77,6 +77,10 @@ export function createMusicClipSynchronizer(media: ClipSyncMedia, options: Optio
 
   return {
     sync,
+    suspend() {
+      wantedPlaying = false;
+      pause();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

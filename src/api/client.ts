@@ -112,6 +112,8 @@ export const api = {
 
   playlistAdd: (kind: number | string, id: string, album: string, at = 0) =>
     call<boolean>("playlist_add_track", { kind: Number(kind), id, album, at }),
+  playlistFillFromQueue: (kind: number, tracks: { id: string; albumId: string }[]) =>
+    call<void>("playlist_fill_from_queue", { kind, tracks }),
 
   playlistRemove: (
     kind: number | string,

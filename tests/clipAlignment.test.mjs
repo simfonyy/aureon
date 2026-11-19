@@ -29,6 +29,24 @@ test('identical requests share analysis; a different edition or clip requires it
   await cache.get('123', '17', 180, async () => { calls++; return valid(20); }); assert.equal(calls, 3);
 });
 
+test('confirmed clip offsets survive a reload, while an uncertain match stays retryable', async () => {
+  const rows = new Map();
+  const storage = {
+    getItem: key => rows.get(key) ?? null,
+    setItem: (key, value) => rows.set(key, value),
+    removeItem: key => rows.delete(key),
+  };
+  const first = createClipAlignmentCache(10, storage);
+  await first.get('123:999', '17', 164, async () => ({ ...valid(5), url: 'https://signed.invalid/private' }));
+  await assert.rejects(first.get('123', '18', 164, async () => ({ ...valid(7), confidence: .2 })));
+  assert.ok(!JSON.stringify([...rows]).includes('signed.invalid'));
+  const restored = createClipAlignmentCache(10, storage);
+  assert.deepEqual(restored.savedClipIds('123', 164), ['17']);
+  assert.deepEqual(restored.savedClipIds('123', 180), []);
+  assert.deepEqual(await restored.get('123', '17', 164, assert.fail), valid(5));
+  assert.equal(restored.saved('123', '18', 164), null);
+});
+
 test('failed or uncertain analysis is retryable and bounded cache eviction cannot grow without limit', async () => {
   const cache = createClipAlignmentCache(2);
   await assert.rejects(cache.get('123', '17', 164, async () => ({ ...valid(), confidence: .1 })), /Не удалось синхронизировать/);

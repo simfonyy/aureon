@@ -1,10 +1,8 @@
 <template>
   <div
     class="player-bar"
-    :class="{
-      'has-viz': ui.settings.playerVisualizer,
-      'player-edit': editMode,
-    }"
+    :class="{ 'player-edit': editMode }"
+    :style="artAccent ? { '--player-art-accent': artAccent } : undefined"
     @contextmenu.prevent="toggleEdit"
   >
     <template v-if="editMode">
@@ -21,13 +19,12 @@
 
       <PlayerEditor />
     </template>
-    <div v-if="ui.settings.playerVisualizer" class="player-viz-window" aria-hidden="true">
-      <canvas ref="vizCanvas" class="player-visualizer" />
-    </div>
-
     <div class="player-left">
-      <div
+      <button
+        type="button"
         class="cover player-cover"
+        :disabled="!player.current"
+        aria-label="Открыть большой плеер"
         @click="player.openFullscreen()"
         @contextmenu.prevent="openAlbum"
       >
@@ -41,10 +38,11 @@
             loading="lazy"
             decoding="async"
             :src="player.current.cover_url"
+            alt=""
           />
           <Icon v-else name="note" :size="18" class="faint" />
         </Transition>
-      </div>
+      </button>
 
       <div class="player-meta">
         <div class="player-title-row">
@@ -184,6 +182,9 @@
       @dragleave="onZoneLeave($event)"
       @drop.prevent="onZoneDrop('right', $event)"
     >
+      <div v-if="showSpectrum" class="player-spectrum" aria-hidden="true">
+        <canvas ref="vizCanvas" class="player-visualizer" />
+      </div>
       <template v-for="(id, index) in rightButtons" :key="id">
         <i v-if="caretAt('right', index)" class="pe-caret" />
         <span
@@ -212,6 +213,7 @@ import PlayerButton from "@/components/player/PlayerButton.vue";
 import PlayerEditor from "@/components/player/PlayerEditor.vue";
 import TrackMenu from "@/components/TrackMenu.vue";
 import { useVisualizer } from "@/composables/useVisualizer";
+import { getCoverPalette } from "@/lib/coverPalette";
 import { formatDuration } from "@/lib/format";
 import { ensureAiArtists, isAiArtist } from "@/lib/aiTag";
 import { useLibraryStore } from "@/stores/library";
@@ -225,7 +227,15 @@ const library = useLibraryStore();
 const ui = useUiStore();
 
 const vizCanvas = ref<HTMLCanvasElement | null>(null);
-useVisualizer(vizCanvas, () => ui.settings.playerVisualizer, { bars: 72 });
+const artAccent = ref('');
+
+watch(() => player.current?.cover_url, async (cover, _, onCleanup) => {
+  let current = true;
+  onCleanup(() => { current = false; });
+  if (!cover) { artAccent.value = ''; return; }
+  const palette = await getCoverPalette(cover);
+  if (current) artAccent.value = palette?.accent ?? '';
+}, { immediate: true });
 
 const primaryArtistId = computed(
   () => player.current?.artists?.[0]?.id ?? null,
@@ -302,6 +312,10 @@ const centerButtons = computed(() => ui.playerZoneButtons("center"));
 const rightButtons = computed(() => ui.playerZoneButtons("right"));
 
 const editMode = computed(() => ui.settings.playerEditMode);
+const showSpectrum = computed(() =>
+  Boolean(player.current && ui.settings.playerVisualizer && ui.settings.animations && !editMode.value),
+);
+useVisualizer(vizCanvas, () => showSpectrum.value, { bars: 24, mode: "trace" });
 const dragId = ref<PlayerButtonId | null>(null);
 const overZone = ref<PlayerZone | null>(null);
 const overIndex = ref(-1);

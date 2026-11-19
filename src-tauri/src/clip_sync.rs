@@ -31,14 +31,17 @@ pub async fn get_clip_alignment(track_id: String, clip_id: String, state: State<
     }
     let guard = AnalysisGuard;
     let yandex = Yandex::new(&session.token);
-    let metadata = tokio::time::timeout(Duration::from_secs(12), yandex.track(&track_id))
-        .await.map_err(|_| "Не удалось проверить версию трека.".to_string())??;
-    if metadata.id != track_id || !metadata.available || !metadata.clip_ids.contains(&clip_id) {
-        return Err("Клип не относится к этой версии трека.".into());
-    }
+    let verify = async {
+        let metadata = tokio::time::timeout(Duration::from_secs(12), yandex.track(&track_id))
+            .await.map_err(|_| "Не удалось проверить версию трека.".to_string())??;
+        if metadata.id != track_id || !metadata.available || !metadata.clip_ids.contains(&clip_id) {
+            return Err("Клип не относится к этой версии трека.".into());
+        }
+        Ok(metadata)
+    };
     // All media stays on this computer. Signed URLs and PCM are never persisted.
-    let (track, clip, rate) = tokio::time::timeout(Duration::from_secs(90), load_audio_pair(&track_id, &clip_id, &yandex))
-        .await.map_err(|_| "Синхронизация клипа заняла слишком много времени.".to_string())??;
+    let (metadata, (track, clip, rate)) =
+        tokio::try_join!(verify, load_audio_pair(&track_id, &clip_id, &yandex))?;
     // A 30-second service preview is not a verified timeline for the full song.
     if !full_audio(metadata.duration_ms, track.len(), rate) {
         return Err("Для синхронизации нужна полная аудиоверсия трека.".into());

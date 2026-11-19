@@ -3,6 +3,9 @@ import {readLocalRatings,saveLocalRatings} from '@/lib/localRatings';
 import { Notify } from "quasar";
 import { api } from "@/api/client";
 import type { AlbumPage, Playlist, Track } from "@/api/types";
+import { askText } from "@/lib/dialogs";
+import { musicTrackId } from "@/lib/musicClips";
+import { useAuthStore } from "./auth";
 
 export interface LikedAlbum {
   id: string;
@@ -22,6 +25,8 @@ interface LibraryState {
   membershipLoading: boolean;
   likedAlbums: LikedAlbum[];
   playlists: Playlist[];
+  queuePlaylistBusy: boolean;
+  queuePlaylistDraft: { uid: number; key: string; playlist: Playlist } | null;
   pinned: number[];
   homePinOrder: number[];
   hidden: number[];
@@ -101,6 +106,8 @@ export const useLibraryStore = defineStore("library", {
     membershipLoading: false,
     likedAlbums: readLikedAlbums(),
     playlists: [],
+    queuePlaylistBusy: false,
+    queuePlaylistDraft: null,
     pinned: readKinds(PIN_KEY),
     homePinOrder: readHomePinOrder(),
     hidden: readKinds(HIDE_KEY),
@@ -283,6 +290,67 @@ export const useLibraryStore = defineStore("library", {
       } catch (e) {
         notifyError(e, "Не удалось создать плейлист");
         return null;
+      }
+    },
+
+    async saveQueueAsPlaylist(queue: Track[], currentTitle?: string) {
+      if (this.queuePlaylistBusy) return;
+      const tracks = queue.flatMap(track => {
+        const id = musicTrackId(track.id);
+        if (!id) return [];
+        const album = track.album_id || track.id.split(":")[1];
+        const albumId = album && musicTrackId(album) === album ? album : id;
+        return [{ id, albumId }];
+      });
+      if (!tracks.length) return;
+      const skipped = queue.length - tracks.length;
+      const auth = useAuthStore();
+      const uid = auth.profile?.uid;
+      this.queuePlaylistBusy = true;
+      let playlist: Playlist | undefined;
+      try {
+        const title = await askText({
+          title: "Сохранить очередь",
+          value: currentTitle ? `Очередь · ${currentTitle}` : "Очередь",
+          placeholder: "Название плейлиста",
+          okLabel: "Создать плейлист",
+          message: skipped
+            ? `В Яндекс Музыку попадут ${tracks.length} из ${queue.length} треков. Остальные треки останутся в очереди.`
+            : "Текущий порядок треков сохранится в личном плейлисте Яндекс Музыки.",
+        });
+        if (!title || auth.profile?.uid !== uid) return;
+        const key = JSON.stringify([title, tracks]);
+        const draft = this.queuePlaylistDraft;
+        if (uid != null && draft?.uid === uid && draft.key === key) {
+          playlist = draft.playlist;
+        } else {
+          playlist = await api.playlistCreate(title, false);
+          if (auth.profile?.uid !== uid) return;
+          if (uid != null) this.queuePlaylistDraft = { uid, key, playlist };
+        }
+        const { kind } = playlist;
+        await api.playlistFillFromQueue(kind, tracks);
+        if (auth.profile?.uid !== uid) return;
+        this.queuePlaylistDraft = null;
+        this.playlists = [
+          { ...playlist, track_count: tracks.length },
+          ...this.playlists.filter(item => item.kind !== kind),
+        ];
+        this.membership[kind] = [...new Set(tracks.map(track => track.id))];
+        Notify.create({ type: "positive", message: `Очередь сохранена в «${playlist.title}»` });
+      } catch (error) {
+        if (auth.profile?.uid !== uid) return;
+        if (playlist) {
+          Notify.create({
+            type: "negative",
+            message: `Не удалось сохранить треки в «${playlist.title}». Повтори с тем же названием.`,
+            caption: error instanceof Error ? error.message : undefined,
+          });
+        } else {
+          notifyError(error, "Не удалось создать плейлист");
+        }
+      } finally {
+        this.queuePlaylistBusy = false;
       }
     },
 

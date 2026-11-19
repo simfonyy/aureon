@@ -9,6 +9,28 @@
           </button>
         </header>
 
+        <button
+          v-if="player.current && player.pendingResume"
+          class="home-resume"
+          type="button"
+          :disabled="player.loading"
+          @click="player.setPlaying(true)"
+        >
+          <span class="home-resume-cover">
+            <img v-if="player.current.cover_url" :src="player.current.cover_url" alt="" />
+            <Icon v-else name="album" :size="23" />
+          </span>
+          <span class="home-resume-copy">
+            <strong>Продолжить</strong>
+            <span>{{ player.current.title }} · {{ artistNames(player.current.artists) }}</span>
+          </span>
+          <span v-if="player.progress > 0" class="home-resume-position">{{ formatDuration(player.progress * 1000) }}</span>
+          <span class="home-resume-play">
+            <q-spinner v-if="player.loading" size="16px" />
+            <Icon v-else name="play" :size="18" />
+          </span>
+        </button>
+
         <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
           @open-playlist="openPlaylist">
           <template #playlist-menu="{ playlist }">
@@ -138,7 +160,7 @@ import HomeShelf from "@/components/home/HomeShelf.vue";
 import HomePlaylistMenu from "@/components/home/HomePlaylistMenu.vue";
 import HomePlayingBadge from "@/components/home/HomePlayingBadge.vue";
 import { beginAlbumCoverTransition, arriveHomeAlbumCoverTransition } from "@/lib/albumCoverTransition";
-import { artistNames, plural } from "@/lib/format";
+import { artistNames, formatDuration, plural } from "@/lib/format";
 import { askConfirm, askText } from "@/lib/dialogs";
 import { readCache, swr, writeCache } from "@/lib/cache";
 import { useLibraryStore } from "@/stores/library";

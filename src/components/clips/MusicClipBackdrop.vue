@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { MusicClipStream, Track } from '@/api/types';
+import type { Track } from '@/api/types';
 import { api } from '@/api/client';
 import { clipsForTrack, hasMusicClips, musicTrackId } from '@/lib/musicClips';
 import { attachMusicClip } from '@/lib/musicClipPlayback';
@@ -31,10 +31,20 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ ready: [value: boolean]; error: [message: string]; loading: [value: boolean] }>();
 const video = ref<HTMLVideoElement | null>(null);
 const frameReady = ref(false), mediaKey = ref(0);
-const visible = ref(typeof document === 'undefined' || !document.hidden);
+let visible = typeof document === 'undefined' || !document.hidden;
 let request = 0, disposed = false;
 type Synchronizer = ReturnType<typeof createMusicClipSynchronizer>;
-type Session = { request: number; media: HTMLVideoElement; sync: Synchronizer; release: (() => void) | null; clock: ReturnType<typeof setInterval> | null; timeout: ReturnType<typeof setTimeout> | null; attached: boolean; alignmentOffset: number };
+type Session = {
+  request: number;
+  media: HTMLVideoElement;
+  sync: Synchronizer;
+  release: (() => void) | null;
+  clock: ReturnType<typeof setInterval> | null;
+  timeout: ReturnType<typeof setTimeout> | null;
+  analyze: (() => void) | null;
+  attached: boolean;
+  alignmentOffset: number;
+};
 let session: Session | null = null;
 let audioWaiting = false;
 let lastDisallowedTrack = '';
@@ -43,9 +53,13 @@ function setReady(value: boolean) {
   frameReady.value = value;
   emit('ready', value);
 }
-function surfaceEligible() { return !disposed && props.enabled && props.active && visible.value && Boolean(props.track && musicTrackId(props.track.id)); }
+function surfaceEligible() { return !disposed && props.enabled && props.active && Boolean(props.track && musicTrackId(props.track.id)); }
 function eligible() { return surfaceEligible() && props.alignmentAllowed; }
 function current(value: Session) { return eligible() && session === value && value.request === request && value.media === video.value; }
+function stopClock(value: Session) {
+  if (value.clock !== null) clearInterval(value.clock);
+  value.clock = null;
+}
 function stop() {
   request++;
   const old = session;
@@ -53,7 +67,7 @@ function stop() {
   setReady(false);
   emit('loading', false);
   if (!old) return;
-  if (old.clock !== null) clearInterval(old.clock);
+  stopClock(old);
   if (old.timeout !== null) clearTimeout(old.timeout);
   old.sync.dispose();
   if (old.release) old.release();
@@ -62,29 +76,43 @@ function stop() {
 function fail(value: Session, message: string) {
   if (!current(value)) return;
   stop();
-  emit('error', message);
+  if (visible) emit('error', message);
+}
+function hasAudioPosition() {
+  return !props.pendingResume && Boolean(audio.getAttribute('src')) && Number.isFinite(audio.currentTime);
+}
+function clipPosition(value: Session, sourceReady: boolean) {
+  const trackPosition = sourceReady ? audio.currentTime : props.position;
+  const offset = Number.isFinite(props.offsetSeconds) ? props.offsetSeconds : 0;
+  return trackPosition + value.alignmentOffset + offset;
 }
 function sync(force = false) {
   const value = session;
-  if (!value || !current(value) || !value.attached) return;
-  const sourceReady = !props.pendingResume && Boolean(audio.getAttribute('src')) && Number.isFinite(audio.currentTime);
-  const position = sourceReady ? audio.currentTime : props.position;
-  const offset = Number.isFinite(props.offsetSeconds) ? props.offsetSeconds : 0;
+  if (!visible || !value || !current(value) || !value.attached) return;
+  const sourceReady = hasAudioPosition();
   const playing = sourceReady && props.playing && !audio.paused && !audio.seeking && !audioWaiting && audio.readyState >= 3;
   const rate = sourceReady && Number.isFinite(audio.playbackRate) && audio.playbackRate > 0 ? audio.playbackRate : props.playbackRate;
-  value.sync.sync(position + value.alignmentOffset + offset, playing, rate, force);
+  value.sync.sync(clipPosition(value, sourceReady), playing, rate, force);
+}
+function startClock(value: Session) {
+  if (!visible || !current(value)) return;
+  sync(true);
+  if (value.clock === null) value.clock = setInterval(() => sync(), 100);
 }
 function metadataLoaded(event: Event) {
   if (event.currentTarget === session?.media) sync(true);
 }
-function frameLoaded(event: Event) {
+function frameLoaded(event?: Event) {
   const value = session;
-  if (!value || !current(value) || !value.attached || event.currentTarget !== value.media || value.media.readyState < 2) return;
+  if (!visible || !value || !current(value) || !value.attached || (event && event.currentTarget !== value.media) || value.media.readyState < 2) return;
   sync();
-  if (value.media.seeking) return;
+  if (value.media.seeking || frameReady.value) return;
   if (value.timeout !== null) { clearTimeout(value.timeout); value.timeout = null; }
   setReady(true);
   emit('loading', false);
+  const analyze = value.analyze;
+  value.analyze = null;
+  analyze?.();
 }
 function mediaFailed(event: Event) {
   const value = session;
@@ -100,49 +128,39 @@ async function start() {
   stop();
   mediaKey.value = request;
   const token = request, track = props.track;
-  if (!surfaceEligible() || !track) return;
+  if (!visible || !surfaceEligible() || !track) return;
+  const trackId = musicTrackId(track.id)!;
   if (!props.alignmentAllowed) {
     if (hasMusicClips(track) && lastDisallowedTrack !== track.id) { lastDisallowedTrack = track.id; emit('error', CLIP_ALIGNMENT_ERROR); }
     return;
   }
   await nextTick();
-  if (token !== request || !eligible() || !video.value) return;
+  if (!visible || token !== request || !eligible() || !video.value) return;
   const media = video.value;
   media.muted = true; media.defaultMuted = true; media.volume = 0; media.loop = false;
-  const value: Session = { request: token, media, release: null, clock: null, timeout: null, attached: false, alignmentOffset: 0,
+  const value: Session = { request: token, media, release: null, clock: null, timeout: null, analyze: null, attached: false, alignmentOffset: 0,
     sync: createMusicClipSynchronizer(media, { current: () => current(value), onError: message => fail(value, message) }) };
   session = value;
   emit('loading', true);
-  value.timeout = setTimeout(() => fail(value, CLIP_ALIGNMENT_ERROR), 110_000);
+  value.timeout = setTimeout(() => fail(value, 'Клип не загрузился. Оставили обычный фон.'), 25_000);
   try {
-    const clips = clipsForTrack(await api.trackClips(musicTrackId(track.id)!), track.id);
-    if (!current(value)) return;
-    if (!clips.length) { stop(); return; }
-    let stream: MusicClipStream | null = null;
+    const duration = (track.duration_ms || 0) / 1000;
+    const knownIds = (track.clip_ids ?? []).filter(id => musicTrackId(id) === id);
+    const savedIds = clipAlignmentCache.savedClipIds(trackId, duration)
+      .filter(id => !knownIds.length || knownIds.includes(id));
+    let ids = [...new Set([...savedIds, ...knownIds])];
+    if (!ids.length) {
+      ids = clipsForTrack(await api.trackClips(trackId), trackId).map(clip => clip.id);
+      if (!current(value)) return;
+    }
+    if (!ids.length) { stop(); return; }
+    let stream = null;
     let lastError: unknown;
-    // A track can carry more than one edition. Try a bounded number of full clips.
-    for (const clip of clips.slice(0, 3)) {
+    for (const clipId of ids.slice(0, 3)) {
       try {
-        const editionDuration = !props.pendingResume && Number.isFinite(audio.duration) && audio.duration > 0
-          ? audio.duration : (track.duration_ms || 0) / 1000;
-        if (value.timeout !== null) { clearTimeout(value.timeout); value.timeout = null; }
-        const alignment = await clipAlignmentCache.get(track.id, clip.id, editionDuration,
-          () => api.alignMusicClip(musicTrackId(track.id)!, clip.id), {
-            current: () => current(value),
-            onStart: () => {
-              if (!current(value)) return;
-              if (value.timeout !== null) clearTimeout(value.timeout);
-              value.timeout = setTimeout(() => fail(value, CLIP_ALIGNMENT_ERROR), 110_000);
-            },
-          });
-        if (!current(value)) return;
-        if (value.timeout !== null) clearTimeout(value.timeout);
-        value.timeout = setTimeout(() => fail(value, 'Клип не загрузился. Оставили обычный фон.'), 25_000);
-        const candidate = await api.clipStream(clip.id);
-        if (!current(value)) return;
-        if (!candidate || candidate.clip_id !== clip.id) throw new Error('Не удалось получить нужный клип.');
+        const candidate = await api.clipStream(clipId);
+        if (candidate.clip_id !== clipId) throw new Error('Не удалось получить нужный клип.');
         stream = candidate;
-        value.alignmentOffset = alignment.offsetSeconds;
         break;
       }
       catch (cause) { lastError = cause; }
@@ -150,27 +168,54 @@ async function start() {
     }
     if (!current(value)) return;
     if (!stream) throw lastError || new Error('Клип недоступен.');
-    if (value.timeout !== null) clearTimeout(value.timeout);
-    value.timeout = setTimeout(() => fail(value, 'Клип не загрузился. Оставили обычный фон.'), 25_000);
+    const clipId = stream.clip_id;
+    const saved = clipAlignmentCache.saved(trackId, clipId, duration);
+    if (saved) {
+      value.alignmentOffset = saved.offsetSeconds;
+    } else {
+      value.analyze = () => {
+        void clipAlignmentCache.get(trackId, clipId, duration, () => api.alignMusicClip(trackId, clipId), {
+          current: () => current(value),
+        }).then(alignment => {
+          if (!current(value)) return;
+          value.alignmentOffset = alignment.offsetSeconds;
+          sync(true);
+        }, () => {});
+      };
+    }
     value.attached = true;
-    const release = await attachMusicClip(media, stream, { current: () => current(value), onError: message => fail(value, message), background: true });
+    const release = await attachMusicClip(media, stream, {
+      current: () => current(value),
+      onError: message => fail(value, message),
+      background: true,
+      startPosition: clipPosition(value, hasAudioPosition()),
+    });
     if (!current(value)) { release?.(); return; }
     if (!release) { fail(value, 'Не удалось загрузить клип.'); return; }
     value.release = release;
-    sync(true);
-    value.clock = setInterval(() => sync(), 100);
-    if (media.readyState >= 2 && !media.seeking) {
-      if (value.timeout !== null) { clearTimeout(value.timeout); value.timeout = null; }
-      setReady(true);
-      emit('loading', false);
-    }
+    startClock(value);
+    frameLoaded();
   } catch (cause) {
     fail(value, cause instanceof Error ? cause.message : 'Не удалось загрузить клип. Оставили обычный фон.');
   }
 }
-watch(() => [props.track?.id, props.enabled, props.active, props.alignmentAllowed, visible.value] as const, () => { void start(); }, { immediate: true, flush: 'post' });
+watch(() => [props.track?.id, props.enabled, props.active, props.alignmentAllowed] as const, () => { void start(); }, { immediate: true, flush: 'post' });
 watch(() => [props.position, props.playing, props.playbackRate, props.pendingResume, props.offsetSeconds] as const, () => sync());
-function visibilityChanged() { visible.value = !document.hidden; }
+function visibilityChanged() {
+  const next = !document.hidden;
+  if (next === visible) return;
+  visible = next;
+  const value = session;
+  if (visible) {
+    if (value && current(value)) startClock(value);
+    else void start();
+  } else if (value && frameReady.value) {
+    stopClock(value);
+    value.sync.suspend();
+  } else {
+    stop();
+  }
+}
 const audioEvents = ['waiting', 'seeking', 'pause', 'playing', 'seeked', 'canplay', 'ratechange', 'emptied', 'ended'] as const;
 function audioStateChanged(event: Event) {
   if (event.type === 'waiting' || event.type === 'emptied') audioWaiting = true;

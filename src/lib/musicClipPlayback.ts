@@ -2,7 +2,13 @@ import type { MusicClipStream } from '@/api/types';
 import { clipMediaUrl } from './musicClips';
 
 type HlsModule = typeof import('hls.js');
-interface Options { current: () => boolean; onError: (message: string) => void; background?: boolean; loadHls?: () => Promise<HlsModule> }
+interface Options {
+  current: () => boolean;
+  onError: (message: string) => void;
+  background?: boolean;
+  startPosition?: number;
+  loadHls?: () => Promise<HlsModule>;
+}
 
 /** The signed stream stays in memory. OAuth is never added to video requests. */
 export async function attachMusicClip(video: HTMLVideoElement, stream: MusicClipStream, options: Options): Promise<(() => void) | null> {
@@ -16,9 +22,11 @@ export async function attachMusicClip(video: HTMLVideoElement, stream: MusicClip
     // Chromium may report native HLS as "maybe" but fail to decode the stream.
     // Prefer the HLS.js MSE path; keep native HLS for platforms without MSE.
     if (Hls.isSupported()) {
+      const position = options.startPosition;
       const hls = new Hls({
         maxBufferLength: 30, maxMaxBufferLength: 60, backBufferLength: 15,
         maxBufferSize: 32 * 1024 * 1024, capLevelToPlayerSize: true, startLevel: 0,
+        startPosition: typeof position === 'number' && Number.isFinite(position) ? Math.max(0, position) : -1,
         manifestLoadingTimeOut: 15_000, levelLoadingTimeOut: 15_000, fragLoadingTimeOut: 20_000,
         emeEnabled: false,
       });
@@ -62,7 +70,13 @@ export async function attachMusicClip(video: HTMLVideoElement, stream: MusicClip
           retryTimer = setTimeout(() => {
             retryTimer = undefined;
             if (!current()) { destroyHls(); return; }
-            try { hls.startLoad(Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : -1); }
+            try {
+              if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || data.details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT) {
+                hls.loadSource(url);
+              } else {
+                hls.startLoad(Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : -1);
+              }
+            }
             catch { fail(); }
           }, delay);
           return;

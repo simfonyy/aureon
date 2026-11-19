@@ -3,7 +3,7 @@ import { spectrumBands, smoothSpectrum } from "@/lib/spectrum";
 import { audioSampleRate, frequencyData } from "@/lib/audio";
 import { usePlayerStore } from "@/stores/player/index";
 
-interface VisualizerOptions { bars?: number }
+interface VisualizerOptions { bars?: number; accent?: () => string | undefined; mode?: "trace" | "bars" }
 
 
 export function useVisualizer(canvas: Ref<HTMLCanvasElement | null>, enabled: () => boolean, options: VisualizerOptions = {}) {
@@ -15,8 +15,53 @@ export function useVisualizer(canvas: Ref<HTMLCanvasElement | null>, enabled: ()
   let reduced = false;
   let media: MediaQueryList;
 
+  function drawTrace(ctx: CanvasRenderingContext2D, width: number, height: number, peak: number) {
+    const floor = height - 2;
+    const spacing = width / (levels.length + 1);
+    const amplitude = Math.max(0, height - 5);
+    ctx.beginPath();
+    ctx.moveTo(0, floor);
+    for (let i = 0; i < levels.length; i++) {
+      const x = (i + 1) * spacing;
+      const y = floor - (levels[i] ?? 0) * amplitude;
+      const next = floor - (levels[i + 1] ?? 0) * amplitude;
+      ctx.quadraticCurveTo(x, y, x + spacing / 2, (y + next) / 2);
+    }
+    ctx.lineTo(width, floor);
+    ctx.lineWidth = 1.45;
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = Math.min(1, peak * 2.4);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.fillStyle = accent;
+    ctx.globalAlpha *= .16;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawBars(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const slot = w / count, bw = Math.max(1, Math.min(4, slot * .48));
+    const maxHeight = Math.max(0, h - 4);
+    const center = h / 2;
+    const fill = ctx.createLinearGradient(0, center - maxHeight / 2, 0, center + maxHeight / 2);
+    fill.addColorStop(0, accent); fill.addColorStop(.5, accent); fill.addColorStop(1, "transparent");
+    ctx.fillStyle = fill;
+    for (let i = 0; i < count; i++) {
+      const next = levels[i] ?? 0;
+      if (next < .006) continue;
+      const edge = (.8 + .2 * Math.sin(Math.PI * (i + .5) / count));
+      const bh = Math.min(maxHeight, Math.max(2, next * maxHeight * edge));
+      ctx.globalAlpha = (.4 + next * .55) * edge;
+      ctx.beginPath(); ctx.roundRect(i * slot + (slot - bw) / 2, center - bh / 2, bw, bh, Math.min(bw / 2, bh / 2)); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  const trace = options.mode === "trace";
+  const shouldRender = () => enabled() && !document.hidden && !(trace && reduced);
+
   function frame(now: number) {
-    if (!enabled() || document.hidden) { stop(); return; }
+    if (!shouldRender()) { stop(); return; }
     const el = canvas.value, ctx = el?.getContext("2d");
     if (!el || !ctx) { stop(); return; }
     if (last && now - last < (reduced ? 100 : 32)) { raf = requestAnimationFrame(frame); return; }
@@ -27,33 +72,28 @@ export function useVisualizer(canvas: Ref<HTMLCanvasElement | null>, enabled: ()
     if (el.width !== pw || el.height !== ph) { el.width = pw; el.height = ph; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
     if (!w || !h) { stop(); return; }
-    if (now - colorAt > 500) { accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#a77cff"; colorAt = now; }
+    if (!colorAt || now - colorAt > 500) {
+      accent = options.accent?.() || (trace
+        ? getComputedStyle(el).color
+        : getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) || "#a77cff";
+      colorAt = now;
+    }
     const data = player.isPlaying ? frequencyData() : null;
     spectrumBands(data, audioSampleRate(), targets);
-    const slot = w / count, bw = Math.max(1, Math.min(4, slot * .48));
-    const maxHeight = Math.max(0, h - 4);
-    const center = h / 2;
-    const fill = ctx.createLinearGradient(0, center - maxHeight / 2, 0, center + maxHeight / 2);
-    fill.addColorStop(0, accent); fill.addColorStop(.5, accent); fill.addColorStop(1, "transparent");
-    ctx.fillStyle = fill;
     let peak = 0;
     for (let i = 0; i < count; i++) {
       const target = targets[i];
       const previous = levels[i] ?? 0;
       const next = smoothSpectrum(previous, target, dt);
       levels[i] = next; peak = Math.max(peak, next);
-      if (next < .006) continue;
-      const edge = (.8 + .2 * Math.sin(Math.PI * (i + .5) / count));
-      const bh = Math.min(maxHeight, Math.max(2, next * maxHeight * edge));
-      ctx.globalAlpha = (.4 + next * .55) * edge;
-      ctx.beginPath();ctx.roundRect(i * slot + (slot - bw) / 2, center - bh / 2, bw, bh, Math.min(bw / 2, bh / 2));ctx.fill();
     }
-    ctx.globalAlpha = 1;
-    if (!player.isPlaying && peak < .006) { ctx.clearRect(0, 0, w, h); stop(); return; }
+    if (!player.isPlaying && peak < .006) { stop(); return; }
+    if (trace) drawTrace(ctx, w, h, peak);
+    else drawBars(ctx, w, h);
     raf = requestAnimationFrame(frame);
   }
   function stop() { cancelAnimationFrame(raf); raf = 0; last = 0; }
-  function start() { stop(); if (enabled() && !document.hidden) raf = requestAnimationFrame(frame); }
+  function start() { stop(); if (shouldRender()) raf = requestAnimationFrame(frame); }
   function visibility() { document.hidden ? stop() : start(); }
   function preference() { reduced = media.matches; start(); }
   watch(enabled, start, { flush: "post" });

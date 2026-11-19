@@ -10,7 +10,7 @@
       <div v-else-if="!clips.clips.length" class="clips-state"><p>Для этого трека клипов нет.</p></div>
       <template v-else>
         <section v-if="selected" class="clip-preview" aria-label="Видеоклип">
-          <video v-show="!previewError" :key="selected.id" ref="video" :poster="selected.thumbnail_url || undefined" controls playsinline preload="metadata" @play="previewStarted" @error="previewError = 'Не удалось воспроизвести видео.'" />
+          <video v-show="!previewError" :key="selected.id" ref="video" :poster="selected.thumbnail_url || undefined" controls playsinline preload="metadata" @playing="previewStarted" @error="previewFailed" />
           <div class="clip-preview-caption"><strong>{{ selected.title }}</strong><span v-if="previewMode">Превью</span><span v-if="connecting" role="status">Загружаем видео…</span></div>
           <p v-if="previewError" class="clip-preview-error" role="alert">{{ previewError }}</p>
           <button v-if="previewError && !previewMode && selected.preview_url" type="button" class="btn" @click="select(selected, true)">Посмотреть превью</button>
@@ -47,7 +47,12 @@ const selected = ref<MusicClip | null>(null), video = ref<HTMLVideoElement | nul
 const externalUrl = computed(() => musicTrackUrl(clips.target?.id || ''));
 let generation = 0;
 let release: (() => void) | null = null;
-function stopPreview() { release?.(); release = null; const element = video.value; if (!element) return; element.pause(); element.removeAttribute('src'); element.load(); }
+function stopPreview() {
+  if (release) { release(); release = null; return; }
+  const element = video.value;
+  if (!element?.getAttribute('src')) return;
+  element.pause(); element.removeAttribute('src'); element.load();
+}
 async function select(clip: MusicClip, preview = false) {
   if (preview && !clip.preview_url) return;
   const request = ++generation;
@@ -64,11 +69,19 @@ async function select(clip: MusicClip, preview = false) {
     if (!current()) { attached?.(); return; }
     release = attached;
     element.volume = Math.max(0, Math.min(1, player.volume));
-    void element.play().catch(() => { if (current() && !previewError.value) previewError.value = 'Нажми воспроизведение в плеере.'; });
+    void element.play().catch(() => {});
   } catch (cause) { if (current()) previewError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить клип.'; }
   finally { if (current()) connecting.value = false; }
 }
-function previewStarted() { if (selected.value && !connecting.value) player.setPlaying(false); }
+function previewStarted(event: Event) {
+  if (selected.value && event.currentTarget === video.value) player.setPlaying(false);
+}
+function previewFailed(event: Event) {
+  const element = video.value;
+  if (selected.value && element && event.currentTarget === element && !element.currentSrc.startsWith('blob:') && !previewError.value) {
+    previewError.value = 'Не удалось воспроизвести видео.';
+  }
+}
 async function openFullClip() {
   const url = externalUrl.value;
   if (!url) return;

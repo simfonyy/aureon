@@ -162,6 +162,9 @@
 
 // Leave the centre of the video open; the lyrics remain a small reading area.
 .lyrics-wrap.has-video-background .lyrics-toolbar { grid-template-columns:minmax(0,1fr) auto; }
+.lyrics-wrap.has-video-background { border: 0; border-radius: 0; animation: none; }
+.lyrics-wrap.has-video-background.lyrics-view-enter-active { transition: none; }
+.lyrics-wrap.has-video-background.lyrics-view-enter-from { opacity: 1; transform: none; }
 .lyrics-wrap.has-video-background .lyrics-src,
 .lyrics-wrap.has-video-background .lyrics-artist-link { display:none; }
 .lyrics-wrap.has-video-background .lyrics-stage:not(.with-queue) { grid-template-columns:minmax(190px,300px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch;gap:clamp(24px,5cqw,100px);padding:24px clamp(28px,4cqw,80px) 36px; }

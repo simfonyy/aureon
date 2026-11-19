@@ -30,10 +30,7 @@
 
 ## Скачать
 
-| Windows x64 | Linux x64 |
-| --- | --- |
-| [Установщик MSI](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_x64_ru-RU.msi) | [DEB](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_amd64.deb) |
-| [ZIP без установки](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_windows-x64_portable.zip) | [AppImage](https://github.com/simfonyy/aureon/releases/download/v1.1.0/Aureon_1.1.0_amd64.AppImage) |
+[Скачать последний релиз](https://github.com/simfonyy/aureon/releases/latest) для Windows x64 (MSI и ZIP) или Linux x64 (DEB и AppImage).
 
 ZIP нужно распаковать. Для AppImage — разрешить выполнение файла. [Подробнее об установке](docs/DISTRIBUTION.md).
 

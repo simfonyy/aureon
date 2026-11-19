@@ -1,15 +1,18 @@
 .player-bar {
   --player-control-size: clamp(28px, calc(var(--player-height, 78px) - 36px), 38px);
+  --player-play-surface: color-mix(in srgb, var(--player-art-accent, var(--accent)) 18%, var(--fg));
+  --player-spectrum-ink: color-mix(in srgb, var(--player-art-accent, var(--accent)) 55%, var(--fg));
   color: var(--fg);
   .player-meta { gap: 3px; }
-  .player-title-text { font-size: calc(13px * var(--text-scale, 1)); line-height: 1.35; letter-spacing: -.01em; }
+  .player-title-text { font-size: calc(13.5px * var(--text-scale, 1)); line-height: 1.35; letter-spacing: -.018em; font-weight: 690; }
   .player-meta > .dim { font-size: calc(12px * var(--text-scale, 1)); line-height: 1.35; }
   .player-cover { width: min(var(--player-cover, 48px), calc(var(--player-height, 78px) - 12px)); height: min(var(--player-cover, 48px), calc(var(--player-height, 78px) - 12px)); border-radius: calc(var(--radius) * .7) !important; overflow: hidden; }
   .player-cover-hover { z-index: 2; }
   .player-center { gap: 3px; }
   .player-controls { gap: calc(var(--player-gap, 6px) + 2px); }
-  &.has-viz .player-controls { padding: 0; background: transparent; backdrop-filter: none; }
   .player-controls .play { width: var(--player-control-size); height: var(--player-control-size); border: 0; padding: 0; font: inherit; border-radius: 50% !important; }
+  .play { background: var(--player-play-surface) !important; color: var(--bg) !important; }
+  .play:hover { background: color-mix(in srgb, var(--player-play-surface) 82%, var(--fg)) !important; }
   .player-controls .play:hover { transform: scale(1.04); }
   .player-controls .play:active { transform: scale(.96); }
   .player-controls .icon-btn, .player-right .icon-btn, .player-zone .icon-btn { flex-shrink: 0; color: var(--fg-dim); }
@@ -19,10 +22,9 @@
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   button:disabled { opacity: .3; cursor: default; }
   .player-time { color: var(--fg-dim); font-size: 10px; letter-spacing: .01em; }
-  .player-progress { gap: 8px; min-width: min(100%, 150px); }
+  .player-progress { --q-primary: var(--player-spectrum-ink); gap: 8px; min-width: min(100%, 150px); }
   .pb-dots { margin-left: 0; border-radius: 5px; }
   .pb-dots:hover { background: var(--hover); }
-  .player-viz-window { opacity: .55; }
 }
 
 html[data-appearance='matte'] .player-bar {

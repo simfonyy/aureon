@@ -71,15 +71,6 @@
         :model-value="s.miniOpacity"
         @update:model-value="ui.set('miniOpacity', $event)"
       />
-      <EditRange
-        v-if="s.miniVolumeSlider"
-        label="Дорожка громкости"
-        suffix=" px"
-        :min="24"
-        :max="96"
-        :model-value="s.miniVolumeHeight"
-        @update:model-value="ui.set('miniVolumeHeight', $event)"
-      />
 
       <div class="me-group-head">Показывать</div>
       <EditSwitch

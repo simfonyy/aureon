@@ -5,6 +5,8 @@
     :touch-position="contextMenu"
     :anchor="contextMenu ? undefined : 'bottom right'"
     :self="contextMenu ? undefined : 'top right'"
+    @before-show="emit('before-show')"
+    @hide="emit('hide')"
   >
     <div class="menu-body">
       <div class="menu-item" v-close-popup @click="library.toggleLike(track)">
@@ -294,7 +296,7 @@ const props = withDefaults(
   }>(),
   { playlistKind: null, contextMenu: false },
 );
-const emit = defineEmits<{ remove: [] }>();
+const emit = defineEmits<{ remove: []; 'before-show': []; hide: [] }>();
 
 defineOptions({ inheritAttrs: false });
 

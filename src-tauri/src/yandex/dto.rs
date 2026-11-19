@@ -1,4 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaylistTrackInput {
+    pub id: String,
+    pub album_id: String,
+}
 
 #[derive(Serialize, Clone)]
 pub struct ArtistDto {

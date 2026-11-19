@@ -84,6 +84,7 @@ function hlsFixture(supported = true) {
   class Hls {
     static Events = { ERROR: 'error', MANIFEST_PARSED: 'manifestParsed', MAX_AUTO_LEVEL_UPDATED: 'maxAutoLevelUpdated' };
     static ErrorTypes = { NETWORK_ERROR: 'networkError', MEDIA_ERROR: 'mediaError' };
+    static ErrorDetails = { MANIFEST_LOAD_ERROR: 'manifestLoadError', MANIFEST_LOAD_TIMEOUT: 'manifestLoadTimeOut' };
     static isSupported() { return supported; }
     constructor(config) { this.config = config; this.destroyed = 0; this.listeners = new Map(); this.restarts = []; this.recoveries = 0; this.autoLevelCapping = -1; instances.push(this); }
     on(event, listener) { this.listeners.set(event, listener); }
@@ -173,6 +174,18 @@ test('release or stale track cancels deferred HLS recovery without restarting it
   second(); assert.deepEqual(errors, []);
 });
 
+test('a failed HLS manifest request retries the manifest itself', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const fixture = hlsFixture();
+  const release = await attachMusicClip(video(), stream, { current: () => true, onError: assert.fail, loadHls: async () => fixture.module });
+  const hls = fixture.instances[0], sources = [];
+  hls.loadSource = url => sources.push(url);
+  hls.emit('error', { fatal: true, type: 'networkError', details: 'manifestLoadError' });
+  t.mock.timers.tick(750);
+  assert.deepEqual(sources, [stream.url]); assert.deepEqual(hls.restarts, []);
+  release();
+});
+
 test('fatal HLS media errors recover once, cancel pending network recovery and then fail once', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const fixture = hlsFixture(), errors = [];
@@ -214,4 +227,13 @@ test('ordinary full clip playback keeps its automatic higher quality levels', as
   const hls = fixture.instances[0];
   hls.emit('manifestParsed', { levels: [{ height: 360 }, { height: 720 }, { height: 1080 }] });
   assert.equal(hls.autoLevelCapping, -1); release();
+});
+
+test('background HLS can request its first fragment at the saved playhead', async () => {
+  const fixture = hlsFixture();
+  const release = await attachMusicClip(video(), stream, {
+    current: () => true, onError: assert.fail, background: true, startPosition: 83.5, loadHls: async () => fixture.module,
+  });
+  assert.equal(fixture.instances[0].config.startPosition, 83.5);
+  release();
 });

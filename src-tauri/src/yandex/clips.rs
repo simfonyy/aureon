@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, time::{Duration, SystemTime, UNIX_EPOCH}};
 
 use serde_json::Value;
 
@@ -251,14 +251,19 @@ fn parse_stream(clip_id: &str, document: &Value) -> Result<ClipStreamDto, String
 
 fn json_request(http: &reqwest::Client, auth: &str, raw_url: &str) -> Result<reqwest::RequestBuilder, String> {
     // OAuth is sent only to these two fixed JSON services, never to stream/CDN URLs.
-    let url = request_url(raw_url).ok_or("Неподдерживаемый адрес сервиса клипов")?;
-    let user_agent = if url.host_str() == Some("frontend.vh.yandex.ru") { VH_USER_AGENT } else { API_USER_AGENT };
-    Ok(http
+    let mut url = request_url(raw_url).ok_or("Неподдерживаемый адрес сервиса клипов")?;
+    let vh = url.host_str() == Some("frontend.vh.yandex.ru");
+    if vh {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+        url.query_pairs_mut().append_pair("_", &now.as_millis().to_string());
+    }
+    let request = http
         .get(url)
         .header("Authorization", auth)
-        .header("User-Agent", user_agent)
+        .header("User-Agent", if vh { VH_USER_AGENT } else { API_USER_AGENT })
         .header("X-Yandex-Music-Client", MUSIC_CLIENT)
-        .header("Accept", "application/json"))
+        .header("Accept", "application/json");
+    Ok(if vh { request.header("Cache-Control", "no-cache") } else { request })
 }
 
 async fn json_at(http: &reqwest::Client, auth: &str, url: &str) -> Result<Value, String> {
@@ -466,8 +471,11 @@ mod tests {
         let request = json_request(&http, auth, vh.as_str()).unwrap().build().unwrap();
         assert_eq!(request.headers().get("user-agent").unwrap(), VH_USER_AGENT);
         assert_eq!(request.headers().get("authorization").unwrap(), auth);
+        assert_eq!(request.headers().get("cache-control").unwrap(), "no-cache");
+        assert!(request.url().query_pairs().any(|(key, value)| key == "_" && value.parse::<u128>().is_ok()));
         let metadata = json_request(&http, auth, "https://api.music.yandex.net/clips?clipIds=624687").unwrap().build().unwrap();
         assert_eq!(metadata.headers().get("user-agent").unwrap(), API_USER_AGENT);
+        assert_eq!(metadata.url().query(), Some("clipIds=624687"));
         for url in ["https://strm.yandex.ru/master.m3u8", "https://evil.test/player/1.json", "https://frontend.vh.yandex.ru/redirect"] {
             assert!(json_request(&http, auth, url).is_err());
         }

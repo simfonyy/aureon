@@ -27,6 +27,7 @@ const f=()=>globalThis.__clipBackgroundControlFixture;
 export const useMusicClipsStore=()=>f().clips;
 export const useUiStore=()=>f().ui;
 export const usePlayerStore=()=>f().player;
+export const getCoverPalette=async()=>null;
 export default {render:()=>h('i',{'aria-hidden':'true'})};
 `);
 const parsed = parse(await readFile(new URL('../src/components/clips/ClipBackgroundControl.vue', import.meta.url), 'utf8'));

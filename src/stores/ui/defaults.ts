@@ -78,13 +78,13 @@ export interface InterfaceSettings {
   playerMetaWidth: number;
   miniShowTime: boolean;
   miniVisualizer: boolean;
+  miniHoverControls: boolean;
   miniOpacity: number;
   miniCoverSize: number;
   miniIconSize: number;
   miniGap: number;
   miniPadding: number;
   miniVolumeSlider: boolean;
-  miniVolumeHeight: number;
   miniWidth: number;
   miniHeight: number;
   playerVisualizer: boolean;
@@ -189,13 +189,13 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   playerMetaWidth: 260,
   miniShowTime: true,
   miniVisualizer: true,
+  miniHoverControls: true,
   miniOpacity: 100,
   miniCoverSize: 38,
   miniIconSize: 15,
   miniGap: 6,
   miniPadding: 10,
   miniVolumeSlider: true,
-  miniVolumeHeight: 40,
   miniWidth: 396,
   miniHeight: 152,
   playerVisualizer: true,

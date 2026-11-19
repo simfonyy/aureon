@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::state::AppState;
-use crate::yandex::{PlaylistDto, PlaylistTracksDto, TrackDto, Yandex};
+use crate::yandex::{PlaylistDto, PlaylistTrackInput, PlaylistTracksDto, TrackDto, Yandex};
 
 #[tauri::command]
 pub async fn get_liked_tracks(state: State<'_, AppState>) -> Result<Vec<TrackDto>, String> {
@@ -93,6 +93,23 @@ pub async fn playlist_add_track(
     Yandex::new(&session.token)
         .playlist_insert(session.uid, kind, at.unwrap_or(0), &id, &album)
         .await
+}
+
+#[tauri::command]
+pub async fn playlist_fill_from_queue(
+    kind: i64,
+    tracks: Vec<PlaylistTrackInput>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let valid_id = |id: &str| {
+        !id.is_empty() && id.len() <= 20 && !id.starts_with('0')
+            && id.bytes().all(|byte| byte.is_ascii_digit())
+    };
+    if kind <= 0 || tracks.is_empty() || tracks.iter().any(|track| !valid_id(&track.id) || !valid_id(&track.album_id)) {
+        return Err("В очереди есть треки без корректного идентификатора Яндекс Музыки.".into());
+    }
+    let session = state.session()?;
+    Yandex::new(&session.token).playlist_fill_from_queue(session.uid, kind, &tracks).await
 }
 
 #[tauri::command]

@@ -17,7 +17,7 @@
         <button type="button" :class="{ active: showQueue }" :aria-pressed="showQueue" @click="showQueue = !showQueue">Очередь</button>
       </nav>
       <label class="lyrics-search"><Icon name="search" :size="16" /><input v-model="searchText" type="search" placeholder="Найти в тексте…" aria-label="Найти в тексте" @keydown.enter.prevent="findNext" /><span v-if="searchText" aria-live="polite">{{ searchMatches.length ? `${searchMatchIndex + 1}/${searchMatches.length}` : '0' }}</span></label>
-      <WindowControls v-if="player.lyricsFullscreen" />
+      <WindowControls v-if="player.lyricsFullscreen || clipReady" />
     </header>
 
     <div class="lyrics-toolbar">
@@ -57,7 +57,7 @@
 
       <div class="lyrics-tools">
         <ClipBackgroundControl v-if="player.current" :track="player.current" :active="player.showLyrics && !player.fullscreen" />
-        <span v-if="clipAligning" class="clip-alignment-status" role="status"><q-spinner size="12px" />Синхронизация клипа…</span>
+        <span v-if="clipAligning" class="clip-alignment-status" role="status"><q-spinner size="12px" />Загрузка клипа…</span>
         <div
           class="icon-btn round"
           data-no-drag

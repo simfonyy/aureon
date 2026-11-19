@@ -160,16 +160,16 @@ test('disabled/inactive background never requests a clip and a stale track canno
     trackClips(id) { requests.push(id); return id === '123' ? first.promise : second.promise; },
     clipStream: async id => ({ clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }),
     attach: async (video, stream) => { attachments.push(stream.clip_id); return () => video.pause(); },
-  }, { enabled: false });
+  }, { enabled: false, track: { ...track('123'), clip_ids: [] } });
   await settle(); assert.deepEqual(requests, []);
   view.props.enabled = true; await settle(); assert.deepEqual(requests, ['123']);
-  view.props.track = track('456'); await settle(); assert.deepEqual(requests, ['123', '456']);
+  view.props.track = { ...track('456'), clip_ids: [] }; await settle(); assert.deepEqual(requests, ['123', '456']);
   first.resolve([clip('17', '123')]); await settle(); assert.deepEqual(attachments, []);
   second.resolve([clip('18', '456')]); await settle(); assert.deepEqual(attachments, ['18']); assert.deepEqual(view.emitted.error, []);
   view.props.active = false; await settle(); assert.equal(view.emitted.ready.at(-1), false);
 });
 
-test('hiding/off destroys the decoder, ignores a late attach, and visible restore gets a fresh stream', async t => {
+test('hiding before the first frame releases the unfinished stream and retries on return', async t => {
   const pending = deferred(), videos = [], streams = [], released = [];
   let attaches = 0;
   const view = mount(t, {
@@ -185,14 +185,44 @@ test('hiding/off destroys the decoder, ignores a late attach, and visible restor
   assert.deepEqual(view.emitted.error, []);
 });
 
+test('switching away from a ready clip keeps its frame and resumes the same video at the current audio position', async t => {
+  let requests = 0, video, released = 0;
+  const view = mount(t, {
+    trackClips: assert.fail,
+    clipStream: async id => {
+      requests++;
+      return { clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' };
+    },
+    attach: async element => { video = element; return () => { released++; element.pause(); }; },
+  }, { playing: true });
+  view.audio.paused = false;
+  await settle();
+  assert.equal(video.paused, false);
+  assert.equal(view.emitted.ready.at(-1), true);
+  view.visibility(true);
+  view.audio.currentTime = 26;
+  view.audioEvent('seeked');
+  await settle();
+  assert.equal(video.paused, true);
+  assert.equal(video.currentTime, 10);
+  assert.equal(view.emitted.ready.at(-1), true);
+  assert.equal(released, 0);
+  view.visibility(false);
+  await settle();
+  assert.equal(video.currentTime, 26);
+  assert.equal(video.paused, false);
+  assert.equal(requests, 1);
+  assert.equal(released, 0);
+});
+
 test('a mismatched stream cannot play another clip and decoder failure restores the ordinary backdrop', async t => {
   const requested = [], attached = [];
   let failDecoder, released = 0;
   const view = mount(t, {
-    trackClips: async () => [clip('17', '123'), clip('18', '123')],
+    trackClips: assert.fail,
     clipStream: async id => { requested.push(id); return { clip_id: id === '17' ? '999' : id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }; },
     attach: async (video, stream, options) => { attached.push(stream.clip_id); failDecoder = options.onError; return () => { released++; video.pause(); }; },
-  });
+  }, { track: { ...track('123'), clip_ids: ['17', '18'] } });
   await settle();
   assert.deepEqual(requested, ['17', '18']); assert.deepEqual(attached, ['18']);
   assert.equal(view.emitted.ready.at(-1), true);
@@ -237,36 +267,44 @@ test('pending resume uses stored position without playing, and explicit offset s
   view.audio.currentTime = 4; view.props.offsetSeconds = -6; await settle(); assert.equal(video.currentTime, 0); assert.equal(video.paused, true);
 });
 
-test('a confirmed 30-second clip intro maps its frames onto the audio clock before becoming visible', async t => {
+test('a clip shows its first frame before sound analysis and applies a confirmed offset afterwards', async t => {
   const analysis = deferred(), order = [];
+  t.after(() => analysis.resolve(null));
   let video;
   const view = mount(t, {
     trackClips: async () => [clip('17', '123')],
     alignMusicClip: async (trackId, clipId) => { order.push(`align:${trackId}:${clipId}`); return analysis.promise; },
     clipStream: async id => { order.push('stream'); return { clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }; },
-    attach: async element => { order.push('attach'); video = element; return () => element.pause(); },
+    attach: async element => { order.push('attach'); video = element; video.readyState = 1; return () => element.pause(); },
   }, { playing: true });
   view.audio.paused = false;
-  await settle(); assert.equal(view.emitted.ready.at(-1), false); assert.equal(view.emitted.loading.at(-1), true); assert.equal(video, undefined);
-  assert.deepEqual(order, ['align:123:17']);
+  await settle(); assert.equal(view.emitted.ready.at(-1), false); assert.equal(view.emitted.loading.at(-1), true); assert.ok(video);
+  assert.deepEqual(order, ['stream', 'attach']);
+  video.readyState = 4;
+  video.props.onLoadeddata({ currentTarget: video });
+  await settle();
+  assert.equal(view.emitted.ready.at(-1), true);
+  assert.deepEqual(order, ['stream', 'attach', 'align:123:17']);
   analysis.resolve({ offsetSeconds: 30, confidence: .98, matchedWindows: 6, analyzedSeconds: 30 }); await settle();
-  assert.deepEqual(order, ['align:123:17', 'stream', 'attach']); assert.equal(video.currentTime, 40); assert.equal(view.emitted.ready.at(-1), true);
+  assert.equal(video.currentTime, 40); assert.equal(view.emitted.ready.at(-1), true);
   view.audio.currentTime = 2; view.audioEvent('seeked'); await settle(); assert.equal(video.currentTime, 32);
 });
 
-test('an unconfirmed match keeps the cover, and a stale alignment cannot fetch or attach video', async t => {
-  const first = deferred(), second = deferred(), streams = [], attached = [];
+test('a stale match cannot move the new video, and an uncertain match leaves it playable', async t => {
+  const first = deferred(), second = deferred(), attached = [];
+  t.after(() => { first.resolve(null); second.resolve(null); });
   const view = mount(t, {
-    trackClips: async id => [clip(id === '123' ? '17' : '18', id)],
+    trackClips: assert.fail,
     alignMusicClip: (id) => id === '123' ? first.promise : second.promise,
-    clipStream: async id => { streams.push(id); return { clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }; },
-    attach: async (element, stream) => { attached.push(stream.clip_id); return () => element.pause(); },
+    clipStream: async id => ({ clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }),
+    attach: async (element, stream) => { attached.push([stream.clip_id, element]); return () => element.pause(); },
   });
-  await settle(); view.props.track = track('456'); await settle();
-  first.resolve({ offsetSeconds: 30, confidence: .99, matchedWindows: 7, analyzedSeconds: 30 }); await settle(); assert.deepEqual(streams, []);
+  await settle(); view.props.track = { ...track('456'), clip_ids: ['18'] }; await settle();
+  first.resolve({ offsetSeconds: 30, confidence: .99, matchedWindows: 7, analyzedSeconds: 30 }); await settle();
+  assert.deepEqual(attached.map(([id]) => id), ['17', '18']);
   second.resolve({ offsetSeconds: 5, confidence: .2, matchedWindows: 1, analyzedSeconds: 30 }); await settle();
-  assert.deepEqual(streams, []); assert.deepEqual(attached, []); assert.equal(view.emitted.ready.at(-1), false);
-  assert.deepEqual(view.emitted.error, ['Не удалось синхронизировать клип с этой версией трека.']); assert.equal(view.emitted.loading.at(-1), false);
+  assert.equal(attached[1][1].currentTime, 10); assert.equal(view.emitted.ready.at(-1), true);
+  assert.deepEqual(view.emitted.error, []); assert.equal(view.emitted.loading.at(-1), false);
 });
 
 test('custom audio editions cannot launch official-stream analysis or show an unsynchronized clip', async t => {
@@ -276,43 +314,64 @@ test('custom audio editions cannot launch official-stream analysis or show an un
   view.props.active = false; await settle(); view.props.active = true; await settle(); assert.equal(view.emitted.error.length, 1); assert.equal(requests, 0);
 });
 
-test('switching tracks during analysis queues the new clip and automatically shows only its video', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
-  const first = deferred(), second = deferred(), calls = [], streams = [], attached = [];
+test('a known alignment starts immediately, even when the track has no clip IDs in its metadata', async t => {
+  let video;
+  const view = mount(t, {
+    trackClips: assert.fail,
+    alignMusicClip: assert.fail,
+    clipStream: async id => {
+      assert.equal(id, '23');
+      return { clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' };
+    },
+    attach: async element => { video = element; return () => element.pause(); },
+  }, { enabled: false, track: { ...track('123'), clip_ids: [] } });
+  await clipAlignmentCache.get('123', '23', 60, async () => ({
+    offsetSeconds: 7, confidence: .98, matchedWindows: 5, analyzedSeconds: 60,
+  }));
+  view.props.enabled = true; await settle();
+  assert.equal(video.currentTime, 17);
+  assert.equal(view.emitted.ready.at(-1), true);
+  assert.equal(view.emitted.loading.at(-1), false);
+});
+
+test('switching tracks shows the new video while its analysis is queued', async t => {
+  const first = deferred(), second = deferred(), calls = [], attached = [];
+  t.after(() => { first.resolve(null); second.resolve(null); });
   let busy = false;
   const view = mount(t, {
-    trackClips: async id => [clip(id === '123' ? '17' : '18', id)],
+    trackClips: assert.fail,
     alignMusicClip: id => {
       assert.equal(busy, false, 'native analysis must never overlap');
       busy = true; calls.push(id);
       return (id === '123' ? first.promise : second.promise).finally(() => { busy = false; });
     },
-    clipStream: async id => { streams.push(id); return { clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }; },
-    attach: async (video, stream) => { attached.push(stream.clip_id); return () => video.pause(); },
+    clipStream: async id => ({ clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }),
+    attach: async (video, stream) => { attached.push([stream.clip_id, video]); return () => video.pause(); },
   });
   await settle(); assert.deepEqual(calls, ['123']);
-  view.props.track = track('456'); await settle();
-  assert.deepEqual(calls, ['123']); assert.deepEqual(view.emitted.error, []); assert.equal(view.emitted.loading.at(-1), true);
-  // Waiting for the old command must not consume the new clip's analysis deadline.
-  t.mock.timers.tick(111_000); await settle();
-  assert.deepEqual(view.emitted.error, []); assert.equal(view.emitted.loading.at(-1), true);
+  view.props.track = { ...track('456'), clip_ids: ['18'] }; await settle();
+  assert.deepEqual(calls, ['123']); assert.deepEqual(view.emitted.error, []); assert.equal(view.emitted.loading.at(-1), false);
+  assert.equal(view.emitted.ready.at(-1), true);
+  assert.deepEqual(attached.map(([id]) => id), ['17', '18']); assert.equal(attached[1][1].currentTime, 10);
   first.resolve({ offsetSeconds: 1, confidence: .99, matchedWindows: 6, analyzedSeconds: 30 }); await settle();
-  assert.deepEqual(calls, ['123', '456']); assert.deepEqual(streams, []);
+  assert.deepEqual(calls, ['123', '456']);
   second.resolve({ offsetSeconds: 5, confidence: .99, matchedWindows: 6, analyzedSeconds: 30 }); await settle();
-  assert.deepEqual(streams, ['18']); assert.deepEqual(attached, ['18']);
+  assert.equal(attached[1][1].currentTime, 15);
   assert.equal(view.emitted.ready.at(-1), true); assert.equal(view.emitted.loading.at(-1), false); assert.deepEqual(view.emitted.error, []);
 });
 
-test('turning a queued background off prevents its analysis and video from starting after the old command', async t => {
-  const first = deferred(), calls = [];
+test('turning a queued background off releases its video and prevents its analysis from starting', async t => {
+  const first = deferred(), calls = [], released = [];
+  t.after(() => first.resolve(null));
   const view = mount(t, {
     trackClips: async id => [clip(id === '123' ? '17' : '18', id)],
     alignMusicClip: id => { calls.push(id); assert.equal(id, '123'); return first.promise; },
-    clipStream: assert.fail, attach: assert.fail,
+    clipStream: async id => ({ clip_id: id, kind: 'mp4', url: 'https://strm.yandex.ru/clip.mp4' }),
+    attach: async (video, stream) => () => { released.push(stream.clip_id); video.pause(); },
   });
-  await settle(); view.props.track = track('456'); await settle();
+  await settle(); view.props.track = { ...track('456'), clip_ids: ['18'] }; await settle();
   assert.deepEqual(calls, ['123']); view.props.enabled = false; await settle();
   first.resolve({ offsetSeconds: 0, confidence: .99, matchedWindows: 6, analyzedSeconds: 30 }); await settle();
   assert.deepEqual(calls, ['123']); assert.equal(view.emitted.ready.at(-1), false); assert.equal(view.emitted.loading.at(-1), false);
-  assert.deepEqual(view.emitted.error, []);
+  assert.deepEqual(view.emitted.error, []); assert.deepEqual(released, ['17', '18']);
 });

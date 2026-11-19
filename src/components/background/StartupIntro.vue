@@ -1,28 +1,106 @@
 <template>
   <Teleport to="body">
-    <section class="startup-intro" aria-label="Запуск Aureon" @keydown.esc="emit('done')">
-      <div class="startup-emblem"><img src="/icons/favicon-96x96.png" alt="" @error="($event.target as HTMLImageElement).style.display='none'"/><span>Ｎ</span></div>
-      <h1>Aureon</h1>
-      <div class="startup-line" aria-hidden="true"/>
-      <button ref="skip" type="button" @click="emit('done')">Продолжить</button>
-    </section>
+    <Transition name="startup" @after-leave="emit('done')">
+      <section v-if="visible" class="startup-intro" role="dialog" aria-modal="true" aria-label="Запуск Aureon" @keydown.esc="dismiss">
+        <div class="startup-lockup">
+          <img src="/icons/aureon-256.png" alt="" width="82" height="82" />
+          <h1>Aureon</h1>
+        </div>
+        <button ref="skip" type="button" @click="dismiss">Продолжить</button>
+      </section>
+    </Transition>
   </Teleport>
 </template>
+
 <script setup lang="ts">
-import {onMounted,onBeforeUnmount,ref} from 'vue';
-import {useUiStore} from '@/stores/ui';
-const emit=defineEmits<{done:[]}>();const skip=ref<HTMLButtonElement|null>(null);
-let timer:ReturnType<typeof setTimeout>|undefined;let previous:HTMLElement|null=null;
-onMounted(()=>{previous=document.activeElement as HTMLElement;skip.value?.focus();const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches||!useUiStore().settings.animations;timer=setTimeout(()=>emit('done'),reduced?100:2300)});
-onBeforeUnmount(()=>{clearTimeout(timer);previous?.focus()});
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { useUiStore } from '@/stores/ui';
+
+const emit = defineEmits<{ done: [] }>();
+const visible = ref(true);
+const skip = ref<HTMLButtonElement | null>(null);
+let timer: ReturnType<typeof setTimeout> | undefined;
+let previous: HTMLElement | null = null;
+
+function dismiss() {
+  clearTimeout(timer);
+  visible.value = false;
+}
+
+onMounted(() => {
+  if (!useUiStore().settings.animations || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    emit('done');
+    return;
+  }
+  previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  skip.value?.focus({ preventScroll: true });
+  timer = setTimeout(dismiss, 850);
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(timer);
+  requestAnimationFrame(() => previous?.focus({ preventScroll: true }));
+});
 </script>
+
 <style scoped>
-.startup-intro{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(ellipse at 50% 40%,#271440 0,#0b0911 45%,#050507 85%);color:#f2edf8;animation:intro-reveal .55s ease-out both}
-.startup-emblem{width:108px;height:108px;position:relative;display:grid;place-items:center;border-radius:28px;background:linear-gradient(135deg,#8d64b233,#06060b);border:1px solid #b08bda55;box-shadow:0 0 65px #923bf526;animation:emblem-reveal 1.25s cubic-bezier(.2,.8,.2,1) both}
-.startup-emblem img{position:absolute;width:100%;height:100%;object-fit:contain;z-index:1}.startup-emblem span{font-size:48px;font-weight:700;color:#d9baff}
-h1{font-size:clamp(27px,5vw,44px);letter-spacing:-1.5px;margin:25px 0 10px;animation:emblem-reveal .8s .2s both}
-.startup-line{margin-top:28px;width:150px;height:2px;background:#ab64fa;transform-origin:left;animation:intro-line 2s ease-in-out both;box-shadow:0 0 14px #a969ee}
-button{position:absolute;bottom:8%;background:none;border:1px solid #9a76b62c;padding:11px 20px;border-radius:12px;color:#b6a4c7;cursor:pointer;font:inherit;font-size:12px}button:focus-visible{outline:2px solid #b988ef;outline-offset:4px}
-@keyframes intro-reveal{from{opacity:0}to{opacity:1}}@keyframes emblem-reveal{from{opacity:0;transform:translateY(18px) scale(.86);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes intro-line{from{transform:scaleX(0);opacity:.3}to{transform:scaleX(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.startup-intro,.startup-emblem,h1,.startup-line{animation:none}}
+.startup-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #101017;
+  color: #f5f2fa;
+}
+
+.startup-intro::before {
+  content: '';
+  position: absolute;
+  width: min(65vmin, 520px);
+  aspect-ratio: 1;
+  border: 1px solid #a08ab022;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 12px, #bca8df0c 12px 13px);
+}
+
+.startup-lockup {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  animation: startup-arrive 270ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+.startup-lockup img { display: block; border-radius: 21px; }
+.startup-lockup h1 { margin: 0; font-size: 38px; font-weight: 720; line-height: 1.1; letter-spacing: -.065em; }
+
+.startup-intro button {
+  position: absolute;
+  bottom: max(24px, 7vh);
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8b1c4;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.startup-intro button:hover,
+.startup-intro button:focus-visible { border-color: #6c5d81; color: #f5f2fa; }
+.startup-leave-active { transition: opacity 170ms ease; }
+.startup-leave-to { opacity: 0; }
+
+@keyframes startup-arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startup-lockup { animation: none; }
+  .startup-leave-active { transition: none; }
+}
 </style>

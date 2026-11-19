@@ -101,15 +101,6 @@
             :model-value="s.miniOpacity"
             @update:model-value="ui.set('miniOpacity', $event)"
           />
-          <EditRange
-            v-if="s.miniVolumeSlider"
-            label="Дорожка громкости"
-            suffix=" px"
-            :min="24"
-            :max="96"
-            :model-value="s.miniVolumeHeight"
-            @update:model-value="ui.set('miniVolumeHeight', $event)"
-          />
         </div>
       </div>
 
@@ -127,6 +118,11 @@
             @update:model-value="ui.set('miniVisualizer', $event)"
           />
           <EditSwitch
+            label="Дополнительные кнопки при наведении"
+            :model-value="s.miniHoverControls"
+            @update:model-value="ui.set('miniHoverControls', $event)"
+          />
+          <EditSwitch
             label="Ползунок громкости"
             :model-value="s.miniVolumeSlider"
             @update:model-value="ui.set('miniVolumeSlider', $event)"
@@ -137,7 +133,7 @@
       <div class="mpe-group">
         <div class="mpe-group-head">
           Кнопки
-          <span class="mpe-group-hint">перетаскивай, чтобы менять порядок</span>
+          <span class="mpe-group-hint">перетаскивай кнопки внутри их групп</span>
         </div>
 
         <div

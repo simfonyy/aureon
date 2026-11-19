@@ -218,6 +218,39 @@ impl Yandex {
         self.change_relative(uid, kind, &diff.to_string()).await
     }
 
+    pub async fn playlist_fill_from_queue(
+        &self,
+        uid: i64,
+        kind: i64,
+        tracks: &[PlaylistTrackInput],
+    ) -> Result<(), String> {
+        let path = format!("/users/{uid}/playlists/{kind}");
+        let playlist = self.get_result(&path).await?;
+        let count = playlist.get("trackCount").and_then(serde_json::Value::as_u64);
+        let entries = playlist.get("tracks").and_then(serde_json::Value::as_array);
+        let saved = entries.is_some_and(|entries| {
+            entries.len() == tracks.len() && entries.iter().zip(tracks).all(|(entry, track)| {
+                entry.get("id").or_else(|| entry.get("track").and_then(|item| item.get("id")))
+                    .is_some_and(|id| val_to_id(id).split(':').next() == Some(track.id.as_str()))
+            })
+        });
+        if saved {
+            return Ok(());
+        }
+        if count.is_some_and(|count| count > 0) || entries.is_some_and(|entries| !entries.is_empty()) {
+            return Err("Плейлист уже содержит треки. Укажи другое название для очереди.".into());
+        }
+        let revision = playlist.get("revision")
+            .and_then(serde_json::Value::as_i64)
+            .ok_or("Не удалось прочитать версию плейлиста")?;
+        let diff = serde_json::json!([{ "op": "insert", "at": 0, "tracks": tracks }]);
+        self.post_form(
+            &format!("{path}/change-relative"),
+            &[("revision", revision.to_string()), ("diff", diff.to_string())],
+        ).await?;
+        Ok(())
+    }
+
     pub async fn playlist_delete(
         &self,
         uid: i64,

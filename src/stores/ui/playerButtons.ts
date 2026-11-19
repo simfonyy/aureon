@@ -126,7 +126,6 @@ export const miniButtonCatalog: Array<{
   { id: "like", label: "Нравится", icon: "heart" },
   { id: "dislike", label: "Не нравится", icon: "heartOff" },
   { id: "lyrics", label: "Текст песни", icon: "lyrics" },
-  { id: "volume", label: "Громкость", icon: "volume" },
 ];
 
 export const playerButtonOrder: PlayerButtonId[] = [
@@ -155,7 +154,6 @@ export const miniButtonOrder: MiniButtonId[] = [
   "repeat",
   "dislike",
   "lyrics",
-  "volume",
 ];
 
 export const defaultPlayerButtonSlots: PlayerButtonSlots = {

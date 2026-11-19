@@ -1,6 +1,11 @@
 <template>
   <aside class="lyrics-queue" aria-label="Очередь воспроизведения">
-    <header><h2>Очередь</h2><span>{{ player.queue.length }}</span><button type="button" class="icon-btn round" aria-label="Скрыть очередь" @click="emit('close')"><Icon name="close" :size="16" /></button></header>
+    <header>
+      <h2>Очередь</h2>
+      <span>{{ player.queue.length }}</span>
+      <QueuePlaylistButton />
+      <button type="button" class="icon-btn round" aria-label="Скрыть очередь" @click="emit('close')"><Icon name="close" :size="16" /></button>
+    </header>
     <q-scroll-area class="lyrics-queue-scroll">
       <CreativeTrackList :tracks="queueTracks" v-slot="{track,index}">
       <div class="lyrics-queue-row" :class="{ current: queueIndex(track,index) === player.index }">
@@ -25,6 +30,7 @@ import { computed } from 'vue';
 import type {Track} from '@/api/types';
 import Icon from '@/components/Icon.vue';
 import TrackMenu from '@/components/TrackMenu.vue';
+import QueuePlaylistButton from '@/components/QueuePlaylistButton.vue';
 import CreativeTrackList from '@/components/creative/CreativeTrackList.vue';
 import { artistNames, formatDuration } from '@/lib/format';
 import { usePlayerStore } from '@/stores/player/index';

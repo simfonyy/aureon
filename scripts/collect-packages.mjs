@@ -21,10 +21,22 @@ if(process.platform==='win32') {
   await mkdir(portable,{recursive:true});
   await copyFile(join(release,'Aureon.exe'),join(portable,'Aureon.exe'));
   await copyFile(join(root,'LICENSE'),join(portable,'LICENSE'));
+  await copyFile(join(root,'NOTICE'),join(portable,'NOTICE'));
   await writeFile(join(portable,'README.txt'),
     'Aureon — Windows x64, запуск без установки.\r\nРаспакуйте ZIP и запустите Aureon.exe.\r\nНужен WebView2 Runtime. Если он не установлен, используйте MSI.\r\nНастройки хранятся в профиле Windows, не рядом с EXE.\r\n');
-  // Windows' libarchive tar writes ZIP without invoking a shell.
-  execFileSync('tar.exe',['-a','-c','-f',join(out,`Aureon_${version}_windows-x64_portable.zip`),'-C',portable,'.'],{stdio:'inherit'});
+  execFileSync('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    "$ErrorActionPreference = 'Stop'; Compress-Archive -LiteralPath (Get-ChildItem -LiteralPath $env:AUREON_PORTABLE_DIR -File).FullName -DestinationPath $env:AUREON_PORTABLE_ZIP -Force",
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      AUREON_PORTABLE_DIR: portable,
+      AUREON_PORTABLE_ZIP: join(out, `Aureon_${version}_windows-x64_portable.zip`),
+    },
+  });
 } else if(process.platform==='linux') {
   await collect('deb','.deb');
   await collect('appimage','.AppImage');

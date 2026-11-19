@@ -323,6 +323,7 @@
           <span v-if="queueItems.length" class="faint t-11 queue-pos">
             {{ player.index + 1 }} / {{ queueItems.length }}
           </span>
+          <QueuePlaylistButton />
           <button
             v-if="queueItems.length"
             type="button"
@@ -475,6 +476,7 @@ import FullscreenPlayer from "@/components/FullscreenPlayer.vue";
 import LyricsBackdrop from "@/components/lyrics/LyricsBackdrop.vue";
 import LyricsPanel from "@/components/LyricsPanel.vue";
 import MiniPlayer from "@/components/MiniPlayer.vue";
+import QueuePlaylistButton from "@/components/QueuePlaylistButton.vue";
 import PlayerBar from "@/components/PlayerBar.vue";
 import TogetherDock from "@/components/together/TogetherDock.vue";
 import TrackLyricsDialog from "@/components/TrackLyricsDialog.vue";
@@ -596,12 +598,12 @@ function guardFooterDuringPlayerOverlay() {
 }
 const playerFooterBlocked = guardFooterDuringPlayerOverlay();
 
-const lyricsBox = computed(() => ({
-  top: "40px",
-  bottom: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : "77px",
-  left: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : `${ui.settings.sidebarWidth}px`,
-  right: lyricsClipReady.value && ui.settings.musicVideoBackground ? "0px" : rightPanel.value ? "300px" : "0px",
-}));
+const lyricsBox = computed(() => {
+  if (lyricsClipReady.value && ui.settings.musicVideoBackground) {
+    return { top: "0px", bottom: "0px", left: "0px", right: "0px" };
+  }
+  return { top: "40px", bottom: "77px", left: `${ui.settings.sidebarWidth}px`, right: rightPanel.value ? "300px" : "0px" };
+});
 
 const nav = [
   { to: "/", label: "Главное", icon: "home" },

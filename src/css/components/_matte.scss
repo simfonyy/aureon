@@ -25,7 +25,6 @@ html[data-appearance='matte'] {
   .setting-row:hover { background: color-mix(in srgb, var(--fg) 3%, transparent); }
   .settings-choice { border: 1px solid var(--line); background: var(--bg); }
   .settings-choice button.on { background: var(--surface-2); }
-  .player-bar.has-viz .player-controls { background: var(--surface); backdrop-filter: none; }
   .player-cover, .cover { box-shadow: none; }
   .nav.on { background: var(--surface-2); border-color: var(--matte-border); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
   .nav.on .ic { color: var(--accent); }
