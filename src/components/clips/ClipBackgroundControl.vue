@@ -12,7 +12,7 @@ import { usePlayerStore } from '@/stores/player/index';
 import { useUiStore } from '@/stores/ui';
 import Icon from '@/components/Icon.vue';
 
-const props = withDefaults(defineProps<{ track: Track; active: boolean; openPlayer?: boolean }>(), { openPlayer: false });
+const props = withDefaults(defineProps<{ track: Track; active: boolean; openPlayer?: boolean; showHint?: boolean }>(), { openPlayer: false, showHint: true });
 const clips = useMusicClipsStore(), ui = useUiStore(), player = usePlayerStore();
 const hint = ref(false);
 const hintAccent = ref('');
@@ -36,7 +36,7 @@ watch(() => [id.value, props.active] as const, () => {
 }, { immediate: true });
 watch(() => [id.value, available.value, props.active, ui.settings.musicVideoBackground] as const, ([trackId, hasClip, active, enabled]) => {
   dismiss();
-  if (!trackId || !hasClip || !active || enabled || hintedTracks.has(trackId)) return;
+  if (!props.showHint || !trackId || !hasClip || !active || enabled || hintedTracks.has(trackId)) return;
   hintedTracks.add(trackId);
   if (hintedTracks.size > 64) hintedTracks.delete(hintedTracks.values().next().value!);
   hint.value = true;

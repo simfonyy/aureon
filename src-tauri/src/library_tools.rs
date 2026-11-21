@@ -343,6 +343,7 @@ fn collect_folder(root: &Path, files: &mut Vec<PathBuf>, depth: usize, truncated
 }
 
 #[tauri::command]
+#[cfg(desktop)]
 pub async fn library_import(app: AppHandle, folder: bool) -> Result<ImportReport, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let picker = rfd::FileDialog::new().set_title(if folder {

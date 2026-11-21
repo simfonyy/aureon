@@ -36,6 +36,7 @@ struct TokenResp {
     error_description: Option<String>,
 }
 
+#[cfg(desktop)]
 fn open_in_browser(url: &str) {
     #[cfg(target_os = "windows")]
     let _ = std::process::Command::new("cmd")
@@ -43,7 +44,7 @@ fn open_in_browser(url: &str) {
         .spawn();
     #[cfg(target_os = "macos")]
     let _ = std::process::Command::new("open").arg(url).spawn();
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(target_os = "linux")]
     let _ = std::process::Command::new("xdg-open").arg(url).spawn();
 }
 
@@ -78,6 +79,7 @@ pub async fn oauth_device_start(app: AppHandle) -> Result<DeviceInfo, String> {
     let poll_interval = data.interval.unwrap_or(5).max(1);
     let expires_in = data.expires_in.unwrap_or(300);
 
+    #[cfg(desktop)]
     open_in_browser(&verification_url);
 
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;

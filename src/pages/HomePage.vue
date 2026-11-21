@@ -2,17 +2,17 @@
   <q-page class="home-page">
     <q-scroll-area class="home-scroll">
       <div class="home-content">
-        <header class="home-topline">
-          <h1>{{ greeting }}</h1>
-          <button class="home-library-link" type="button" @click="router.push('/library')">
-            <Icon name="search" :size="15" /><span>В библиотеке</span>
-          </button>
-        </header>
-
-        <HomeDiscovery :select-lead="selectLeadRelease">
+        <HomeDiscovery :featured="phoneLayout" :select-lead="selectLeadRelease" :favorite-artists="favoriteArtists">
           <template #lead="{ release, playAlbum, loadingAlbum }">
             <HomeSpotlight :release="release" :loading-album="loadingAlbum" @play="playAlbum" />
           </template>
+          <header v-if="!phoneLayout" class="home-topline">
+            <h1>{{ greeting }}</h1>
+            <button class="home-library-link" type="button" @click="router.push('/library')">
+              <Icon name="search" :size="15" /><span>В библиотеке</span>
+            </button>
+          </header>
+
           <button
             v-if="player.current && player.pendingResume"
             class="home-resume"
@@ -151,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Notify } from "quasar";
 import { api } from "@/api/client";
@@ -168,8 +168,10 @@ import { artistNames, formatDuration, plural } from "@/lib/format";
 import { askConfirm, askText } from "@/lib/dialogs";
 import { readCache, swr, writeCache } from "@/lib/cache";
 import { useStatsStore } from "@/stores/stats";
+import { useAuthStore } from "@/stores/auth";
 import { useLibraryStore } from "@/stores/library";
 import { usePlayerStore } from "@/stores/player/index";
+import { phoneLayout } from "@/lib/phoneLayout";
 
 const router = useRouter();
 const player = usePlayerStore();
@@ -200,6 +202,34 @@ const waves = computed(() =>
 const picks = computed(() =>
   wheel.value.filter((item) => item.kind !== "wave"),
 );
+
+const auth = useAuthStore();
+const likedTracks = ref<Track[]>([]);
+watch(() => auth.profile?.uid, (uid, _, onCleanup) => {
+  likedTracks.value = [];
+  if (!phoneLayout || !uid) return;
+  let active = true;
+  onCleanup(() => { active = false; });
+  void swr<Track[]>(`home.discovery.${uid}.liked-tracks`, () => api.likedTracks(), {
+    maxAge: 15 * 60 * 1000,
+    onData: tracks => { if (active) likedTracks.value = tracks; },
+  });
+}, { immediate: true });
+
+const favoriteArtists = computed(() => {
+  const names = new Set<string>();
+  if (!phoneLayout) return names;
+  for (const album of library.likedAlbums) {
+    for (const name of (album.artists || "").split(", ")) names.add(name.toLowerCase());
+  }
+  const likedIds = new Set(library.likedIds);
+  for (const track of [...player.queue, ...likedTracks.value]) {
+    if (likedIds.has(track.id)) {
+      for (const artist of track.artists) names.add(artist.name.toLowerCase());
+    }
+  }
+  return names;
+});
 
 const greeting = computed(() => {
   const hour = new Date().getHours();

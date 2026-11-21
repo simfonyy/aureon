@@ -9,27 +9,31 @@ mod library_tools;
 mod listenbrainz;
 mod audio_tools;
 mod genius;
+#[cfg(desktop)]
 mod hotkeys;
 mod lrclib;
 mod lyrics_fx;
+#[cfg(desktop)]
 mod mini;
 mod oauth;
 mod presence;
 mod proxy;
 mod state;
 mod together;
+#[cfg(desktop)]
 mod tray;
 mod yandex;
 
 use presence::DiscordState;
 use state::AppState;
+#[cfg(desktop)]
 use tauri::{Emitter, Manager};
-
-
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -38,7 +42,11 @@ pub fn run() {
                 let _ = app.emit("app://shown", ());
             }
         }))
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    #[cfg(target_os = "ios")]
+    let builder = builder.plugin(tauri_plugin_opener::init());
+
+    builder
         .register_asynchronous_uri_scheme_protocol(proxy::SCHEME, |_app, request, responder| {
             proxy::handle(request, responder);
         })
@@ -46,18 +54,37 @@ pub fn run() {
         .manage(DiscordState::default())
         .manage(together::TogetherState::default())
         .manage(together::relay::RelayState::default())
-        .setup(|app| {
-            for (_, window) in app.webview_windows() {
-                if let Ok(icon) =
-                    tauri::image::Image::from_bytes(include_bytes!("../icons/256x256.png"))
-                {
-                    let _ = window.set_icon(icon);
+        .setup(|_app| {
+            #[cfg(desktop)]
+            {
+                let app = _app;
+                for (_, window) in app.webview_windows() {
+                    if let Ok(icon) =
+                        tauri::image::Image::from_bytes(include_bytes!("../icons/256x256.png"))
+                    {
+                        let _ = window.set_icon(icon);
+                    }
+                }
+                tray::build(app.handle())?;
+            }
+            #[cfg(target_os = "ios")]
+            {
+                use objc2_avf_audio::{AVAudioSession, AVAudioSessionCategoryPlayback};
+                let result = unsafe {
+                    AVAudioSessionCategoryPlayback.map(|category| {
+                        AVAudioSession::sharedInstance().setCategory_error(category)
+                    })
+                };
+                if let Some(Err(error)) = result {
+                    eprintln!("Aureon could not configure iOS audio: {error:?}");
                 }
             }
-            tray::build(app.handle())?;
             Ok(())
         })
-        .on_window_event(|window, event| {
+        .on_window_event(|_window, _event| {
+            #[cfg(desktop)]
+            let (window, event) = (_window, _event);
+            #[cfg(desktop)]
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" && tray::close_to_tray() {
                     api.prevent_close();
@@ -75,6 +102,7 @@ pub fn run() {
             listenbrainz::listenbrainz_recent,
             audio_tools::save_microphone_recording,
             library_tools::library_catalog,
+            #[cfg(desktop)]
             library_tools::library_import,
             library_tools::library_track_path,
             library_tools::library_lyrics,
@@ -156,16 +184,27 @@ pub fn run() {
             presence::clear_discord_presence,
             presence::discord_presence_status,
             presence::reconnect_discord_presence,
+            #[cfg(desktop)]
             tray::set_close_to_tray,
+            #[cfg(desktop)]
             tray::set_tray_tooltip,
+            #[cfg(desktop)]
             tray::hide_to_tray,
+            #[cfg(desktop)]
             tray::show_from_tray,
+            #[cfg(desktop)]
             tray::quit_app,
+            #[cfg(desktop)]
             hotkeys::set_global_hotkeys,
+            #[cfg(desktop)]
             hotkeys::clear_global_hotkeys,
+            #[cfg(desktop)]
             mini::enter_mini_player,
+            #[cfg(desktop)]
             mini::resize_mini_player,
+            #[cfg(desktop)]
             mini::dock_mini_player,
+            #[cfg(desktop)]
             mini::exit_mini_player,
             together::commands::together_host,
             together::commands::together_join,

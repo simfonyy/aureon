@@ -2,13 +2,26 @@
   <q-layout
     view="hHh lpR fFf"
     class="app-shell"
-    :class="{ 'queue-open': rightPanel, 'lyrics-open': lyricsVisible, 'liquid-shell': liquidActive, 'optimized-effects': ui.settings.metalQuality === 'optimized' }"
+    :class="{ 'phone-shell': phoneLayout, 'queue-open': !phoneLayout && rightPanel, 'lyrics-open': lyricsVisible, 'liquid-shell': liquidActive, 'optimized-effects': ui.settings.metalQuality === 'optimized' }"
   >
+    <q-header v-if="phoneLayout" class="phone-header">
+      <button v-if="phoneCanGoBack" class="phone-header-button" type="button" aria-label="Назад" @click="phoneBack">
+        <Icon name="chevronLeft" :size="23" />
+      </button>
+      <RouterLink v-else class="phone-brand" to="/" aria-label="Aureon, главная">
+        <img src="/icons/favicon-32x32.png" width="22" height="22" alt="" />
+        Aureon
+      </RouterLink>
+      <button type="button" class="phone-header-button" aria-label="Профиль" @click="phoneProfile = true">
+        <img v-if="avatarUrl" :src="avatarUrl" alt="" referrerpolicy="no-referrer" @error="avatarError = true" />
+        <Icon v-else name="person" :size="23" />
+      </button>
+    </q-header>
     <LiquidMetalBackground v-if="liquidAvailable" v-show="!panels.hidden && !panels.mini" :suspended="panels.hidden || panels.mini || background.open" />
     <Transition name="lyrics-ambient">
       <LyricsBackdrop v-if="lyricsVisible && !panels.hidden && !panels.mini" class="lyrics-shell-backdrop" :cover="player.current?.cover_url || ''" :mode="ui.settings.lyricsBackdrop" :blur="ui.settings.lyricsBackgroundBlur" :opacity="ui.settings.lyricsBackgroundOpacity" :motion="ui.settings.lyricsMotion" />
     </Transition>
-    <q-header v-if="!panels.hidden && !panels.mini" class="topbar">
+    <q-header v-if="!phoneLayout && !panels.hidden && !panels.mini" class="topbar">
       <div
         class="titlebar"
         @mousedown="startWindowDrag"
@@ -105,7 +118,7 @@
     </q-header>
 
     <q-drawer
-      v-if="!panels.hidden && !panels.mini"
+      v-if="!phoneLayout && !panels.hidden && !panels.mini"
       :model-value="true"
       show-if-above
       side="left"
@@ -286,7 +299,7 @@
     </q-drawer>
 
     <q-drawer
-      v-if="!panels.hidden && !panels.mini"
+      v-if="!phoneLayout && !panels.hidden && !panels.mini"
       v-model="rightPanel"
       side="right"
       :width="300"
@@ -387,11 +400,11 @@
     </q-drawer>
 
     <q-page-container
-      v-if="!panels.hidden && !panels.mini"
+      v-if="phoneLayout || (!panels.hidden && !panels.mini)"
       style="position: relative"
     >
       <router-view v-slot="{ Component, route: current }">
-        <Transition name="page" mode="out-in">
+        <Transition :name="phoneLayout ? 'phone-page' : 'page'" mode="out-in">
           <component :is="Component" :key="current.fullPath" />
         </Transition>
       </router-view>
@@ -406,25 +419,53 @@
 
     <div v-if="panels.hidden" class="tray-idle">Играет в фоновом режиме</div>
 
+    <q-footer v-if="phoneLayout" class="phone-footer">
+      <PhonePlayer />
+      <nav class="phone-tabs" aria-label="Навигация">
+        <RouterLink
+          v-for="tab in phoneTabs"
+          :key="tab.to"
+          :to="tab.to"
+          :class="{ 'is-active': activePhoneTab === tab.to }"
+          :aria-current="activePhoneTab === tab.to ? 'page' : undefined"
+        >
+          <span class="phone-tab-icon"><Icon :name="tab.icon" :size="23" /></span>
+          <span>{{ tab.label }}</span>
+        </RouterLink>
+      </nav>
+    </q-footer>
+
+    <q-dialog v-if="phoneLayout" v-model="phoneProfile" position="bottom" transition-show="slide-up" transition-hide="slide-down">
+      <section class="phone-profile" aria-label="Профиль">
+        <strong>{{ accountName }}</strong>
+        <button v-for="link in phoneProfileLinks" :key="link.to" v-close-popup type="button" @click="router.push(link.to)">
+          <Icon :name="link.icon" :size="20" />{{ link.label }}
+        </button>
+        <button v-close-popup type="button" @click="doLogout">
+          <Icon name="logout" :size="20" />Выйти
+        </button>
+      </section>
+    </q-dialog>
+
     <q-footer
       class="main-player-footer"
       :class="{ 'is-player-covered': playerFooterBlocked }"
       :inert="playerFooterBlocked"
-      v-if="!panels.hidden && !panels.mini"
+      v-if="!phoneLayout && !panels.hidden && !panels.mini"
       style="background: var(--bg); border-top: 1px solid var(--line)"
     >
       <PlayerBar />
     </q-footer>
 
-    <MiniScreenDock v-if="panels.mini && !panels.hidden">
+    <MiniScreenDock v-if="!phoneLayout && panels.mini && !panels.hidden">
       <CassetteMiniPlayer v-if="creative.miniSkin === 'cassette'" />
       <MiniPlayer v-else />
     </MiniScreenDock>
 
-    <TogetherDock />
-    <AlbumCoverTransition />
-    <FullscreenPlayer />
-    <CreativeFeedback />
+    <TogetherDock v-if="!phoneLayout" />
+    <AlbumCoverTransition v-if="!phoneLayout" />
+    <FullscreenPlayer v-if="!phoneLayout" />
+    <CreativeFeedback v-if="!phoneLayout" />
     <CommandPalette v-if="commandsOpen" v-model="commandsOpen" />
     <ScreenshotSearchDialog v-if="ocrOpen" v-model="ocrOpen" />
     <LibraryToolsDialog v-if="localLibraryOpen" v-model="localLibraryOpen" />
@@ -446,6 +487,8 @@ const musicClips = useMusicClipsStore();
 onBeforeUnmount(() => musicClips.reset());
 const MusicClipDialog=defineAsyncComponent(()=>import('@/components/clips/MusicClipDialog.vue'));
 import PlaylistFolders from '@/components/library/PlaylistFolders.vue';
+import PhonePlayer from '@/components/player/PhonePlayer.vue';
+import { phoneLayout } from '@/lib/phoneLayout';
 import CreativeFeedback from '@/components/creative/CreativeFeedback.vue';
 import MiniScreenDock from '@/components/player/MiniScreenDock.vue';
 const CassetteMiniPlayer=defineAsyncComponent(()=>import('@/components/creative/CassetteMiniPlayer.vue'));
@@ -516,6 +559,7 @@ const ui = useUiStore();
 const background = useBackgroundStore();
 const panels = usePanelsStore();
 const liquidAvailable = computed(() => {
+  if (phoneLayout) return false;
   const theme = ui.settings.theme;
   const background = theme === "custom" ? ui.settings.customBackground : themePalettes[theme].background;
   return ui.settings.backgroundMode === 'beauty' && ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
@@ -557,6 +601,24 @@ const profileLinks = [
   { to: "/stats", label: "Статистика", icon: "stats" },
   { to: "/settings", label: "Настройки", icon: "settings" },
 ];
+const phoneProfile = ref(false);
+const phoneTabs = [
+  { to: '/', label: 'Главная', icon: 'home' },
+  { to: '/wave', label: 'Волна', icon: 'wave' },
+  { to: '/search', label: 'Поиск', icon: 'search' },
+  { to: '/playlists', label: 'Коллекция', icon: 'library' },
+];
+const phoneProfileLinks = [{ to: '/liked', label: 'Мне нравится', icon: 'heart' }, ...profileLinks.slice(1)];
+const activePhoneTab = computed(() => {
+  if (route.path.startsWith('/playlists') || route.path === '/liked') return '/playlists';
+  return route.path;
+});
+const phoneCanGoBack = computed(() => !phoneTabs.some(tab => tab.to === route.path));
+
+function phoneBack() {
+  if (router.options.history.state.back) router.back();
+  else void router.replace('/');
+}
 
 const showHidden = ref(false);
 const sidebarPlaylists = computed(() => library.visiblePlaylists.filter(p=>!playlistFolders.contains(p.kind)));
@@ -575,7 +637,7 @@ function freezeLyricsBounds(element: Element) {
   Object.assign(el.style, { position: 'fixed', top: `${bounds.top}px`, left: `${bounds.left}px`, width: `${bounds.width}px`, height: `${bounds.height}px`, right: 'auto', bottom: 'auto' });
 }
 
-const lyricsVisible = computed(() => player.showLyrics && !!player.current);
+const lyricsVisible = computed(() => !phoneLayout && player.showLyrics && !!player.current);
 const lyricsClipReady = ref(false);
 watch(() => [lyricsVisible.value, player.current?.id] as const, () => { lyricsClipReady.value = false; }, { flush: 'sync' });
 
@@ -777,6 +839,11 @@ const hotkeyHandlers = {
 
 
 onMounted(() => {
+  void library.init();
+  if (ui.settings.resumeLastSession) {
+    void player.restoreSession(!phoneLayout && ui.settings.resumeAutoplay);
+  }
+  if (phoneLayout) return;
   window.addEventListener('keydown',commandKey,true);
   navMotionPreference.addEventListener('change', updateNavMotionPreference);
   navResizeObserver = new ResizeObserver(updateNavIndicator);
@@ -786,11 +853,7 @@ onMounted(() => {
   bindLocalHotkeys((signature) => hotkeys.resolve(signature), hotkeyHandlers);
   void bindGlobalHotkeyEvents(hotkeyHandlers);
   void hotkeys.applyGlobal();
-  void library.init();
   void setCloseToTray(ui.settings.minimizeToTray);
-  if (ui.settings.resumeLastSession) {
-    void player.restoreSession(ui.settings.resumeAutoplay);
-  }
   void bindTrayEvents({
     onToggle: () => player.toggle(),
     onNext: () => {
@@ -817,8 +880,10 @@ watch(
   () => ui.settings,
   () => {
     ui.apply();
-    void player.syncPresence();
-    void setCloseToTray(ui.settings.minimizeToTray);
+    if (!phoneLayout) {
+      void player.syncPresence();
+      void setCloseToTray(ui.settings.minimizeToTray);
+    }
   },
   { deep: true, immediate: true },
 );

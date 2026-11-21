@@ -24,6 +24,7 @@ import { readCache, releaseMemoryCache, writeCache } from "@/lib/cache";
 import type { LyricsOrigin } from "@/lib/lyricsSource";
 import { hasText, loadTrackLyrics } from "@/lib/lyricsSource";
 import { proxyStream } from "@/lib/stream";
+import { phoneLayout } from '@/lib/phoneLayout';
 import { playDiagnostic, withDeadline } from '@/lib/playFlow';
 import {
   censorUrl,
@@ -363,7 +364,7 @@ export const usePlayerStore = defineStore("player", {
 
       useEqualizerStore().apply();
 
-      if (presenceTimer === null) {
+      if (!phoneLayout && presenceTimer === null) {
         presenceTimer = window.setInterval(() => {
           void this.syncPresence();
         }, 15000);
@@ -378,6 +379,7 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async syncPresence(force = false) {
+      if (phoneLayout) return null;
       const error = await syncDiscordPresence(
         {
           track: this.current,
@@ -501,6 +503,7 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async syncTray() {
+      if (phoneLayout) return;
       const track = this.current;
       const text = track
         ? `${track.title} - ${artistNames(track.artists)}`

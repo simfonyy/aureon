@@ -1,0 +1,24 @@
+{
+  "identifier": "app.nightlezz.devs.aureon",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Aureon",
+        "backgroundColor": "#0a0a0a"
+      }
+    ],
+    "security": {
+      "assetProtocol": {
+        "scope": ["$APPDATA/**", "$APPCACHE/**", "$TEMP/**"]
+      }
+    }
+  },
+  "bundle": {
+    "targets": "all",
+    "iOS": {
+      "frameworks": ["AVFAudio"],
+      "minimumSystemVersion": "17.0"
+    }
+  }
+}
