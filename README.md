@@ -1,32 +1,24 @@
 # Aureon
 
-Яндекс Музыка для Windows и Linux с клипами прямо в плеере. Включи трек, открой клип с обложки и убери курсор. Обложка отъедет в угол, а музыка продолжится с той же секунды.
+Неофициальный плеер Яндекс Музыки для Windows и Linux. Нужен аккаунт с Плюсом.
 
-**[Скачать Aureon](https://github.com/simfonyy/aureon/releases/latest)** · [Что нового](CHANGELOG.md) · [Сообщить о баге](https://github.com/simfonyy/aureon/issues)
+**[Скачать Aureon](https://github.com/simfonyy/aureon/releases/latest)**
 
-[![Плеер Aureon с клипом на фоне](docs/screenshots/player.png)](docs/screenshots/player.png)
+![Клип в полноэкранном плеере Aureon](docs/screenshots/player.png)
 
-### Пока играет музыка
+Клип включается прямо с обложки. Если убрать мышь, обложка уедет в угол и освободит кадр. Aureon запоминает синхронизацию для каждого трека.
 
-- **Нашёл трек для очереди?** Нажми `Ctrl+K`, введи название и нажми `Shift+Enter`. Трек сыграет следующим. Обычный `Enter` включает его сразу.
-- **Помнишь только строчку?** Введи её в поиск. Когда найдёшь песню, открой текст и следи за подсветкой в такт вокалу.
-- **Работаешь в другом окне?** Подтащи мини-плеер к краю экрана. Останутся обложка и полоска прогресса. Клик — пауза, колесо — громкость.
-- **Вернулся к любимому клипу?** Aureon запоминает синхронизацию на этом компьютере. При следующем включении подбирать её заново не придётся.
+Мини-плеер можно прицепить к краю рабочего стола. Щелчок по обложке ставит трек на паузу, колесо меняет громкость. Через `Ctrl+K` можно найти песню, а через `Shift+Enter` — поставить её следующей.
 
-[Главная](docs/screenshots/home.png) · [Текст поверх клипа](docs/screenshots/lyrics.png) · [Все скриншоты](docs/screenshots/INDEX.md)
+## Установка
 
-### Установка
+**Windows x64.** Скачай MSI. Для запуска без установки распакуй portable ZIP и открой `Aureon.exe`. Начиная с 1.2.2 обе версии обновляются при запуске.
 
-| Платформа | Что скачать |
-| --- | --- |
-| Windows x64 | **MSI** для установки или **portable ZIP**. Распакуй ZIP в свою папку и запусти `Aureon.exe`. |
-| Linux x64 | **DEB** для Debian и Ubuntu или **AppImage**. Для AppImage разреши выполнение файла. |
+**Linux x64.** Для Debian и Ubuntu есть DEB. Для AppImage дай файлу право на выполнение и запусти его.
 
-Для прослушивания нужны аккаунт Яндекса и Плюс. С версии 1.2.2 Aureon на Windows сам проверяет новые стабильные релизы при запуске. Переключатель автообновления находится в настройках, в разделе «О проекте».
+## Android и iPhone
 
-### А на телефоне?
-
-В следующих обновлениях ждите **версию для Android** и **IPA для iPhone**. Когда сборки будут готовы, выложим их здесь же. Чтобы не потерять релиз, вверху страницы GitHub выбери *Watch → Custom → Releases*.
+В следующих обновлениях планирую выложить версию для Android и `.ipa` для iPhone. Обе появятся здесь же, в Releases. Не теряйте :)
 
 <details>
 <summary><strong>Собрать из исходников</strong></summary>
@@ -38,7 +30,7 @@ npm ci
 npm run tauri:dev
 ```
 
-[Зависимости и сборка пакетов](docs/DISTRIBUTION.md) · [Участие в разработке](docs/CONTRIBUTING.md)
+[Инструкция по сборке](docs/DISTRIBUTION.md)
 
 </details>
 
@@ -51,6 +43,6 @@ Aureon вырос из [Mashiro](https://github.com/aeviww/yandex-music-client).
 
 Для работы с Яндекс Музыкой использованы [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless). Источники версий без цензуры — [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData).
 
-[GPL-3.0-or-later](LICENSE) · [NOTICE](NOTICE) · [Лицензия шаблона установщика](src-tauri/installer)
+Aureon распространяется под [GPL-3.0-or-later](LICENSE). Уведомления об авторских правах собраны в [NOTICE](NOTICE). Лицензия шаблона установщика лежит в [src-tauri/installer](src-tauri/installer).
 
 </details>
