@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
+const ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const REPOSITORY = 'simfonyy/aureon';
 const API = `https://api.github.com/repos/${REPOSITORY}`;
 const ARTIFACTS = { windows: 'Aureon-Windows-x64', linux: 'Aureon-Linux-x64' };
@@ -22,15 +22,15 @@ function versionFiles(version) {
 }
 
 function publicationOnly(path) {
-  return path === 'README.md' || path === 'CHANGELOG.md' || path.startsWith('docs/')
-    || path === '.github/workflows/publish-release.yml' || path === 'scripts/publish-release.mjs';
+  return path === 'README.md' || path.startsWith('docs/')
+    || path === '.github/workflows/publish-release.yml' || path === '.github/scripts/publish-release.mjs';
 }
 
 function sourceVersions(sha) {
   const json = path => JSON.parse(git('show', `${sha}:${path}`));
-  const cargo = git('show', `${sha}:src-tauri/Cargo.toml`).split(/^\[/m).find(section => section.startsWith('package]'));
+  const cargo = git('show', `${sha}:app/src-tauri/Cargo.toml`).split(/^\[/m).find(section => section.startsWith('package]'));
   const rust = cargo && /^version\s*=\s*"([^"]+)"/m.exec(cargo)?.[1];
-  return [json('package.json').version, json('src-tauri/tauri.conf.json').version, rust];
+  return [json('app/package.json').version, json('app/src-tauri/tauri.conf.json').version, rust];
 }
 
 async function api(path, { method = 'GET', body, optional = false, upload = false, size } = {}) {
@@ -161,7 +161,7 @@ async function verifyPackages(version) {
     key: Buffer.from(process.env.AUREON_UPDATE_SIGNING_KEY ?? '', 'base64'), type: 'pkcs8', format: 'der',
   });
   const publicKey = createPublicKey(signingKey).export({ format: 'jwk' });
-  const pinned = (await readFile(join(ROOT, 'src-tauri/update-public-key.hex'), 'utf8')).trim();
+  const pinned = (await readFile(join(ROOT, 'app/src-tauri/update-public-key.hex'), 'utf8')).trim();
   if (publicKey.crv !== 'Ed25519' || Buffer.from(publicKey.x, 'base64url').toString('hex') !== pinned) {
     fail('Release signing key does not match the updater public key.');
   }
@@ -220,7 +220,7 @@ async function verifyAssets(id, files) {
 
 async function publish(version, state) {
   const files = await verifyPackages(version);
-  const body = releaseBody(await readFile(join(ROOT, 'CHANGELOG.md'), 'utf8'), version, versionFiles(version));
+  const body = releaseBody(await readFile(join(ROOT, 'docs/CHANGELOG.md'), 'utf8'), version, versionFiles(version));
   await verifyTag(version, state.current);
   let release = await api(`/releases/tags/v${version}`, { optional: true });
   if (!release) {
@@ -274,7 +274,7 @@ async function selfTest() {
   assert.equal(files.windows.length + files.linux.length, 5);
   assert.throws(() => versionFiles('1.1.0-beta'));
   assert(publicationOnly('docs/screenshots/home.png'));
-  for (const path of ['src/main.ts', 'src-tauri/Cargo.toml', 'package.json', 'scripts/collect-packages.mjs', '.github/workflows/desktop-packages.yml']) assert(!publicationOnly(path));
+  for (const path of ['app/src/App.vue', 'app/src-tauri/Cargo.toml', 'app/package.json', 'app/scripts/collect-packages.mjs', '.github/workflows/desktop-packages.yml']) assert(!publicationOnly(path));
   const hash = 'a'.repeat(64), name = files.windows[0];
   assert.equal(checksumRows(`${hash}  ${name}\n`, [name]).get(name), hash);
   assert.throws(() => checksumRows(`${hash}  ../private\n`, [name]));

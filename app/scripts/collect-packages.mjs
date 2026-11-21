@@ -21,8 +21,8 @@ if(process.platform==='win32') {
   const portable=join(root,'dist',`Aureon-${version}-portable`);
   await mkdir(portable,{recursive:true});
   await copyFile(join(release,'Aureon.exe'),join(portable,'Aureon.exe'));
-  await copyFile(join(root,'LICENSE'),join(portable,'LICENSE'));
-  await copyFile(join(root,'NOTICE'),join(portable,'NOTICE'));
+  await copyFile(join(root,'..','LICENSE'),join(portable,'LICENSE'));
+  await copyFile(join(root,'..','docs','NOTICE'),join(portable,'NOTICE'));
   await writeFile(join(portable,'README.txt'),
     'Aureon — Windows x64, запуск без установки.\r\nРаспакуйте ZIP и запустите Aureon.exe.\r\nНужен WebView2 Runtime. Если он не установлен, используйте MSI.\r\nНастройки хранятся в профиле Windows, не рядом с EXE.\r\n');
   execFileSync('powershell.exe', [

@@ -15,8 +15,8 @@ quasar.config.*.temporary.compiled*
 .vite/
 
 
-src-tauri/target/
-src-tauri/gen/schemas/
+app/src-tauri/target/
+app/src-tauri/gen/schemas/
 
 
 .env
@@ -53,5 +53,5 @@ artifacts/
 *.deb
 
 # Recreated from locked packages before dev/build.
-/public/ocr/
-/public/emoji-ru.json
+/app/public/ocr/
+/app/public/emoji-ru.json

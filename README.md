@@ -59,13 +59,13 @@ chmod +x ./Aureon_1.2.2_amd64.AppImage
 
 ```powershell
 git clone https://github.com/simfonyy/aureon.git
-cd aureon
+cd aureon/app
 .\scripts\build\Build-MSI.bat
 ```
 
-Скрипт сам установит зависимости проекта и соберёт плеер. Первый запуск может занять время. Когда сборка закончится, откроется Проводник с готовым установщиком из `src-tauri/target/release/bundle/msi/`. Сам плеер лежит в `src-tauri/target/release/Aureon.exe`. Если сборка остановилась с ошибкой, полный вывод лежит в `build-logs/`.
+Скрипт сам установит зависимости проекта и соберёт плеер. Первый запуск может занять время. Когда сборка закончится, откроется Проводник с готовым установщиком из `app/src-tauri/target/release/bundle/msi/`. Сам плеер лежит в `app/src-tauri/target/release/Aureon.exe`. Если сборка остановилась с ошибкой, полный вывод лежит в `app/build-logs/`.
 
-Чтобы посмотреть изменения во время разработки, запусти `npm.cmd run tauri:dev` из папки `aureon`. Остановить этот режим можно через `Ctrl+C`.
+Чтобы посмотреть изменения во время разработки, запусти `npm.cmd run tauri:dev` из папки `aureon/app`. Остановить этот режим можно через `Ctrl+C`.
 
 </details>
 
@@ -86,12 +86,12 @@ sudo apt install git build-essential curl wget file pkg-config patchelf xdg-util
 
 ```bash
 git clone https://github.com/simfonyy/aureon.git
-cd aureon
+cd aureon/app
 npm ci
 bash scripts/build/Build-Linux.sh
 ```
 
-Готовый пакет для установки лежит в `src-tauri/target/release/bundle/deb/`, а файл для запуска без установки — в `src-tauri/target/release/bundle/appimage/`. Для разработки из той же папки проекта запусти `npm run tauri:dev`.
+Готовый пакет для установки лежит в `app/src-tauri/target/release/bundle/deb/`, а файл для запуска без установки — в `app/src-tauri/target/release/bundle/appimage/`. Для разработки из той же папки проекта запусти `npm run tauri:dev`.
 
 </details>
 
@@ -104,6 +104,6 @@ Aureon вырос из [Mashiro](https://github.com/aeviww/yandex-music-client).
 
 Для работы с Яндекс Музыкой использованы [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless). Источники версий без цензуры — [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData).
 
-Aureon распространяется под [GPL-3.0-or-later](LICENSE). Уведомления об авторских правах собраны в [NOTICE](NOTICE). Лицензия шаблона установщика лежит в [src-tauri/installer](src-tauri/installer).
+Aureon распространяется под [GPL-3.0-or-later](LICENSE). Уведомления об авторских правах собраны в [NOTICE](docs/NOTICE). Лицензия шаблона установщика лежит в [app/src-tauri/installer](app/src-tauri/installer).
 
 </details>

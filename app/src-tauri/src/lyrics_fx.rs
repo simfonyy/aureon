@@ -192,6 +192,7 @@ fn runtime_dir(config_dir: &Path) -> Option<PathBuf> {
         let sibling = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()?
             .parent()?
+            .parent()?
             .join("karaoke-prototype");
         if sibling.is_dir() {
             return Some(sibling);

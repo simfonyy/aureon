@@ -2,7 +2,11 @@ name: iPhone preview
 
 on:
   push:
-    branches: [ios/preview]
+    branches: [main]
+    paths: ['app/**', '.github/workflows/ios-preview.yml']
+  pull_request:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/ios-preview.yml']
   workflow_dispatch:
 
 permissions:
@@ -11,6 +15,10 @@ permissions:
 concurrency:
   group: iphone-preview-${{ github.ref }}
   cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: app
 
 jobs:
   iphone:
@@ -26,12 +34,13 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: app/package-lock.json
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           targets: aarch64-apple-ios
       - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a
         with:
-          workspaces: src-tauri -> target
+          workspaces: app/src-tauri -> target
           cache-on-failure: true
       - run: npm ci --no-audit --no-fund
       - run: npm test
@@ -64,5 +73,5 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: Aureon-iPhone-preview
-          path: artifacts/*
+          path: app/artifacts/*
           if-no-files-found: error

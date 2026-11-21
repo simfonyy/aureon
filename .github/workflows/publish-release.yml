@@ -41,7 +41,7 @@ jobs:
           node-version: '22'
       - name: Verify build source and artifacts
         id: prepare
-        run: node scripts/publish-release.mjs prepare
+        run: node .github/scripts/publish-release.mjs prepare
       - name: Download Windows packages
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
@@ -61,4 +61,4 @@ jobs:
       - name: Verify packages and publish release
         env:
           AUREON_UPDATE_SIGNING_KEY: ${{ secrets.AUREON_UPDATE_SIGNING_KEY }}
-        run: node scripts/publish-release.mjs publish
+        run: node .github/scripts/publish-release.mjs publish

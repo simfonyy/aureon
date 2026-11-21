@@ -2,6 +2,7 @@ mod commands;
 mod clip_sync;
 mod clip_sync_media;
 mod clip_sync_match;
+#[cfg(desktop)]
 mod updates;
 mod gpu;
 mod files;
@@ -112,8 +113,11 @@ pub fn run() {
             library_tools::library_duplicate_groups,
             library_tools::library_identify,
             gpu::detect_gpu,
+            #[cfg(desktop)]
             updates::check_update,
+            #[cfg(desktop)]
             updates::install_update,
+            #[cfg(desktop)]
             updates::download_update,
             commands::prefetch_stream,
             commands::clear_stream_cache,

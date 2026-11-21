@@ -12,7 +12,7 @@ Linux-пакеты собираются в GitHub Actions на Ubuntu 22.04.
 ## GitHub Actions
 
 Workflow [Desktop packages](https://github.com/simfonyy/aureon/actions/workflows/desktop-packages.yml) собирает Windows x64 (MSI и ZIP без установки) и Linux x64
-(DEB и AppImage). Он запускается при push в main, build/desktop-packages, при pull request
+(DEB и AppImage). Он запускается при push в main или release/**, при pull request
 в main, при теге v* или вручную: Actions → Desktop packages → Run workflow.
 
 В успешном запуске скачайте Artifacts → Aureon-Windows-x64 / Aureon-Linux-x64.
@@ -25,12 +25,12 @@ Workflow [Desktop packages](https://github.com/simfonyy/aureon/actions/workflows
 
 ## Локальная сборка Windows
 
-`Build-MSI.ps1` — обычная сборка. При уже установленных зависимостях: `./scripts/build/Build-MSI.ps1 -SkipInstall`.
+Из корня репозитория перейдите в `app/` командой `cd app`. `Build-MSI.ps1` запускает сборку установщика. При уже установленных зависимостях: `./scripts/build/Build-MSI.ps1 -SkipInstall`.
 Результат: `src-tauri/target/release/bundle/msi/`.
 
 ## Linux (Ubuntu 22.04+, x86_64)
 
-Нужны Node.js 22, npm, актуальный Rust stable и системные библиотеки:
+Команды ниже выполняются из папки `app/`. Нужны Node.js 22, npm, актуальный Rust stable и системные библиотеки:
 
 ```bash
 sudo apt-get update

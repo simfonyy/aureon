@@ -2,17 +2,17 @@
   <q-page class="home-page">
     <q-scroll-area class="home-scroll">
       <div class="home-content">
+        <header v-if="!phoneLayout" class="home-topline">
+          <h1>{{ greeting }}</h1>
+          <button class="home-library-link" type="button" @click="router.push('/library')">
+            <Icon name="search" :size="15" /><span>В библиотеке</span>
+          </button>
+        </header>
+
         <HomeDiscovery :featured="phoneLayout" :select-lead="selectLeadRelease" :favorite-artists="favoriteArtists">
           <template #lead="{ release, playAlbum, loadingAlbum }">
             <HomeSpotlight :release="release" :loading-album="loadingAlbum" @play="playAlbum" />
           </template>
-          <header v-if="!phoneLayout" class="home-topline">
-            <h1>{{ greeting }}</h1>
-            <button class="home-library-link" type="button" @click="router.push('/library')">
-              <Icon name="search" :size="15" /><span>В библиотеке</span>
-            </button>
-          </header>
-
           <button
             v-if="player.current && player.pendingResume"
             class="home-resume"
