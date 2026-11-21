@@ -1,10 +1,10 @@
 <template>
   <div class="home-discovery" :aria-busy="loading">
-    <slot name="lead" :releases="releases" :play-album="playAlbum" :loading-album="loadingAlbum" />
+    <slot name="lead" :release="leadRelease" :play-album="playAlbum" :loading-album="loadingAlbum" />
     <slot />
-    <template v-if="releases.length">
+    <template v-if="shelfReleases.length">
       <HomeShelf id="home-new-releases" label="Новые релизы">
-        <article v-for="album in releases" :key="album.id" class="home-card">
+        <article v-for="album in shelfReleases" :key="album.id" class="home-card">
           <div class="home-card-art" :data-home-album-cover="album.id">
             <button class="home-cover-open" type="button" :aria-label="`Открыть альбом: ${album.title}`" @click="openAlbum(album, $event)">
               <img v-if="album.cover_url" :src="album.cover_url" alt="" loading="lazy" decoding="async" />
@@ -21,7 +21,7 @@
         </article>
       </HomeShelf>
     </template>
-    <section v-else-if="loading || releasesError" class="discovery-status-section" aria-labelledby="new-releases-heading">
+    <section v-else-if="!leadRelease && (loading || releasesError)" class="discovery-status-section" aria-labelledby="new-releases-heading">
       <div class="home-section-head"><h2 id="new-releases-heading">Новые релизы</h2></div>
       <p v-if="loading" class="discovery-loading" role="status"><q-spinner size="15px" />Загружаем релизы…</p>
     </section>
@@ -58,9 +58,12 @@ import HomePlayingBadge from './HomePlayingBadge.vue';
 import Icon from '@/components/Icon.vue';
 import TrackRow from '@/components/TrackRow.vue';
 
+const props = defineProps<{ selectLead?: (albums: DiscoveryAlbum[]) => DiscoveryAlbum | undefined }>();
 const router = useRouter(), auth = useAuthStore(), player = usePlayerStore();
 const releases = ref<DiscoveryAlbum[]>([]), chart = ref<Track[]>([]);
 const releasesError = ref(''), chartError = ref(''), loading = ref(false), chartExpanded = ref(false), loadingAlbum = ref('');
+const leadRelease = computed(() => props.selectLead?.(releases.value));
+const shelfReleases = computed(() => releases.value.filter(album => album.id !== leadRelease.value?.id));
 const visibleChart = computed(() => chartExpanded.value ? chart.value : chart.value.slice(0, 10));
 let disposed = false, generation = 0, playbackGeneration = 0;
 function account() { return auth.profile?.uid ?? null; }

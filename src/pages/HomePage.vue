@@ -9,9 +9,9 @@
           </button>
         </header>
 
-        <HomeDiscovery>
-          <template #lead="{ releases, playAlbum, loadingAlbum }">
-            <HomeSpotlight :releases="releases" :loading-album="loadingAlbum" @play="playAlbum" />
+        <HomeDiscovery :select-lead="selectLeadRelease">
+          <template #lead="{ release, playAlbum, loadingAlbum }">
+            <HomeSpotlight :release="release" :loading-album="loadingAlbum" @play="playAlbum" />
           </template>
           <button
             v-if="player.current && player.pendingResume"
@@ -155,7 +155,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Notify } from "quasar";
 import { api } from "@/api/client";
-import type { Playlist, Track, WheelItem } from "@/api/types";
+import type { DiscoveryAlbum, Playlist, Track, WheelItem } from "@/api/types";
 import Icon from "@/components/Icon.vue";
 import HomeSpotlight from "@/components/home/HomeSpotlight.vue";
 import HomeQuickLaunch from "@/components/home/HomeQuickLaunch.vue";
@@ -167,12 +167,24 @@ import { beginAlbumCoverTransition, arriveHomeAlbumCoverTransition } from "@/lib
 import { artistNames, formatDuration, plural } from "@/lib/format";
 import { askConfirm, askText } from "@/lib/dialogs";
 import { readCache, swr, writeCache } from "@/lib/cache";
+import { useStatsStore } from "@/stores/stats";
 import { useLibraryStore } from "@/stores/library";
 import { usePlayerStore } from "@/stores/player/index";
 
 const router = useRouter();
 const player = usePlayerStore();
 const library = useLibraryStore();
+const stats = useStatsStore();
+const knownArtists = computed(() => {
+  const ids = new Set(stats.events.filter(event => event.seconds >= 20).map(event => event.artistId));
+  const names = new Set(library.likedAlbums.flatMap(album => (album.artists || "").toLowerCase().split(", ")));
+  return { ids, names };
+});
+function selectLeadRelease(albums: DiscoveryAlbum[]) {
+  const { ids, names } = knownArtists.value;
+  return albums.find(album => album.artists.some(artist => ids.has(artist.id) || names.has(artist.name.toLowerCase()))) ?? albums[0];
+}
+
 const playlists = ref<Playlist[]>([]);
 const wheel = ref<WheelItem[]>([]);
 const loading = ref(false);

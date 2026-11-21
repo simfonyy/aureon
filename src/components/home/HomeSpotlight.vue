@@ -4,7 +4,7 @@
       <button type="button" class="spot-open" :aria-label="'Открыть альбом ' + release.title" @click="router.push('/album/' + release.id)">
         <img v-if="release.cover_url" :src="release.cover_url" alt="" />
         <span class="spot-copy">
-          <small>{{ familiar ? 'Новое от знакомых артистов' : 'Новый релиз' }}</small>
+          <small>Новый релиз</small>
           <strong>{{ release.title }}</strong><span>{{ artistNames(release.artists) }}</span>
         </span>
       </button>
@@ -23,24 +23,16 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '@/components/Icon.vue';
 import type { DiscoveryAlbum } from '@/api/types';
 import { artistNames } from '@/lib/format';
 import { useRecentMusicStore } from '@/stores/recentMusic';
-import { useLibraryStore } from '@/stores/library';
-import { useStatsStore } from '@/stores/stats';
 
-const props = defineProps<{ releases: DiscoveryAlbum[]; loadingAlbum: string }>();
+defineProps<{ release: DiscoveryAlbum | undefined; loadingAlbum: string }>();
 const emit = defineEmits<{ play: [album: DiscoveryAlbum] }>();
-const router = useRouter(), recent = useRecentMusicStore(), library = useLibraryStore(), stats = useStatsStore();
-const familiar = computed(() => {
-  const artists = new Set(stats.events.filter(event => event.seconds >= 20).map(event => event.artistId));
-  const names = new Set(library.likedAlbums.flatMap(album => (album.artists || '').toLowerCase().split(', ')));
-  return props.releases.find(album => album.artists.some(artist => artists.has(artist.id) || names.has(artist.name.toLowerCase())));
-});
-const release = computed(() => familiar.value ?? props.releases[0]);
+const router = useRouter();
+const recent = useRecentMusicStore();
 </script>
 <style scoped>
 .home-spotlight { display: grid; gap: 24px; margin-bottom: 22px; }
