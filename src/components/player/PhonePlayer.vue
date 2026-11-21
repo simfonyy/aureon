@@ -20,16 +20,16 @@
 
   <q-dialog
     v-model="open"
+    class="phone-player-modal"
     maximized
-    position="bottom"
     transition-show="slide-up"
     transition-hide="slide-down"
     :transition-duration="reduceMotion ? 0 : 320"
     aria-label="Сейчас играет"
     @hide="resetSheet"
   >
-    <section v-if="track" class="phone-player" :style="paletteStyle">
-      <div class="phone-sheet" :class="{ 'is-dragging': gesture, 'show-queue': queueOpen }" :style="{ '--drag-y': dragY + 'px' }">
+    <div v-if="track" class="phone-player" :style="paletteStyle">
+      <div class="phone-sheet" :class="{ 'is-dragging': gesture }" :style="{ '--drag-y': dragY + 'px' }">
         <div
           class="phone-grab"
           aria-hidden="true"
@@ -150,7 +150,7 @@
           </button>
         </footer>
       </div>
-    </section>
+    </div>
   </q-dialog>
 </template>
 

@@ -36,9 +36,9 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - name: Generate Xcode project
-        run: node node_modules/@tauri-apps/cli/tauri.js ios init --ci
+        run: npm run tauri -- ios init --ci
       - name: Build unsigned iPhone package
-        run: node node_modules/@tauri-apps/cli/tauri.js ios build --ci --no-sign --target aarch64 -- --locked
+        run: npm run tauri -- ios build --ci --no-sign --target aarch64 -- --locked
       - name: Verify iPhone package
         run: |
           set -euo pipefail
