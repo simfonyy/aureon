@@ -184,7 +184,7 @@ function releaseBody(changelog, version, files) {
   if (!match) fail('Release changelog section is missing.');
   const section = changelog.slice(match.index + match[0].length).split(/^## /m)[0];
   const bullets = section.split(/\r?\n/).filter(line => line.startsWith('- '));
-  if (bullets.length !== 5 || bullets.some(line => line.length > 240)) fail('Use exactly five short changelog bullets for this release.');
+  if (!bullets.length) fail('Release changelog has no entries.');
   const link = (label, name) => `[${label}](https://github.com/${REPOSITORY}/releases/download/v${version}/${name})`;
   const downloads = `![Скачивания файлов](https://img.shields.io/github/downloads/${REPOSITORY}/v${version}/total?style=flat-square&label=скачиваний&labelColor=252628&color=786443)`;
   const packages = [
