@@ -1,5 +1,7 @@
 import type { Track } from "@/api/types";
 
+import type { PlaylistSource } from '@/stores/recentMusic';
+
 const SESSION_KEY = "mashiro.session";
 const KEEP_BEFORE = 20;
 const KEEP_TOTAL = 150;
@@ -7,6 +9,7 @@ const KEEP_TOTAL = 150;
 export interface PlayerSession {
   queue: Track[];
   sourceQueue: Track[];
+  playlist?: PlaylistSource | null;
   shuffle: boolean;
   index: number;
   progress: number;
@@ -42,6 +45,8 @@ export function loadSession(): PlayerSession | null {
       sourceQueue: Array.isArray(data.sourceQueue)
         ? data.sourceQueue
         : data.queue,
+      playlist: data.playlist && Number.isSafeInteger(data.playlist.kind) && typeof data.playlist.title === 'string'
+        ? data.playlist : null,
       shuffle: Boolean(data.shuffle),
       index: Math.min(index, data.queue.length - 1),
       progress: typeof data.progress === "number" ? data.progress : 0,

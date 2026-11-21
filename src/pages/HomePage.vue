@@ -9,36 +9,39 @@
           </button>
         </header>
 
-        <button
-          v-if="player.current && player.pendingResume"
-          class="home-resume"
-          type="button"
-          :disabled="player.loading"
-          @click="player.setPlaying(true)"
-        >
-          <span class="home-resume-cover">
-            <img v-if="player.current.cover_url" :src="player.current.cover_url" alt="" />
-            <Icon v-else name="album" :size="23" />
-          </span>
-          <span class="home-resume-copy">
-            <strong>Продолжить</strong>
-            <span>{{ player.current.title }} · {{ artistNames(player.current.artists) }}</span>
-          </span>
-          <span v-if="player.progress > 0" class="home-resume-position">{{ formatDuration(player.progress * 1000) }}</span>
-          <span class="home-resume-play">
-            <q-spinner v-if="player.loading" size="16px" />
-            <Icon v-else name="play" :size="18" />
-          </span>
-        </button>
-
-        <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
-          @open-playlist="openPlaylist">
-          <template #playlist-menu="{ playlist }">
-            <HomePlaylistMenu :pl="playlist" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
+        <HomeDiscovery>
+          <template #lead="{ releases, playAlbum, loadingAlbum }">
+            <HomeSpotlight :releases="releases" :loading-album="loadingAlbum" @play="playAlbum" />
           </template>
-        </HomeQuickLaunch>
+          <button
+            v-if="player.current && player.pendingResume"
+            class="home-resume"
+            type="button"
+            :disabled="player.loading"
+            @click="player.setPlaying(true)"
+          >
+            <span class="home-resume-cover">
+              <img v-if="player.current.cover_url" :src="player.current.cover_url" alt="" />
+              <Icon v-else name="album" :size="23" />
+            </span>
+            <span class="home-resume-copy">
+              <strong>Продолжить</strong>
+              <span>{{ player.current.title }} · {{ artistNames(player.current.artists) }}</span>
+            </span>
+            <span v-if="player.progress > 0" class="home-resume-position">{{ formatDuration(player.progress * 1000) }}</span>
+            <span class="home-resume-play">
+              <q-spinner v-if="player.loading" size="16px" />
+              <Icon v-else name="play" :size="18" />
+            </span>
+          </button>
 
-        <HomeDiscovery />
+          <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
+            @open-playlist="openPlaylist">
+            <template #playlist-menu="{ playlist }">
+              <HomePlaylistMenu :pl="playlist" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
+            </template>
+          </HomeQuickLaunch>
+        </HomeDiscovery>
 
         <HomeShelf v-if="picks.length" id="home-picks" label="Новое для тебя">
           <article v-for="p in picks" :key="`${p.kind}-${p.id}`" class="home-card">
@@ -154,6 +157,7 @@ import { Notify } from "quasar";
 import { api } from "@/api/client";
 import type { Playlist, Track, WheelItem } from "@/api/types";
 import Icon from "@/components/Icon.vue";
+import HomeSpotlight from "@/components/home/HomeSpotlight.vue";
 import HomeQuickLaunch from "@/components/home/HomeQuickLaunch.vue";
 import HomeDiscovery from "@/components/home/HomeDiscovery.vue";
 import HomeShelf from "@/components/home/HomeShelf.vue";
@@ -210,7 +214,7 @@ async function playPlaylist(pl: Playlist) {
       Notify.create({ message: "Плейлист пуст" });
       return;
     }
-    await player.playQueue(tracks, 0);
+    await player.playQueue(tracks, 0, { playlist: pl });
   } catch {
     Notify.create({ message: "Не удалось загрузить плейлист" });
   }

@@ -164,6 +164,7 @@ pub fn run() {
             hotkeys::clear_global_hotkeys,
             mini::enter_mini_player,
             mini::resize_mini_player,
+            mini::dock_mini_player,
             mini::exit_mini_player,
             together::commands::together_host,
             together::commands::together_join,

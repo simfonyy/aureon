@@ -416,8 +416,10 @@
       <PlayerBar />
     </q-footer>
 
-    <CassetteMiniPlayer v-if="panels.mini && !panels.hidden && creative.miniSkin==='cassette'" />
-    <MiniPlayer v-else-if="panels.mini && !panels.hidden" />
+    <MiniScreenDock v-if="panels.mini && !panels.hidden">
+      <CassetteMiniPlayer v-if="creative.miniSkin === 'cassette'" />
+      <MiniPlayer v-else />
+    </MiniScreenDock>
 
     <TogetherDock />
     <AlbumCoverTransition />
@@ -445,6 +447,7 @@ onBeforeUnmount(() => musicClips.reset());
 const MusicClipDialog=defineAsyncComponent(()=>import('@/components/clips/MusicClipDialog.vue'));
 import PlaylistFolders from '@/components/library/PlaylistFolders.vue';
 import CreativeFeedback from '@/components/creative/CreativeFeedback.vue';
+import MiniScreenDock from '@/components/player/MiniScreenDock.vue';
 const CassetteMiniPlayer=defineAsyncComponent(()=>import('@/components/creative/CassetteMiniPlayer.vue'));
 const CommandPalette=defineAsyncComponent(()=>import('@/components/commands/CommandPalette.vue'));
 const ScreenshotSearchDialog=defineAsyncComponent(()=>import('@/components/search/ScreenshotSearchDialog.vue'));
@@ -923,4 +926,3 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 </style>
-

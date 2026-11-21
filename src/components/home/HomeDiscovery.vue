@@ -1,5 +1,7 @@
 <template>
   <div class="home-discovery" :aria-busy="loading">
+    <slot name="lead" :releases="releases" :play-album="playAlbum" :loading-album="loadingAlbum" />
+    <slot />
     <template v-if="releases.length">
       <HomeShelf id="home-new-releases" label="Новые релизы">
         <article v-for="album in releases" :key="album.id" class="home-card">

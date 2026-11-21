@@ -157,18 +157,23 @@
         <div class="faint t-11 player-time">
           {{ formatDuration(seekValue * 1000) }}
         </div>
-        <q-slider
-          class="col"
-          aria-label="Позиция воспроизведения"
-          :model-value="seekValue"
-          :min="0"
-          :max="Math.max(player.duration, 1)"
-          :step="1"
-          dense
-          color="primary"
-          @update:model-value="onSeekInput"
-          @change="onSeekCommit"
-        />
+        <div class="player-timeline">
+          <div v-if="showSpectrum" class="player-spectrum" aria-hidden="true">
+            <canvas ref="vizCanvas" class="player-visualizer" />
+          </div>
+          <q-slider
+            class="col"
+            aria-label="Позиция воспроизведения"
+            :model-value="seekValue"
+            :min="0"
+            :max="Math.max(player.duration, 1)"
+            :step="1"
+            dense
+            color="primary"
+            @update:model-value="onSeekInput"
+            @change="onSeekCommit"
+          />
+        </div>
         <div class="faint t-11 player-time">
           {{ formatDuration(player.duration * 1000) }}
         </div>
@@ -182,9 +187,6 @@
       @dragleave="onZoneLeave($event)"
       @drop.prevent="onZoneDrop('right', $event)"
     >
-      <div v-if="showSpectrum" class="player-spectrum" aria-hidden="true">
-        <canvas ref="vizCanvas" class="player-visualizer" />
-      </div>
       <template v-for="(id, index) in rightButtons" :key="id">
         <i v-if="caretAt('right', index)" class="pe-caret" />
         <span
@@ -315,7 +317,7 @@ const editMode = computed(() => ui.settings.playerEditMode);
 const showSpectrum = computed(() =>
   Boolean(player.current && ui.settings.playerVisualizer && ui.settings.animations && !editMode.value),
 );
-useVisualizer(vizCanvas, () => showSpectrum.value, { bars: 24, mode: "trace" });
+useVisualizer(vizCanvas, () => showSpectrum.value, { bars: 52, mode: "trace" });
 const dragId = ref<PlayerButtonId | null>(null);
 const overZone = ref<PlayerZone | null>(null);
 const overIndex = ref(-1);

@@ -47,6 +47,8 @@ import { loadSession, saveSession } from "./session";
 import type { PlaybackSettings } from "./settings";
 import { loadPlaybackSettings, savePlaybackSettings } from "./settings";
 
+import { useRecentMusicStore, type PlaylistSource } from '@/stores/recentMusic';
+
 const DEFAULT_STATION = "user:onyourwave";
 const SEEN_LIMIT = 600;
 const WAVE_HISTORY_KEY = "wave.history.v1";
@@ -90,6 +92,7 @@ function rememberPrefetch(id: string, entry: PrefetchEntry): void {
 interface PlayerState {
   queue: Track[];
   sourceQueue: Track[];
+  playlistSource: PlaylistSource | null;
   index: number;
   current: Track | null;
   isPlaying: boolean;
@@ -197,6 +200,7 @@ export const usePlayerStore = defineStore("player", {
     return {
       queue: [],
       sourceQueue: [],
+      playlistSource: null,
       index: -1,
       current: null,
       isPlaying: false,
@@ -346,6 +350,7 @@ export const usePlayerStore = defineStore("player", {
         void this.syncTray();
       };
       audio.onplaying = () => {
+        if (this.current) useRecentMusicStore().record(this.current, this.playlistSource);
         stallAt = audio.currentTime;
         stallSince = 0;
         recoverStep = 0;
@@ -450,6 +455,7 @@ export const usePlayerStore = defineStore("player", {
     persistSession() {
       if (!this.current || !this.queue.length) return;
       saveSession({
+        playlist: this.playlistSource,
         queue: this.queue,
         sourceQueue: this.sourceQueue.length ? this.sourceQueue : this.queue,
         shuffle: this.shuffle,
@@ -469,6 +475,7 @@ export const usePlayerStore = defineStore("player", {
       if (!data) return false;
       const track = data.queue[data.index];
       if (!track) return false;
+      this.playlistSource = data.playlist ?? null;
       this.queue = data.queue;
       this.sourceQueue = data.sourceQueue.length
         ? [...data.sourceQueue]
@@ -591,6 +598,7 @@ export const usePlayerStore = defineStore("player", {
         }
         if (!tracks.length) throw new Error("Ротор вернул пустой плейлист");
 
+        this.playlistSource = null;
         this.stationId = station;
         if (stationName) this.stationName = stationName;
         else if (station === DEFAULT_STATION) this.stationName = "Моя волна";
@@ -617,8 +625,9 @@ export const usePlayerStore = defineStore("player", {
     async playQueue(
       tracks: Track[],
       startIndex = 0,
-      opts?: { wave?: boolean; batchId?: string | null },
+      opts?: { wave?: boolean; batchId?: string | null; playlist?: PlaylistSource },
     ) {
+      this.playlistSource = opts?.playlist ?? null;
       this.sourceQueue = [...tracks];
       this.queue = [...tracks];
       this.shuffle = false;

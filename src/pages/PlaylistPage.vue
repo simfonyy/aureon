@@ -749,13 +749,17 @@ const totalLabel = computed(() => {
   return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
 });
 
+function playlistContext() {
+  return { playlist: { kind: Number(props.kind), title: title.value, cover_url: cover.value } };
+}
+
 function playFrom(index: number) {
-  if (tracks.value.length) void player.playQueue(tracks.value, index);
+  if (tracks.value.length) void player.playQueue(tracks.value, index, playlistContext());
 }
 
 function shufflePlay() {
   if (!tracks.value.length) return;
-  void player.playQueue(tracks.value, 0).then(() => {
+  void player.playQueue(tracks.value, 0, playlistContext()).then(() => {
     if (!player.shuffle) player.toggleShuffle();
   });
 }
@@ -824,7 +828,7 @@ function toggleSelectAllRows() {
 
 function playRowSelection() {
   const list = selectedRowTracks.value;
-  if (list.length) void player.playQueue(list, 0);
+  if (list.length) void player.playQueue(list, 0, playlistContext());
 }
 
 function enqueueRowSelection() {
@@ -912,7 +916,7 @@ function playSelected() {
   const list = selectedTracks.value;
   if (!list.length) return;
   pickerOpen.value = false;
-  void player.playQueue(list, 0);
+  void player.playQueue(list, 0, playlistContext());
 }
 
 function enqueueSelected() {

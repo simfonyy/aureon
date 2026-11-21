@@ -1,4 +1,4 @@
-use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, WebviewWindow};
+use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, PhysicalPosition, WebviewWindow};
 
 const MINI_WIDTH: f64 = 396.0;
 const MINI_HEIGHT: f64 = 152.0;
@@ -72,6 +72,62 @@ pub fn resize_mini_player(app: AppHandle, width: f64, height: f64) -> Result<(),
     let win = window_of(&app)?;
     let (width, height) = size_of(Some(width), Some(height));
     force_size(&win, width, height)
+}
+
+#[tauri::command]
+pub fn dock_mini_player(
+    app: AppHandle,
+    expanded: bool,
+    was_docked: bool,
+    width: f64,
+    height: f64,
+) -> Result<Option<&'static str>, String> {
+    let win = window_of(&app)?;
+    if !win.is_always_on_top().map_err(|e| e.to_string())? {
+        return Ok(None);
+    }
+    let Some(monitor) = win.current_monitor().map_err(|e| e.to_string())? else {
+        return Ok(None);
+    };
+    let area = monitor.work_area();
+    let scale = monitor.scale_factor();
+    let pos = win.outer_position().map_err(|e| e.to_string())?;
+    let size = win.outer_size().map_err(|e| e.to_string())?;
+    let left = area.position.x;
+    let right = left + area.size.width as i32;
+    let threshold = (16.0 * scale).round() as i32;
+    let side = if (pos.x - left).abs() <= threshold {
+        Some("left")
+    } else if (right - pos.x - size.width as i32).abs() <= threshold {
+        Some("right")
+    } else {
+        None
+    };
+    if side.is_none() && !was_docked {
+        return Ok(None);
+    }
+    let (w, h) = if side.is_some() {
+        (if expanded { 320.0 } else { 60.0 }, 60.0)
+    } else {
+        size_of(Some(width), Some(height))
+    };
+    let target = LogicalSize::new(w, h).to_physical::<u32>(scale);
+    let last_x = (right - target.width as i32).max(left);
+    let top = area.position.y;
+    let last_y = (top + area.size.height as i32 - target.height as i32).max(top);
+    let x = match side {
+        Some("left") => left,
+        Some("right") => last_x,
+        _ => pos.x.clamp(left, last_x),
+    };
+    let destination = PhysicalPosition::new(x, pos.y.clamp(top, last_y));
+    if target != size {
+        force_size(&win, w, h)?;
+    }
+    if destination != pos || target != size {
+        win.set_position(destination).map_err(|e| e.to_string())?;
+    }
+    Ok(side)
 }
 
 #[tauri::command]

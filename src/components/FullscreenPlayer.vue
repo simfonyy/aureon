@@ -4,7 +4,8 @@
       <div
         v-if="player.fullscreen && player.current"
         class="fs-player"
-        :class="{ 'with-queue': showQueue, 'has-clip-background': clipReady }"
+        @pointermove="pointerMoved"
+        :class="{ 'with-queue': showQueue, 'has-clip-background': clipReady, 'clip-idle': clipReady && docked && !showQueue && !trackMenuOpen, 'clip-peek': clipReady && peek && !showQueue }"
       >
         <div
           v-if="coverUrl"
@@ -48,7 +49,7 @@
 
         <div class="fs-body">
           <div class="fs-stage">
-            <div class="fs-dock">
+            <div class="fs-dock" @focusin="revealDock">
               <div class="fs-art">
                 <Transition name="fs-swap">
                   <img
@@ -243,6 +244,37 @@ watch(() => [player.current?.id, player.current?.cover_url], () => { coverFailed
 
 const showQueue = ref(false);
 const trackMenuOpen = ref(false);
+const docked = ref(false);
+const peek = ref(false);
+let idleTimer: number | undefined;
+
+function settleDock() {
+  window.clearTimeout(idleTimer);
+  if (clipReady.value && !showQueue.value && !trackMenuOpen.value) docked.value = true;
+}
+
+function revealDock() {
+  if (!clipReady.value) return;
+  window.clearTimeout(idleTimer);
+  if (docked.value) peek.value = true;
+  docked.value = false;
+  idleTimer = window.setTimeout(() => {
+    if (!document.querySelector('.fs-dock :focus-visible, .fs-dock :active')) settleDock();
+  }, 2000);
+}
+
+function pointerMoved(event: PointerEvent) {
+  if (!document.hasFocus() || (!event.movementX && !event.movementY)) return;
+  if (!docked.value || (event.target as HTMLElement).closest('.fs-dock')) revealDock();
+}
+
+watch(() => [clipReady.value, showQueue.value, trackMenuOpen.value], () => {
+  window.clearTimeout(idleTimer);
+  docked.value = false;
+  peek.value = false;
+  if (clipReady.value && !document.hasFocus()) settleDock();
+  else if (clipReady.value && !showQueue.value && !trackMenuOpen.value) revealDock();
+});
 const native = ref(false);
 let nativeCloseTimer: number | undefined;
 let nativeReadVersion = 0;
@@ -361,9 +393,12 @@ watch(
 
 onMounted(() => {
   window.addEventListener("keydown", onKey);
+  window.addEventListener("blur", settleDock);
 });
 
 onBeforeUnmount(() => {
+  window.clearTimeout(idleTimer);
+  window.removeEventListener("blur", settleDock);
   nativeReadVersion++;
   const shouldExit = native.value || nativeCloseTimer !== undefined;
   cancelNativeClose();
@@ -380,7 +415,7 @@ onBeforeUnmount(() => {
 
 .fs-dock {
   --dock-shift: 0px;
-  --dock-motion: 500ms cubic-bezier(.22, .65, .28, 1);
+  --dock-motion: 250ms cubic-bezier(.22, .65, .28, 1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -403,11 +438,35 @@ onBeforeUnmount(() => {
 }
 
 .has-clip-background .fs-dock {
-  --dock-shift: calc(-1 * min(22cqw, max(0px, (100cqw - 390px) / 2)));
-  width: min(360px, 100%);
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  translate: -50% 50%;
+  transition: left var(--dock-motion), bottom var(--dock-motion), translate var(--dock-motion), width var(--dock-motion);
 }
-
-.has-clip-background .fs-dock .fs-art { --cover-limit: min(39vh, 310px); }
+.has-clip-background.with-queue .fs-dock { position: static; translate: none; }
+.clip-peek .fs-dock {
+  width: min(360px, 78vw, 47vh);
+  left: clamp(20px, 3vw, 48px);
+  bottom: clamp(20px, 4vh, 52px);
+  translate: 0 0;
+}
+.clip-peek .fs-art { order: 1; }
+.clip-idle .fs-dock {
+  width: clamp(96px, 10vw, 152px);
+  bottom: clamp(20px, 4vh, 52px);
+  left: clamp(20px, 3vw, 48px);
+  translate: 0 0;
+  gap: 0;
+}
+.clip-idle .fs-dock .fs-meta, .clip-idle .fs-dock .fs-progress {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+.clip-idle .fs-player-actions { opacity: 0; pointer-events: none; }
+.clip-idle .fs-player-actions > * { pointer-events: none; }
+html.no-motion .fs-dock, html.no-motion .fs-dock .fs-art { transition: none; }
 
 .fs-dock .fs-meta,
 .fs-dock .fs-progress { width: 100%; max-width: 100%; }

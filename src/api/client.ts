@@ -265,6 +265,9 @@ export const api = {
   resizeMiniPlayer: (width: number, height: number) =>
     call<void>("resize_mini_player", { width, height }),
 
+  dockMiniPlayer: (expanded: boolean, wasDocked: boolean, width: number, height: number) =>
+    call<'left' | 'right' | null>('dock_mini_player', { expanded, wasDocked, width, height }),
+
   exitMiniPlayer: () => call<void>("exit_mini_player"),
 
   exportTextFile: (name: string, content: string, dir?: string | null) =>

@@ -332,7 +332,7 @@ async function playPlaylist(pl: Playlist) {
     if (list.length) writeCache(key, list);
   }
   if (!list.length) return;
-  void player.playQueue(list, 0);
+  void player.playQueue(list, 0, { playlist: pl });
 }
 
 async function createPlaylist() {
