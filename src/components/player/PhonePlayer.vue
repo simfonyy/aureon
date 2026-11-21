@@ -21,6 +21,7 @@
   <q-dialog
     v-model="open"
     class="phone-player-modal"
+    :no-esc-dismiss="clipExpanded"
     maximized
     transition-show="slide-up"
     transition-hide="slide-down"
@@ -31,7 +32,7 @@
     <div v-if="track" class="phone-player" :style="paletteStyle">
       <div class="phone-sheet" :class="{ 'is-dragging': gesture }" :style="{ '--drag-y': dragY + 'px' }">
         <div
-          class="phone-grab"
+          class="phone-grab" :inert="clipExpanded"
           aria-hidden="true"
           @pointerdown="startDrag"
           @pointermove="moveDrag"
@@ -39,7 +40,7 @@
           @pointercancel="cancelDrag"
           @lostpointercapture="cancelDrag"
         ><span /></div>
-        <header class="phone-player-head">
+        <header class="phone-player-head" :inert="clipExpanded">
           <button class="phone-player-button" type="button" aria-label="Свернуть плеер" @click="open = false">
             <Icon name="chevronDown" :size="23" />
           </button>
@@ -50,25 +51,13 @@
           </button>
         </header>
 
-        <div class="phone-media">
-          <div v-show="!queueOpen" class="phone-artwork" :class="{ 'is-playing': player.isPlaying }">
-            <Transition name="phone-cover">
-              <img v-if="track.cover_url" :key="track.cover_url" :src="track.cover_url" alt="" decoding="async" />
-              <Icon v-else key="fallback" name="note" :size="58" />
-            </Transition>
-            <MusicClipBackdrop
-              v-if="open"
-              class="phone-clip"
-              :track="track"
-              :active="!queueOpen && !player.loading"
-              :enabled="ui.settings.musicVideoBackground"
-              :alignment-allowed="!player.censorReplaced && !player.playingLocal"
-              :position="player.progress"
-              :playing="player.isPlaying"
-              :playback-rate="player.playbackRate"
-              :pending-resume="player.pendingResume"
-            />
-          </div>
+        <div class="phone-media" :class="{ 'clip-expanded': clipExpanded }">
+          <PhoneArtwork
+            v-show="!queueOpen"
+            v-model:expanded="clipExpanded"
+            :track="track"
+            :active="open && !queueOpen"
+          />
 
           <section v-if="queueOpen" class="phone-queue" aria-label="Очередь">
             <div class="phone-queue-head">
@@ -100,7 +89,7 @@
           </section>
         </div>
 
-        <div class="phone-player-meta">
+        <div class="phone-player-meta" :inert="clipExpanded">
           <div class="phone-player-title">
             <h1 class="ellipsis">{{ track.title }}</h1>
             <p class="ellipsis">{{ artists }}</p>
@@ -110,7 +99,7 @@
           </button>
         </div>
 
-        <div class="phone-seek">
+        <div class="phone-seek" :inert="clipExpanded">
           <q-slider
             :model-value="seekPreview ?? player.progress"
             :max="Math.max(1, player.duration)"
@@ -126,7 +115,7 @@
           </div>
         </div>
 
-        <div class="phone-transport" aria-label="Управление воспроизведением">
+        <div class="phone-transport" :inert="clipExpanded" aria-label="Управление воспроизведением">
           <button class="phone-player-button" type="button" aria-label="Предыдущий трек" :disabled="!player.hasPrev && player.progress <= 3" @click="player.prev()">
             <Icon name="prev" :size="30" />
           </button>
@@ -140,11 +129,10 @@
           </button>
         </div>
 
-        <footer class="phone-player-tools">
+        <footer class="phone-player-tools" :inert="clipExpanded">
           <button class="phone-player-button" type="button" aria-label="Текст песни" @click="openTrackLyrics(track)">
             <Icon name="lyrics" :size="23" />
           </button>
-          <ClipBackgroundControl :track="track" :active="open && !queueOpen" :show-hint="false" />
           <button class="phone-player-button" type="button" aria-label="Очередь" :aria-pressed="queueOpen" @click="queueOpen = !queueOpen">
             <Icon name="queue" :size="23" />
           </button>
@@ -159,8 +147,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import Icon from '@/components/Icon.vue';
 import TrackMenu from '@/components/TrackMenu.vue';
 import QueuePlaylistButton from '@/components/QueuePlaylistButton.vue';
-import ClipBackgroundControl from '@/components/clips/ClipBackgroundControl.vue';
-import MusicClipBackdrop from '@/components/clips/MusicClipBackdrop.vue';
+import PhoneArtwork from './PhoneArtwork.vue';
 import { openTrackLyrics } from '@/lib/dialogs';
 import { artistNames, formatDuration } from '@/lib/format';
 import { useCoverPalette } from '@/composables/useCoverPalette';
@@ -180,6 +167,7 @@ const playIcon = computed(() => player.isPlaying ? 'pause' : 'play');
 const playLabel = computed(() => player.isPlaying ? 'Пауза' : 'Воспроизвести');
 const reduceMotion = computed(() => !ui.settings.animations || matchMedia('(prefers-reduced-motion: reduce)').matches);
 const open = ref(false);
+const clipExpanded = ref(false);
 const queueOpen = ref(false);
 const seekPreview = ref<number | null>(null);
 const dragY = ref(0);
@@ -230,6 +218,7 @@ function cancelDrag(event: PointerEvent) {
 }
 
 function resetSheet() {
+  clipExpanded.value = false;
   gesture.value = null;
   dragY.value = 0;
   queueOpen.value = false;

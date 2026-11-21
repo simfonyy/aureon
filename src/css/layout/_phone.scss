@@ -244,6 +244,59 @@ body .phone-player-modal .q-dialog__inner > .phone-player {
 .phone-cover-enter-from,
 .phone-cover-leave-to { opacity: 0; }
 
+.phone-media.clip-expanded { container-type: normal; }
+.phone-sheet:has(.clip-expanded) { transform: none; }
+.phone-artwork.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  aspect-ratio: auto;
+  scale: 1;
+  border-radius: 0;
+  background: #070709;
+  touch-action: none;
+}
+.phone-artwork.is-expanded > img { visibility: hidden; }
+.phone-artwork.is-expanded .phone-clip video { inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.phone-artwork.is-expanded .music-clip-backdrop-shade { background: none; }
+.phone-clip-surface {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  touch-action: manipulation;
+}
+.phone-clip-switch,
+.phone-clip-expand,
+.phone-clip-controls button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #ffffff38;
+  border-radius: 50%;
+  background: #111117cf;
+  color: white;
+}
+.phone-clip-switch, .phone-clip-expand { position: absolute; bottom: 12px; }
+.phone-clip-switch { left: 12px; }
+.phone-clip-expand { right: 12px; }
+.phone-clip-controls {
+  position: absolute;
+  inset: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.phone-clip-controls button { pointer-events: auto; }
+.phone-clip-controls button:first-child { align-self: flex-start; }
+
 .phone-player-title { min-width: 0; }
 .phone-player-title h1 { margin: 0; font-size: clamp(20px, 6vw, 30px); font-weight: 730; line-height: 1.19; letter-spacing: -.04em; }
 .phone-player-title p { margin: 3px 0 0; color: #ffffff9c; font-size: 14px; }
@@ -255,7 +308,7 @@ body .phone-player-modal .q-dialog__inner > .phone-player {
 .phone-transport { min-height: 64px; }
 .phone-play { width: 64px; height: 64px; background: #f9f8ff; color: #15151a; }
 .phone-player-tools { min-height: 44px; }
-.phone-player-tools .clip-background-button { width: 44px; height: 44px; }
+
 .phone-play-icon-enter-active,
 .phone-play-icon-leave-active { transition: opacity .12s ease, scale .12s ease; }
 .phone-play-icon-enter-from,
@@ -293,7 +346,64 @@ body .phone-player-modal .q-dialog__inner > .phone-player {
 .phone-page-leave-to { opacity: 0; }
 .phone-shell :is(.home-content, .scroll-page-inner, .liked-page, .page-head) { padding-inline: var(--phone-edge); }
 .phone-shell .home-content { --home-section-space: 24px; --home-shelf-gap: 12px; padding-block: 14px 24px; }
-.phone-shell .home-topline { margin-bottom: 16px; }
+.phone-shell .phone-releases { margin: 0 0 22px; }
+.phone-shell .phone-releases .home-section-title {
+  font-size: clamp(24px, 6.5vw, 31px);
+  letter-spacing: -.045em;
+}
+.phone-shell .phone-releases .home-shelf-arrows { display: none; }
+.phone-release {
+  position: relative;
+  flex: 0 0 min(88%, 420px);
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.phone-release-open {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1.18;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: white;
+  text-align: left;
+}
+.phone-release-open::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #060609ee 0%, #060609a0 25%, transparent 68%);
+  content: '';
+}
+.phone-release-open img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.phone-release-copy {
+  position: absolute;
+  z-index: 1;
+  inset: auto 68px 17px 17px;
+  display: grid;
+  gap: 3px;
+  line-height: 1.22;
+}
+.phone-release-copy small { margin-bottom: 4px; font-size: 12px; color: #ffffffe0; }
+.phone-release-copy strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: clamp(22px, 6vw, 30px); letter-spacing: -.04em; }
+.phone-release-copy > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; }
+.phone-release-play {
+  position: absolute;
+  right: 15px;
+  bottom: 17px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: white;
+  color: #121215;
+}
+.phone-release :focus-visible { outline: 2px solid white; outline-offset: -3px; }
 .phone-shell .home-page .home-shelf .home-card { flex-basis: clamp(116px, 37vw, 177px); }
 .phone-shell .home-card-play,
 .phone-shell .home-playlist-listen { opacity: 1; transform: none; }

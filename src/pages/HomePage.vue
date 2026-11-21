@@ -2,43 +2,43 @@
   <q-page class="home-page">
     <q-scroll-area class="home-scroll">
       <div class="home-content">
-        <header class="home-topline">
-          <h1>{{ greeting }}</h1>
-          <button class="home-library-link" type="button" @click="router.push('/library')">
-            <Icon name="search" :size="15" /><span>В библиотеке</span>
+        <HomeDiscovery :featured="phoneLayout" :favorite-artists="favoriteArtists">
+          <header v-if="!phoneLayout" class="home-topline">
+            <h1>{{ greeting }}</h1>
+            <button class="home-library-link" type="button" @click="router.push('/library')">
+              <Icon name="search" :size="15" /><span>В библиотеке</span>
+            </button>
+          </header>
+
+          <button
+            v-if="player.current && player.pendingResume"
+            class="home-resume"
+            type="button"
+            :disabled="player.loading"
+            @click="player.setPlaying(true)"
+          >
+            <span class="home-resume-cover">
+              <img v-if="player.current.cover_url" :src="player.current.cover_url" alt="" />
+              <Icon v-else name="album" :size="23" />
+            </span>
+            <span class="home-resume-copy">
+              <strong>Продолжить</strong>
+              <span>{{ player.current.title }} · {{ artistNames(player.current.artists) }}</span>
+            </span>
+            <span v-if="player.progress > 0" class="home-resume-position">{{ formatDuration(player.progress * 1000) }}</span>
+            <span class="home-resume-play">
+              <q-spinner v-if="player.loading" size="16px" />
+              <Icon v-else name="play" :size="18" />
+            </span>
           </button>
-        </header>
 
-        <button
-          v-if="player.current && player.pendingResume"
-          class="home-resume"
-          type="button"
-          :disabled="player.loading"
-          @click="player.setPlaying(true)"
-        >
-          <span class="home-resume-cover">
-            <img v-if="player.current.cover_url" :src="player.current.cover_url" alt="" />
-            <Icon v-else name="album" :size="23" />
-          </span>
-          <span class="home-resume-copy">
-            <strong>Продолжить</strong>
-            <span>{{ player.current.title }} · {{ artistNames(player.current.artists) }}</span>
-          </span>
-          <span v-if="player.progress > 0" class="home-resume-position">{{ formatDuration(player.progress * 1000) }}</span>
-          <span class="home-resume-play">
-            <q-spinner v-if="player.loading" size="16px" />
-            <Icon v-else name="play" :size="18" />
-          </span>
-        </button>
-
-        <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
-          @open-playlist="openPlaylist">
-          <template #playlist-menu="{ playlist }">
-            <HomePlaylistMenu :pl="playlist" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
-          </template>
-        </HomeQuickLaunch>
-
-        <HomeDiscovery />
+          <HomeQuickLaunch :playlists="visiblePlaylists" @open-wave="openWave"
+            @open-playlist="openPlaylist">
+            <template #playlist-menu="{ playlist }">
+              <HomePlaylistMenu :pl="playlist" @play="playPlaylist" @rename="rename" @remove="removePlaylist" />
+            </template>
+          </HomeQuickLaunch>
+        </HomeDiscovery>
 
         <HomeShelf v-if="picks.length" id="home-picks" label="Новое для тебя">
           <article v-for="p in picks" :key="`${p.kind}-${p.id}`" class="home-card">
@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Notify } from "quasar";
 import { api } from "@/api/client";
@@ -163,8 +163,10 @@ import { beginAlbumCoverTransition, arriveHomeAlbumCoverTransition } from "@/lib
 import { artistNames, formatDuration, plural } from "@/lib/format";
 import { askConfirm, askText } from "@/lib/dialogs";
 import { readCache, swr, writeCache } from "@/lib/cache";
+import { useAuthStore } from "@/stores/auth";
 import { useLibraryStore } from "@/stores/library";
 import { usePlayerStore } from "@/stores/player/index";
+import { phoneLayout } from "@/lib/phoneLayout";
 
 const router = useRouter();
 const player = usePlayerStore();
@@ -184,6 +186,34 @@ const waves = computed(() =>
 const picks = computed(() =>
   wheel.value.filter((item) => item.kind !== "wave"),
 );
+
+const auth = useAuthStore();
+const likedTracks = ref<Track[]>([]);
+watch(() => auth.profile?.uid, (uid, _, onCleanup) => {
+  likedTracks.value = [];
+  if (!phoneLayout || !uid) return;
+  let active = true;
+  onCleanup(() => { active = false; });
+  void swr<Track[]>(`home.discovery.${uid}.liked-tracks`, () => api.likedTracks(), {
+    maxAge: 15 * 60 * 1000,
+    onData: tracks => { if (active) likedTracks.value = tracks; },
+  });
+}, { immediate: true });
+
+const favoriteArtists = computed(() => {
+  const names = new Set<string>();
+  if (!phoneLayout) return names;
+  for (const album of library.likedAlbums) {
+    for (const name of (album.artists || "").split(", ")) names.add(name.toLowerCase());
+  }
+  const likedIds = new Set(library.likedIds);
+  for (const track of [...player.queue, ...likedTracks.value]) {
+    if (likedIds.has(track.id)) {
+      for (const artist of track.artists) names.add(artist.name.toLowerCase());
+    }
+  }
+  return names;
+});
 
 const greeting = computed(() => {
   const hour = new Date().getHours();

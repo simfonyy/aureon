@@ -1,22 +1,41 @@
 <template>
   <div class="home-discovery" :aria-busy="loading">
+    <slot v-if="!featured" />
     <template v-if="releases.length">
-      <HomeShelf id="home-new-releases" label="Новые релизы">
-        <article v-for="album in releases" :key="album.id" class="home-card">
-          <div class="home-card-art" :data-home-album-cover="album.id">
-            <button class="home-cover-open" type="button" :aria-label="`Открыть альбом: ${album.title}`" @click="openAlbum(album, $event)">
-              <img v-if="album.cover_url" :src="album.cover_url" alt="" loading="lazy" decoding="async" />
-              <Icon v-else name="album" :size="38" class="faint" />
+      <HomeShelf id="home-new-releases" :label="releaseHeading" :class="{ 'phone-releases': featured }">
+        <template v-if="featured">
+          <article v-for="(album, index) in featuredReleases" :key="album.id" class="phone-release">
+            <button class="phone-release-open" type="button" :aria-label="`Открыть альбом: ${album.title}`" @click="openAlbum(album, $event)">
+              <img v-if="album.cover_url" :src="album.cover_url" :loading="index === 0 ? 'eager' : 'lazy'" alt="" />
+              <Icon v-else name="album" :size="54" />
+              <span class="phone-release-copy">
+                <small v-if="releaseDateLabel(album.release_date)">{{ releaseDateLabel(album.release_date) }}</small>
+                <strong>{{ album.title }}</strong>
+                <span>{{ artistNames(album.artists) }}</span>
+              </span>
             </button>
-            <HomePlayingBadge v-if="String(player.current?.album_id) === album.id" />
-            <button class="home-card-play" type="button" :aria-label="`Слушать: ${album.title}`" :disabled="loadingAlbum === album.id" @click.stop="playAlbum(album)">
-              <q-spinner v-if="loadingAlbum === album.id" size="18px" /><Icon v-else name="play" :size="18" />
+            <button class="phone-release-play" type="button" :aria-label="`Слушать: ${album.title}`" :disabled="loadingAlbum === album.id" @click="playAlbum(album)">
+              <q-spinner v-if="loadingAlbum === album.id" size="19px" /><Icon v-else name="play" :size="21" />
             </button>
-          </div>
-          <button class="home-card-title" type="button" :title="album.title" @click="openAlbum(album, $event)"><span>{{ album.title }}</span></button>
-          <p class="home-card-subtitle" :title="artistNames(album.artists)">{{ artistNames(album.artists) }}</p>
-          <small v-if="releaseDateLabel(album.release_date)" class="release-date">{{ releaseDateLabel(album.release_date) }}</small>
-        </article>
+          </article>
+        </template>
+        <template v-else>
+          <article v-for="album in releases" :key="album.id" class="home-card">
+            <div class="home-card-art" :data-home-album-cover="album.id">
+              <button class="home-cover-open" type="button" :aria-label="`Открыть альбом: ${album.title}`" @click="openAlbum(album, $event)">
+                <img v-if="album.cover_url" :src="album.cover_url" alt="" loading="lazy" decoding="async" />
+                <Icon v-else name="album" :size="38" class="faint" />
+              </button>
+              <HomePlayingBadge v-if="String(player.current?.album_id) === album.id" />
+              <button class="home-card-play" type="button" :aria-label="`Слушать: ${album.title}`" :disabled="loadingAlbum === album.id" @click.stop="playAlbum(album)">
+                <q-spinner v-if="loadingAlbum === album.id" size="18px" /><Icon v-else name="play" :size="18" />
+              </button>
+            </div>
+            <button class="home-card-title" type="button" :title="album.title" @click="openAlbum(album, $event)"><span>{{ album.title }}</span></button>
+            <p class="home-card-subtitle" :title="artistNames(album.artists)">{{ artistNames(album.artists) }}</p>
+            <small v-if="releaseDateLabel(album.release_date)" class="release-date">{{ releaseDateLabel(album.release_date) }}</small>
+          </article>
+        </template>
       </HomeShelf>
     </template>
     <section v-else-if="loading || releasesError" class="discovery-status-section" aria-labelledby="new-releases-heading">
@@ -24,6 +43,8 @@
       <p v-if="loading" class="discovery-loading" role="status"><q-spinner size="15px" />Загружаем релизы…</p>
     </section>
     <div v-if="releasesError" class="discovery-error" role="status"><span>{{ releasesError }}</span><button type="button" :disabled="loading" @click="load">Повторить</button></div>
+
+    <slot v-if="featured" />
 
     <section v-if="chart.length || loading || chartError" class="home-chart" aria-labelledby="home-chart-heading">
       <div class="home-section-head">
@@ -56,9 +77,18 @@ import HomePlayingBadge from './HomePlayingBadge.vue';
 import Icon from '@/components/Icon.vue';
 import TrackRow from '@/components/TrackRow.vue';
 
+const props = defineProps<{ featured?: boolean; favoriteArtists?: Set<string> }>();
 const router = useRouter(), auth = useAuthStore(), player = usePlayerStore();
 const releases = ref<DiscoveryAlbum[]>([]), chart = ref<Track[]>([]);
 const releasesError = ref(''), chartError = ref(''), loading = ref(false), chartExpanded = ref(false), loadingAlbum = ref('');
+const favoriteReleases = computed(() =>
+  releases.value.filter(album => album.artists.some(artist => props.favoriteArtists?.has(artist.name.toLowerCase()))),
+);
+const featuredReleases = computed(() => {
+  const prioritized = new Set(favoriteReleases.value);
+  return [...prioritized, ...releases.value.filter(album => !prioritized.has(album))];
+});
+const releaseHeading = computed(() => props.featured && favoriteReleases.value.length ? 'Свежие для тебя' : 'Новые релизы');
 const visibleChart = computed(() => chartExpanded.value ? chart.value : chart.value.slice(0, 10));
 let disposed = false, generation = 0, playbackGeneration = 0;
 function account() { return auth.profile?.uid ?? null; }
