@@ -27,16 +27,15 @@ fn window_of(app: &AppHandle) -> Result<WebviewWindow, String> {
 fn force_size(win: &WebviewWindow, width: f64, height: f64) -> Result<(), String> {
     let locked = !win.is_resizable().unwrap_or(false);
     if locked {
-        let _ = win.set_resizable(true);
+        win.set_resizable(true).map_err(|e| e.to_string())?;
     }
-    let size = LogicalSize::new(width, height);
-    win.set_min_size(Some(size)).map_err(|e| e.to_string())?;
-    win.set_max_size(Some(size)).map_err(|e| e.to_string())?;
-    win.set_size(size).map_err(|e| e.to_string())?;
+    let result = win
+        .set_size_constraints(Default::default())
+        .and_then(|_| win.set_size(LogicalSize::new(width, height)));
     if locked {
-        let _ = win.set_resizable(false);
+        win.set_resizable(false).map_err(|e| e.to_string())?;
     }
-    Ok(())
+    result.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -74,6 +73,11 @@ pub fn resize_mini_player(app: AppHandle, width: f64, height: f64) -> Result<(),
     force_size(&win, width, height)
 }
 
+fn undocked_x(x: i32, left: i32, last_x: i32, threshold: i32) -> i32 {
+    let inset = (threshold + 1).min((last_x - left) / 2);
+    x.clamp(left + inset, last_x - inset)
+}
+
 #[tauri::command]
 pub fn dock_mini_player(
     app: AppHandle,
@@ -86,9 +90,10 @@ pub fn dock_mini_player(
     if !win.is_always_on_top().map_err(|e| e.to_string())? {
         return Ok(None);
     }
-    let Some(monitor) = win.current_monitor().map_err(|e| e.to_string())? else {
-        return Ok(None);
-    };
+    let monitor = win
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Экран мини-плеера недоступен".to_string())?;
     let area = monitor.work_area();
     let scale = monitor.scale_factor();
     let pos = win.outer_position().map_err(|e| e.to_string())?;
@@ -103,7 +108,8 @@ pub fn dock_mini_player(
     } else {
         None
     };
-    if side.is_none() && !was_docked {
+    let inner = win.inner_size().map_err(|e| e.to_string())?;
+    if side.is_none() && !was_docked && inner.to_logical::<f64>(scale).height >= MIN_HEIGHT - 1.0 {
         return Ok(None);
     }
     let (w, h) = if side.is_some() {
@@ -118,13 +124,13 @@ pub fn dock_mini_player(
     let x = match side {
         Some("left") => left,
         Some("right") => last_x,
-        _ => pos.x.clamp(left, last_x),
+        _ => undocked_x(pos.x, left, last_x, threshold),
     };
     let destination = PhysicalPosition::new(x, pos.y.clamp(top, last_y));
-    if target != size {
+    if target != inner {
         force_size(&win, w, h)?;
     }
-    if destination != pos || target != size {
+    if destination != pos || target != inner {
         win.set_position(destination).map_err(|e| e.to_string())?;
     }
     Ok(side)
@@ -145,4 +151,23 @@ pub fn exit_mini_player(app: AppHandle) -> Result<(), String> {
     let _ = win.center();
     let _ = win.set_focus();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wider_player_stays_outside_the_snap_zone_after_detaching() {
+        for scale in [1.0_f64, 1.25, 1.5, 2.0] {
+            let threshold = (16.0 * scale).round() as i32;
+            let left = -1920;
+            let last_x = -(396.0 * scale).round() as i32;
+            for x in [left - 50, left + 100, -100] {
+                let restored = undocked_x(x, left, last_x, threshold);
+                assert!(restored - left > threshold && last_x - restored > threshold);
+            }
+        }
+        assert_eq!(undocked_x(300, 30, 30, 16), 30);
+    }
 }

@@ -47,13 +47,14 @@ export const usePanelsStore = defineStore("panels", {
     },
 
     async exitMini() {
+      if (this.miniBusy || !this.mini) return;
       this.miniBusy = true;
-      this.mini = false;
       try {
         await api.exitMiniPlayer();
-      } catch {
-      } finally {
         this.mini = false;
+      } catch {
+        Notify.create({ type: "negative", message: "Не удалось восстановить окно" });
+      } finally {
         this.miniBusy = false;
       }
     },

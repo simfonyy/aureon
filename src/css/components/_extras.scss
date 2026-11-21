@@ -312,6 +312,28 @@
   transition: opacity 0.14s ease;
 }
 
+@media (max-height: 95px) {
+  html[data-mini] .mini-player {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+
+    .mini-top { flex: 1; min-width: 0; }
+    .mini-cover { width: 36px; height: 36px; }
+    .mini-toolbar { padding: 0; border: 0; }
+    .mini-seek, .mini-control-extra, .player-volume-control { display: none; }
+  }
+}
+
+@media (max-height: 95px) and (max-width: 180px) {
+  html[data-mini] .mini-player {
+    .mini-cover, .mini-meta, .mini-toolbar { display: none; }
+    .mini-top { justify-content: center; }
+    .mini-restore { align-self: center; }
+  }
+}
+
 html[data-mini] {
   .q-notifications__list {
     padding: 6px;

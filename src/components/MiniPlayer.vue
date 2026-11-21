@@ -234,7 +234,6 @@ import { formatDuration } from "@/lib/format";
 import { getCoverPalette, type CoverPalette } from "@/lib/coverPalette";
 import { ensureAiArtists, isAiArtist } from "@/lib/aiTag";
 import { startWindowDrag } from "@/lib/window";
-import { api } from "@/api/client";
 import { useLibraryStore } from "@/stores/library";
 import { usePanelsStore } from "@/stores/panels";
 import { usePlayerStore } from "@/stores/player/index";
@@ -333,7 +332,6 @@ onMounted(() => {
   if (props.preview) return;
   window.addEventListener("keydown", onKey);
   document.documentElement.dataset.mini = "1";
-  void api.resizeMiniPlayer(ui.settings.miniWidth, ui.settings.miniHeight);
 });
 
 onBeforeUnmount(() => {

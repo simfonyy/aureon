@@ -14,6 +14,7 @@
       <button type="button" aria-label="Предыдущий трек" @click="player.prev()"><Icon name="prev" :size="16" /></button>
       <button type="button" :aria-label="player.isPlaying ? 'Пауза' : 'Воспроизвести'" @click="player.toggle()"><Icon :name="player.isPlaying ? 'pause' : 'play'" :size="17" /></button>
       <button type="button" aria-label="Следующий трек" @click="player.next(false)"><Icon name="next" :size="16" /></button>
+      <button data-no-drag type="button" aria-label="Вернуться в обычный вид" @click="panels.exitMini()"><Icon name="restore" :size="15" /></button>
     </div>
   </div>
 </template>
@@ -25,16 +26,18 @@ import { api } from '@/api/client';
 import Icon from '@/components/Icon.vue';
 import { artistNames } from '@/lib/format';
 import { startWindowDrag } from '@/lib/window';
+import { usePanelsStore } from '@/stores/panels';
 import { usePlayerStore } from '@/stores/player/index';
 import { useUiStore } from '@/stores/ui';
 
 const player = usePlayerStore(), ui = useUiStore();
+const panels = usePanelsStore();
 const side = ref<'left' | 'right' | null>(null), expanded = ref(false);
 const played = computed(() => player.duration > 0 ? Math.min(100, 100 * player.progress / player.duration) : 0);
 let dragStart: { x: number; y: number } | null = null;
 let suppressClick = false, disposed = false, wanted = false;
 let movedTimer: number, leaveTimer: number;
-let detach: (() => void) | undefined;
+const listeners: Array<() => void> = [];
 let pending = Promise.resolve();
 
 function update() {
@@ -89,17 +92,22 @@ function volume(event: WheelEvent) {
 
 onMounted(async () => {
   try {
-    const stop = await getCurrentWindow().onMoved(() => {
+    const win = getCurrentWindow();
+    const onGeometryChange = () => {
       window.clearTimeout(movedTimer);
       movedTimer = window.setTimeout(update, 180);
-    });
-    if (disposed) stop();
-    else detach = stop;
+    };
+    for (const subscribe of [() => win.onMoved(onGeometryChange), () => win.onResized(onGeometryChange)]) {
+      const stop = await subscribe();
+      if (disposed) { stop(); return; }
+      listeners.push(stop);
+    }
   } catch {}
+  update();
 });
 onBeforeUnmount(() => {
   disposed = true;
-  detach?.();
+  for (const stop of listeners) stop();
   window.clearTimeout(movedTimer);
   window.clearTimeout(leaveTimer);
 });

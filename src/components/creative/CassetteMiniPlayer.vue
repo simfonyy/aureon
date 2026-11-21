@@ -37,7 +37,6 @@ import { usePanelsStore } from '@/stores/panels';
 import { useUiStore } from '@/stores/ui/index';
 import { artistNames, formatDuration } from '@/lib/format';
 import { startWindowDrag } from '@/lib/window';
-import { api } from '@/api/client';
 const props = withDefaults(defineProps<{ preview?: boolean }>(), { preview: false });
 const player = usePlayerStore(), library = useLibraryStore(), creative = useCreativeStore(), panels = usePanelsStore(), ui = useUiStore();
 const liked = computed(() => player.current ? library.liked(player.current.id) : false);
@@ -45,7 +44,7 @@ const percent = computed(() => Math.min(100, Math.max(0, player.duration ? playe
 function drag(event: MouseEvent) { if (!props.preview) startWindowDrag(event); }
 function restore() { if (!props.preview) void panels.exitMini(); }
 function key(event: KeyboardEvent) { if (event.key === 'Escape') { event.preventDefault(); restore(); } }
-onMounted(() => { if (props.preview) return; document.documentElement.dataset.mini = '1'; window.addEventListener('keydown', key); void api.resizeMiniPlayer(ui.settings.miniWidth, ui.settings.miniHeight); });
+onMounted(() => { if (props.preview) return; document.documentElement.dataset.mini = '1'; window.addEventListener('keydown', key); });
 onBeforeUnmount(() => { window.removeEventListener('keydown', key); if (!props.preview) delete document.documentElement.dataset.mini; });
 </script>
 <style scoped>

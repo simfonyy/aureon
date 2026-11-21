@@ -12,25 +12,86 @@
 
 ## Установка
 
-**Windows x64.** Скачай MSI. Для запуска без установки распакуй portable ZIP и открой `Aureon.exe`. Начиная с 1.2.2 обе версии обновляются при запуске.
+### Windows
 
-**Linux x64.** Для Debian и Ubuntu есть DEB. Для AppImage дай файлу право на выполнение и запусти его.
+1. Нажми **Скачать Aureon** в начале страницы. Откроется последний релиз.
+2. Прокрути до **Assets**. Если список свёрнут, нажми на стрелку рядом с **Assets**.
+3. Нажми на файл с окончанием `_x64_ru-RU.msi`. Это установщик для 64-битной Windows.
+4. Открой скачанный файл из папки **Загрузки**. Нажми **Далее** и пройди шаги мастера. В конце отметь **Запустить Aureon** и нажми **Готово**.
+5. Войди в свой аккаунт Яндекс Музыки. В следующий раз плеер можно открыть из меню **Пуск**.
+
+**Хочешь portable?** В том же списке скачай файл с окончанием `_windows-x64_portable.zip`. Щёлкни по нему правой кнопкой, выбери **Извлечь все…** и укажи папку, где будет лежать плеер. Открой эту папку и дважды щёлкни по `Aureon.exe`.
+
+Если у тебя 1.2.0 или 1.2.1, один раз обновись вручную тем же способом. С версии 1.2.2 Aureon сам проверяет обновления при запуске.
+
+<details>
+<summary><strong>Установка на Linux</strong></summary>
+
+Для Ubuntu или Debian скачай из **Assets** файл с окончанием `_amd64.deb`. Открой терминал в папке с файлом. Для версии 1.2.2 команда такая:
+
+```bash
+sudo apt install ./Aureon_1.2.2_amd64.deb
+```
+
+После установки найди **Aureon** в меню приложений. Если предпочитаешь запуск из одной папки, скачай файл `.AppImage` и выполни в его папке:
+
+```bash
+chmod +x ./Aureon_1.2.2_amd64.AppImage
+./Aureon_1.2.2_amd64.AppImage
+```
+
+Для другого релиза подставь имя скачанного файла.
+
+</details>
 
 ## Android и iPhone
 
 В следующих обновлениях планирую выложить версию для Android и `.ipa` для iPhone. Обе появятся здесь же, в Releases. Не теряйте :)
 
+## Как собрать самому
+
 <details>
-<summary><strong>Собрать из исходников</strong></summary>
+<summary><strong>Windows · собрать свой MSI</strong></summary>
 
-Понадобятся Node.js, Rust и системные зависимости Tauri 2.
+1. Установи Git, Node.js 22 с npm и Rust через rustup. В установщике Rust выбери стандартный вариант для Windows x64 (MSVC).
+2. В Visual Studio Installer установи **Build Tools** с набором **Разработка классических приложений на C++**. Оставь выбранными компилятор MSVC для x64 и Windows SDK. Для запуска плеера нужен Microsoft Edge WebView2 Runtime.
+3. Открой новое окно PowerShell в папке, где хочешь хранить проект, и выполни:
 
-```sh
-npm ci
-npm run tauri:dev
+```powershell
+git clone https://github.com/simfonyy/aureon.git
+cd aureon
+.\scripts\build\Build-MSI.bat
 ```
 
-[Инструкция по сборке](docs/DISTRIBUTION.md)
+Скрипт сам установит зависимости проекта и соберёт плеер. Первый запуск может занять время. Когда сборка закончится, откроется Проводник с готовым установщиком из `src-tauri/target/release/bundle/msi/`. Сам плеер лежит в `src-tauri/target/release/Aureon.exe`. Если сборка остановилась с ошибкой, полный вывод лежит в `build-logs/`.
+
+Чтобы посмотреть изменения во время разработки, запусти `npm.cmd run tauri:dev` из папки `aureon`. Остановить этот режим можно через `Ctrl+C`.
+
+</details>
+
+<details>
+<summary><strong>Linux · собрать DEB и AppImage</strong></summary>
+
+Релизные пакеты собираются на Ubuntu 22.04 x64. Установи Node.js 22 с npm и Rust stable через rustup. Затем открой терминал и установи библиотеки для сборки и воспроизведения музыки:
+
+```bash
+sudo apt update
+sudo apt install git build-essential curl wget file pkg-config patchelf xdg-utils \
+  libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev \
+  libsecret-1-dev libdbus-1-dev libfuse2 gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+```
+
+Скачай исходники и запусти сборку:
+
+```bash
+git clone https://github.com/simfonyy/aureon.git
+cd aureon
+npm ci
+bash scripts/build/Build-Linux.sh
+```
+
+Готовый пакет для установки лежит в `src-tauri/target/release/bundle/deb/`, а файл для запуска без установки — в `src-tauri/target/release/bundle/appimage/`. Для разработки из той же папки проекта запусти `npm run tauri:dev`.
 
 </details>
 
