@@ -1,6 +1,6 @@
 import { appendFile, lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, createPrivateKey, createPublicKey, sign } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +16,7 @@ const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8'
 function versionFiles(version) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) fail('Version must be a stable X.Y.Z release.');
   return {
-    windows: [`Aureon_${version}_x64_ru-RU.msi`, `Aureon_${version}_windows-x64_portable.zip`],
+    windows: [`Aureon_${version}_x64_ru-RU.msi`, `Aureon_${version}_windows-x64_portable.zip`, `Aureon_${version}_windows-x64.exe`],
     linux: [`Aureon_${version}_amd64.deb`, `Aureon_${version}_amd64.AppImage`],
   };
 }
@@ -157,6 +157,21 @@ async function verifyPackages(version) {
   }
   const output = join(ROOT, 'release-output');
   await mkdir(output, { recursive: true });
+  const signingKey = createPrivateKey({
+    key: Buffer.from(process.env.AUREON_UPDATE_SIGNING_KEY ?? '', 'base64'), type: 'pkcs8', format: 'der',
+  });
+  const publicKey = createPublicKey(signingKey).export({ format: 'jwk' });
+  const pinned = (await readFile(join(ROOT, 'src-tauri/update-public-key.hex'), 'utf8')).trim();
+  if (publicKey.crv !== 'Ed25519' || Buffer.from(publicKey.x, 'base64url').toString('hex') !== pinned) {
+    fail('Release signing key does not match the updater public key.');
+  }
+  for (const file of packages.filter(item => /\.(msi|exe)$/.test(item.name))) {
+    const name = file.name + '.sig', path = join(output, name);
+    const message = Buffer.from(['aureon-update-v1', version, file.name, String(file.size), file.hash, ''].join('\n'));
+    const signature = sign(null, message, signingKey);
+    await writeFile(path, signature);
+    packages.push({ name, path, size: signature.length, hash: await fileHash(path) });
+  }
   const sums = join(output, 'SHA256SUMS.txt');
   await writeFile(sums, packages.toSorted((a, b) => a.name.localeCompare(b.name, 'en')).map(file => `${file.hash}  ${file.name}`).join('\n') + '\n');
   packages.push({ name: 'SHA256SUMS.txt', path: sums, size: (await lstat(sums)).size, hash: await fileHash(sums) });
@@ -248,7 +263,7 @@ async function publish(version, state) {
   await verifyAssets(published.id, files);
   const latest = await api('/releases/latest');
   if (latest.id !== published.id) fail('Published release did not become Latest.');
-  console.log(`Published Aureon v${version}: four packages and SHA256SUMS.txt verified.`);
+  console.log(`Published Aureon v${version}: packages and update signatures verified.`);
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY,
     `Aureon v${version}: [release](${published.html_url}).\n\nBuild source: \`${state.source}\`. Release commit: \`${state.current}\`.\n`);
 }
@@ -256,7 +271,7 @@ async function publish(version, state) {
 async function selfTest() {
   const assert = (await import('node:assert/strict')).default;
   const files = versionFiles('1.1.0');
-  assert.equal(files.windows.length + files.linux.length, 4);
+  assert.equal(files.windows.length + files.linux.length, 5);
   assert.throws(() => versionFiles('1.1.0-beta'));
   assert(publicationOnly('docs/screenshots/home.png'));
   for (const path of ['src/main.ts', 'src-tauri/Cargo.toml', 'package.json', 'scripts/collect-packages.mjs', '.github/workflows/desktop-packages.yml']) assert(!publicationOnly(path));

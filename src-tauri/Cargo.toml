@@ -1,6 +1,6 @@
 [package]
 name = "nightlezz-devs"
-version = "1.2.1"
+version = "1.2.2"
 description = "Aureon - music desktop client by Nightlezz Dev's"
 authors = ["Mashiro contributors"]
 edition = "2021"
@@ -43,4 +43,7 @@ tempfile = "3"
 custom-protocol = ["tauri/custom-protocol"]
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.61", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common"] }
+self-replace = "1.5.0"
+winreg = "0.55"
+same-file = "1"
+windows = { version = "0.61", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_System_SystemInformation"] }

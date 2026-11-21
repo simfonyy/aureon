@@ -14,6 +14,11 @@
       </div>
     </div>
 
+    <label v-if="$q.platform.is.win" class="about-auto-update">
+      <input type="checkbox" :checked="updates.automatic" :disabled="updates.downloading"
+        @change="updates.setAutomatic(($event.target as HTMLInputElement).checked)" />
+      Автоматически устанавливать обновления при запуске
+    </label>
     <div class="about-update">
       <button class="btn" :disabled="updates.checking || updates.downloading" @click="updates.check('manual')">{{ updates.checking ? 'Проверяем…' : 'Проверить обновления' }}</button>
       <span role="status">{{ updates.error || (updates.checked && !updates.release ? 'Установлена последняя версия.' : updates.release ? 'Доступна версия ' + updates.release.version : 'Новые версии проверяются автоматически.') }}</span>
@@ -82,6 +87,7 @@ function openLink(url: string) {
 </script>
 
 <style scoped>
+.about-auto-update { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; cursor: pointer; }
 .about-update { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:0 0 20px; }
 .about-update span { color:var(--fg-dim); font-size:12px; }
 .about-card { display: flex; align-items: center; gap: 24px; padding: 26px 0; }

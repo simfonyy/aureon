@@ -85,6 +85,7 @@ pub fn run() {
             library_tools::library_identify,
             gpu::detect_gpu,
             updates::check_update,
+            updates::install_update,
             updates::download_update,
             commands::prefetch_stream,
             commands::clear_stream_cache,

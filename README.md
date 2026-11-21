@@ -1,61 +1,56 @@
-<p align="center">
-  <img src="public/icons/aureon-256.png" width="88" alt="Aureon">
-</p>
-<h1 align="center">Aureon</h1>
-<p align="center">Своя музыка.</p>
-<p align="center">
-  <a href="https://github.com/simfonyy/aureon/releases/latest">Скачать</a> ·
-  <a href="CHANGELOG.md">Обновления</a> ·
-  <a href="https://github.com/simfonyy/aureon/issues/new/choose">Сообщить о баге</a>
-</p>
-<p align="center">
-  <img src="https://img.shields.io/github/downloads/simfonyy/aureon/total?style=flat-square&amp;label=скачиваний&amp;labelColor=252628&amp;color=786443" alt="Скачивания файлов из релизов">
-</p>
+# Aureon
 
-Неофициальный клиент Яндекс Музыки для Windows и Linux. Для прослушивания нужны аккаунт Яндекса и Плюс.
+Яндекс Музыка для Windows и Linux с клипами прямо в плеере. Включи трек, открой клип с обложки и убери курсор. Обложка отъедет в угол, а музыка продолжится с той же секунды.
 
-Караоке по словам, поиск по строчке и с опечатками, «Моя волна», плейлисты, мини-плеер, эквалайзер и статистика.
+**[Скачать Aureon](https://github.com/simfonyy/aureon/releases/latest)** · [Что нового](CHANGELOG.md) · [Сообщить о баге](https://github.com/simfonyy/aureon/issues)
 
-## Скриншоты
+[![Плеер Aureon с клипом на фоне](docs/screenshots/player.png)](docs/screenshots/player.png)
 
-| Главная | Плеер с клипом |
+### Пока играет музыка
+
+- **Нашёл трек для очереди?** Нажми `Ctrl+K`, введи название и нажми `Shift+Enter`. Трек сыграет следующим. Обычный `Enter` включает его сразу.
+- **Помнишь только строчку?** Введи её в поиск. Когда найдёшь песню, открой текст и следи за подсветкой в такт вокалу.
+- **Работаешь в другом окне?** Подтащи мини-плеер к краю экрана. Останутся обложка и полоска прогресса. Клик — пауза, колесо — громкость.
+- **Вернулся к любимому клипу?** Aureon запоминает синхронизацию на этом компьютере. При следующем включении подбирать её заново не придётся.
+
+[Главная](docs/screenshots/home.png) · [Текст поверх клипа](docs/screenshots/lyrics.png) · [Все скриншоты](docs/screenshots/INDEX.md)
+
+### Установка
+
+| Платформа | Что скачать |
 | --- | --- |
-| [![Главная](docs/screenshots/home.png)](docs/screenshots/home.png) | [![Плеер с клипом](docs/screenshots/player.png)](docs/screenshots/player.png) |
-| **Текст с клипом** | **Статистика** |
-| [![Текст с клипом](docs/screenshots/lyrics.png)](docs/screenshots/lyrics.png) | [![Статистика](docs/screenshots/statistics.png)](docs/screenshots/statistics.png) |
-| **Поиск по строчке** | **Исполнитель** |
-| [![Поиск по строчке](docs/screenshots/search.png)](docs/screenshots/search.png) | [![Исполнитель](docs/screenshots/artist.png)](docs/screenshots/artist.png) |
+| Windows x64 | **MSI** для установки или **portable ZIP**. Распакуй ZIP в свою папку и запусти `Aureon.exe`. |
+| Linux x64 | **DEB** для Debian и Ubuntu или **AppImage**. Для AppImage разреши выполнение файла. |
 
-[Все скриншоты](docs/screenshots/INDEX.md)
+Для прослушивания нужны аккаунт Яндекса и Плюс. С версии 1.2.2 Aureon на Windows сам проверяет новые стабильные релизы при запуске. Переключатель автообновления находится в настройках, в разделе «О проекте».
 
-## Скачать
+### А на телефоне?
 
-[Скачать последний релиз](https://github.com/simfonyy/aureon/releases/latest) для Windows x64 (MSI и ZIP) или Linux x64 (DEB и AppImage).
+В следующих обновлениях ждите **версию для Android** и **IPA для iPhone**. Когда сборки будут готовы, выложим их здесь же. Чтобы не потерять релиз, вверху страницы GitHub выбери *Watch → Custom → Releases*.
 
-ZIP нужно распаковать. Для AppImage — разрешить выполнение файла. [Подробнее об установке](docs/DISTRIBUTION.md).
+<details>
+<summary><strong>Собрать из исходников</strong></summary>
 
-## Сборка
+Понадобятся Node.js, Rust и системные зависимости Tauri 2.
 
-Vue 3, Quasar, Rust и Tauri 2.
-
-~~~sh
+```sh
 npm ci
 npm run tauri:dev
-~~~
+```
 
 [Зависимости и сборка пакетов](docs/DISTRIBUTION.md) · [Участие в разработке](docs/CONTRIBUTING.md)
 
-<details>
-<summary>Тексты песен и источники</summary>
-
-Тексты — [LRCLIB](https://lrclib.net) и [Genius](https://genius.com). Если есть тайминги только строк, подсветка слов приблизительная. Без таймингов показывается обычный текст.
-
-Поиск по строчке не добавляет отсутствующие песни в каталог Яндекса. Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless).
-
-API: [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api), [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Версии без цензуры: [FckCensor](https://github.com/Hazzz895/FckCensor), [FckCensorData](https://github.com/Hazzz895/FckCensorData).
-
 </details>
 
-Основан на [Mashiro](https://github.com/aeviww/yandex-music-client). Спасибо! Яндекс не участвует в разработке.
+<details>
+<summary><strong>Авторы и источники</strong></summary>
+
+Aureon вырос из [Mashiro](https://github.com/aeviww/yandex-music-client). Это неофициальный клиент. Яндекс не участвует в разработке.
+
+Тексты предоставляют [LRCLIB](https://lrclib.net) и [Genius](https://genius.com). Если у песни есть только тайминги строк, подсветка слов приблизительная. Без таймингов доступен обычный текст.
+
+Для работы с Яндекс Музыкой использованы [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless). Источники версий без цензуры — [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData).
 
 [GPL-3.0-or-later](LICENSE) · [NOTICE](NOTICE) · [Лицензия шаблона установщика](src-tauri/installer)
+
+</details>

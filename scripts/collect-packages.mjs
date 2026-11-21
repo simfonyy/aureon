@@ -17,6 +17,7 @@ async function collect(kind,extension) {
 }
 if(process.platform==='win32') {
   await collect('msi','.msi');
+  await copyFile(join(release,'Aureon.exe'),join(out, `Aureon_${version}_windows-x64.exe`));
   const portable=join(root,'dist',`Aureon-${version}-portable`);
   await mkdir(portable,{recursive:true});
   await copyFile(join(release,'Aureon.exe'),join(portable,'Aureon.exe'));
@@ -41,7 +42,7 @@ if(process.platform==='win32') {
   await collect('deb','.deb');
   await collect('appimage','.AppImage');
 } else throw new Error('Only Windows and Linux packages are supported here');
-const names=(await readdir(out)).filter(n=>/\.(msi|zip|deb|AppImage)$/.test(n)).sort();
+const names=(await readdir(out)).filter(n=>/\.(msi|zip|exe|deb|AppImage)$/.test(n)).sort();
 const checksums=await Promise.all(names.map(async name=>`${createHash('sha256').update(await readFile(join(out,name))).digest('hex')}  ${name}`));
 await writeFile(join(out,'SHA256SUMS.txt'),checksums.join('\n')+'\n');
 console.log(names.join('\n'));

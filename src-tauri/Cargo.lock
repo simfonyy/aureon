@@ -2503,7 +2503,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nightlezz-devs"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "base64 0.22.1",
  "ed25519-dalek",
@@ -2519,6 +2519,8 @@ dependencies = [
  "rubato",
  "rustfft",
  "rusty-chromaprint",
+ "same-file",
+ "self-replace",
  "serde",
  "serde_json",
  "sha2",
@@ -2531,6 +2533,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "windows",
+ "winreg",
 ]
 
 [[package]]
@@ -3775,6 +3778,17 @@ dependencies = [
  "rustc-hash",
  "servo_arc",
  "smallvec",
+]
+
+[[package]]
+name = "self-replace"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609c5606d9d357b26e4ee1a7a01beac396628d0fa01ebbade2a09cefb88e65af"
+dependencies = [
+ "fastrand",
+ "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

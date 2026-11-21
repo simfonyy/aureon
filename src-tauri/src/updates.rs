@@ -150,10 +150,13 @@ fn selected_asset(release: &Release) -> Option<&Asset> {
         std::env::consts::ARCH,
         std::env::var_os("APPIMAGE").is_some(),
     )?;
-    release
-        .assets
-        .iter()
-        .find(|a| valid_asset(a, &release.tag_name, &name))
+    #[cfg(windows)]
+    let name = if windows_update::installed_executable() {
+        name
+    } else {
+        format!("Aureon_{}_windows-x64.exe", release.tag_name.trim_start_matches('v'))
+    };
+    release.assets.iter().find(|a| valid_asset(a, &release.tag_name, &name))
 }
 
 #[tauri::command]
@@ -162,12 +165,46 @@ pub async fn check_update() -> Result<Option<Update>, String> {
         return Ok(None);
     };
     let asset = selected_asset(&release);
+    #[cfg(windows)]
+    let asset = asset.filter(|package| !cfg!(debug_assertions) && signature_asset(&release, package).is_some());
     Ok(Some(Update {
         version: release.tag_name.trim_start_matches('v').into(),
         release_url: format!("{REPOSITORY}/releases/tag/{}", release.tag_name),
         package_name: asset.map(|a| a.name.clone()),
         can_install: cfg!(target_os = "windows") && asset.is_some(),
     }))
+}
+
+#[cfg(any(windows, test))]
+fn signature_asset<'a>(release: &'a Release, package: &Asset) -> Option<&'a Asset> {
+    let name = format!("{}.sig", package.name);
+    release.assets.iter().find(|asset| asset.size == 64 && valid_asset(asset, &release.tag_name, &name))
+}
+
+#[cfg(any(windows, test))]
+fn verify_signature(public_key: &[u8; 32], version: &str, asset: &Asset, signature: &[u8]) -> Result<(), String> {
+    use ed25519_dalek::{Signature, VerifyingKey};
+    let error = || "Не удалось подтвердить подпись обновления Aureon.".to_string();
+    let hash = checksum(asset).ok_or_else(error)?.to_ascii_lowercase();
+    let message = format!("aureon-update-v1\n{version}\n{}\n{}\n{hash}\n", asset.name, asset.size);
+    let key = VerifyingKey::from_bytes(public_key).map_err(|_| error())?;
+    let sig = Signature::from_slice(signature).map_err(|_| error())?;
+    key.verify_strict(message.as_bytes(), &sig).map_err(|_| error())
+}
+
+#[cfg(windows)]
+async fn authenticate(release: &Release, package: &Asset) -> Result<(), String> {
+    let asset = signature_asset(release, package).ok_or("В релизе нет подписи для этого файла.")?;
+    let mut response = client(30)?.get(&asset.browser_download_url).send().await
+        .and_then(|r| r.error_for_status()).map_err(|_| "Не удалось скачать подпись обновления.")?;
+    let mut bytes = Vec::with_capacity(64);
+    while let Some(chunk) = response.chunk().await.map_err(|_| "Загрузка подписи прервалась.")? {
+        if bytes.len() + chunk.len() > 64 { return Err("Неверная длина подписи.".into()); }
+        bytes.extend_from_slice(&chunk);
+    }
+    let key: [u8; 32] = hex::decode(include_str!("../update-public-key.hex").trim())
+        .ok().and_then(|v| v.try_into().ok()).ok_or("Ошибка ключа обновлений.")?;
+    verify_signature(&key, release.tag_name.trim_start_matches('v'), package, &bytes)
 }
 
 struct DownloadGuard;
@@ -194,6 +231,11 @@ pub async fn download_update(
         return Err("Вышла другая версия. Проверьте обновления ещё раз.".into());
     }
     let asset = selected_asset(&release).ok_or("Пакет для этой системы пока не опубликован.")?;
+    #[cfg(windows)]
+    {
+        if cfg!(debug_assertions) { return Err("Автообновление доступно в релизной сборке.".into()); }
+        authenticate(&release, asset).await?;
+    }
     let folder = if cfg!(target_os = "windows") {
         app.path().app_cache_dir()
     } else {
@@ -203,7 +245,7 @@ pub async fn download_update(
     .join("Aureon-updates");
     std::fs::create_dir_all(&folder).map_err(|_| "Не удалось создать папку для обновления.")?;
     let target = folder.join(&asset.name);
-    let partial = folder.join(format!("{}.part", asset.name));
+
     let result: Result<(), String> = async {
         let mut response = client(600)?
             .get(&asset.browser_download_url)
@@ -215,8 +257,7 @@ pub async fn download_update(
         if response.content_length().is_some_and(|n| n != asset.size) {
             return Err("Размер пакета не совпадает с данными GitHub.".into());
         }
-        let mut file =
-            std::fs::File::create(&partial).map_err(|_| "Не удалось сохранить обновление.")?;
+        let mut file = tempfile::NamedTempFile::new_in(&folder).map_err(|_| "Не удалось сохранить обновление.")?;
         let mut hash = Sha256::new();
         let mut received = 0u64;
         let mut last_percent = 101;
@@ -243,36 +284,84 @@ pub async fn download_update(
         {
             return Err("Проверка файла не пройдена. Скачайте обновление заново.".into());
         }
-        file.sync_all()
+        file.as_file().sync_all()
             .map_err(|_| "Не удалось сохранить обновление.")?;
-        drop(file);
-        if target.exists() {
-            std::fs::remove_file(&target)
-                .map_err(|_| "Не удалось заменить ранее скачанный пакет.")?;
-        }
-        std::fs::rename(&partial, &target).map_err(|_| "Не удалось сохранить пакет.")?;
+        file.persist(&target).map_err(|_| "Не удалось сохранить пакет.")?;
         Ok(())
     }
     .await;
-    if result.is_err() {
-        let _ = std::fs::remove_file(&partial);
-    }
     result?;
-    #[cfg(target_os = "windows")]
-    {
-        // Use the OS installer, with its normal confirmation screens and existing upgrade code.
-        std::process::Command::new("msiexec.exe")
-            .arg("/i")
-            .arg(&target)
-            .spawn()
-            .map_err(|_| "Не удалось открыть установщик. Попробуйте ещё раз.")?;
-        app.exit(0);
-    }
+    #[cfg(windows)]
+    windows_update::prepare(requested_version, target.clone(), checksum(asset).unwrap().to_ascii_lowercase());
     #[cfg(target_os = "linux")]
     {
         let _ = std::process::Command::new("xdg-open").arg(&folder).spawn();
     }
     Ok(target.to_string_lossy().into_owned())
+}
+
+#[cfg(windows)]
+mod windows_update {
+    use super::*;
+    use std::{ffi::OsString, fs::OpenOptions, os::windows::{ffi::OsStringExt, fs::OpenOptionsExt}, path::{Path, PathBuf}, sync::Mutex};
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+
+    struct Package { version: String, path: PathBuf, digest: String }
+    static PREPARED: Mutex<Option<Package>> = Mutex::new(None);
+
+    pub(super) fn installed_executable() -> bool {
+        let path: Option<String> = RegKey::predef(HKEY_CURRENT_USER)
+            .open_subkey(r"Software\Nightlezz\MusicMSI").and_then(|key| key.get_value("Executable")).ok();
+        path.zip(std::env::current_exe().ok()).is_some_and(|(installed, current)|
+            same_file::is_same_file(installed, current).unwrap_or(false))
+    }
+
+    pub(super) fn prepare(version: String, path: PathBuf, digest: String) {
+        *PREPARED.lock().unwrap() = Some(Package { version, path, digest });
+    }
+
+    fn start_installer(path: &Path) -> Result<(), String> {
+        let mut buf = [0u16; 1024];
+        let n = unsafe { windows::Win32::System::SystemInformation::GetSystemDirectoryW(Some(&mut buf)) } as usize;
+        if n == 0 || n >= buf.len() { return Err("Не удалось найти Windows Installer.".into()); }
+        let system = PathBuf::from(OsString::from_wide(&buf[..n]));
+        std::process::Command::new(system.join("msiexec.exe"))
+            .arg("/i").arg(path).args(["/passive", "/norestart", "AUTOLAUNCHAPP=1"])
+            .spawn().map_err(|_| "Не удалось запустить Windows Installer.")?;
+        Ok(())
+    }
+
+    pub(super) fn install(app: tauri::AppHandle, version: &str) -> Result<(), String> {
+        let package = PREPARED.lock().unwrap().take().filter(|p| p.version == version)
+            .ok_or("Сначала скачайте и проверьте обновление.")?;
+        let mut file = OpenOptions::new().read(true).share_mode(1).open(&package.path)
+            .map_err(|_| "Не удалось открыть сохранённое обновление.")?;
+        let mut hash = Sha256::new();
+        std::io::copy(&mut file, &mut hash).map_err(|_| "Не удалось проверить сохранённый файл.")?;
+        if hex::encode(hash.finalize()) != package.digest {
+            return Err("Скачанный пакет изменился. Загрузите его заново.".into());
+        }
+        if package.path.extension().is_some_and(|ext| ext == "msi") {
+            if !installed_executable() { return Err("Не найдена установленная копия Aureon.".into()); }
+            start_installer(&package.path)?;
+            app.exit(0);
+        } else {
+            if installed_executable() { return Err("Для этой копии нужен установщик MSI.".into()); }
+            self_replace::self_replace(&package.path).map_err(|_| "Не удалось обновить Aureon в этой папке. Проверьте права на запись.")?;
+            drop(file);
+            let _ = std::fs::remove_file(&package.path);
+            app.request_restart();
+        }
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub async fn install_update(app: tauri::AppHandle, requested_version: String) -> Result<(), String> {
+    #[cfg(windows)]
+    return windows_update::install(app, &requested_version);
+    #[cfg(not(windows))]
+    { let _ = (app, requested_version); Err("Пакет можно установить из папки загрузок.".into()) }
 }
 
 #[cfg(test)]
@@ -291,6 +380,55 @@ mod tests {
             assert_eq!(version(bad), None);
         }
     }
+    #[cfg(windows)]
+    #[test]
+    fn portable_replaces_a_disposable_copy_in_place() {
+        use std::{fs, process::Command};
+        const WORKER: &str = "AUREON_PORTABLE_TEST_DIR";
+        let exe = std::env::current_exe().unwrap();
+        if let Some(dir) = std::env::var_os(WORKER) {
+            let dir = std::path::PathBuf::from(dir);
+            assert_eq!(exe, dir.join("Aureon.exe"));
+            self_replace::self_replace(dir.join("next.exe")).unwrap();
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let portable = dir.path().join("Aureon.exe");
+        fs::copy(&exe, &portable).unwrap();
+        let next = dir.path().join("next.exe");
+        fs::copy(&exe, &next).unwrap();
+        fs::OpenOptions::new().append(true).open(&next).unwrap().write_all(b"update test").unwrap();
+        let status = Command::new(&portable)
+            .args(["--exact", "updates::tests::portable_replaces_a_disposable_copy_in_place"])
+            .env(WORKER, dir.path()).status().unwrap();
+        assert!(status.success());
+        assert_eq!(fs::metadata(portable).unwrap().len(), fs::metadata(next).unwrap().len());
+    }
+
+    #[test]
+    fn update_signature_binds_the_version_name_size_and_hash() {
+        use ed25519_dalek::{Signer, SigningKey};
+        let name = "Aureon_1.2.2_windows-x64.exe";
+        let hash = "ab".repeat(32);
+        let mut asset = Asset {
+            name: name.into(), size: 42, digest: Some(format!("sha256:{hash}")),
+            browser_download_url: String::new(), state: "uploaded".into(),
+        };
+        let key = SigningKey::from_bytes(&[9; 32]);
+        let sig = key.sign(format!("aureon-update-v1\n1.2.2\n{name}\n42\n{hash}\n").as_bytes()).to_bytes();
+        let verify = |v, a: &Asset| verify_signature(key.verifying_key().as_bytes(), v, a, &sig);
+        assert!(verify("1.2.2", &asset).is_ok());
+        assert!(verify("1.2.3", &asset).is_err());
+        asset.name.push('x');
+        assert!(verify("1.2.2", &asset).is_err());
+        asset.name = name.into();
+        asset.size += 1;
+        assert!(verify("1.2.2", &asset).is_err());
+        asset.size = 42;
+        asset.digest = Some(format!("sha256:{}", "bc".repeat(32)));
+        assert!(verify("1.2.2", &asset).is_err());
+    }
+
     #[test]
     fn platform_packages_and_trust_boundary() {
         assert_eq!(

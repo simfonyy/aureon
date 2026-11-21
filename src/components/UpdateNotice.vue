@@ -1,10 +1,15 @@
 <template>
+  <aside v-if="updates.downloading && !updates.open" class="update-toast" role="status">
+    <span>{{ updates.progress < 100 ? 'Скачиваем обновление Aureon' : 'Проверяем и устанавливаем обновление' }}</span>
+    <strong>{{ updates.progress }}%</strong>
+    <q-linear-progress :value="updates.progress / 100" color="primary" rounded />
+  </aside>
   <q-dialog :model-value="updates.open && !blocked" :persistent="updates.downloading" @update:model-value="value => { if (!value) updates.remindLater(); }">
     <div v-if="updates.release" class="update-notice" aria-labelledby="update-title">
       <span class="update-caption">Обновление Aureon</span>
       <h2 id="update-title">Версия {{ updates.release.version }}</h2>
       <p v-if="updates.downloaded">Файл сохранён. Откройте его, чтобы установить новую версию.</p>
-      <p v-else-if="updates.release.canInstall">После загрузки Aureon закроется и откроет установщик. Настройки сохранятся.</p>
+      <p v-else-if="updates.release.canInstall">Aureon проверит подпись, установит обновление и откроется снова.</p>
       <p v-else-if="updates.release.packageName">Скачаем пакет в папку «Загрузки». Затем его можно установить.</p>
       <p v-else>Сборка для этой системы пока недоступна. Проверить файлы можно на странице релиза.</p>
       <button class="update-link" @click="api.openExternal(updates.release.releaseUrl)">Что изменилось ↗</button>
@@ -39,6 +44,8 @@ onBeforeUnmount(() => { clearInterval(timer); document.removeEventListener('visi
 </script>
 
 <style scoped>
+.update-toast { position: fixed; bottom: 86px; right: 20px; z-index: 6500; display: grid; grid-template-columns: 1fr auto; gap: 9px 14px; max-width: calc(100vw - 40px); padding: 12px 16px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; font-size: 12px; pointer-events: none; }
+.update-toast .q-linear-progress { grid-column: 1 / -1; }
 .update-notice { width: 460px; max-width: calc(100vw - 40px); padding: 28px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
 .update-caption { color: var(--fg-dim); font-size: 12px; }
 h2 { margin: 8px 0 16px; font-size: 25px; line-height: 1.2; }

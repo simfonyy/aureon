@@ -6,7 +6,7 @@ on:
       version:
         description: Release version
         required: true
-        default: '1.2.0'
+        default: '1.2.2'
         type: string
       build_run_id:
         description: Successful Desktop packages run
@@ -59,4 +59,6 @@ jobs:
           path: release-input/linux
           merge-multiple: true
       - name: Verify packages and publish release
+        env:
+          AUREON_UPDATE_SIGNING_KEY: ${{ secrets.AUREON_UPDATE_SIGNING_KEY }}
         run: node scripts/publish-release.mjs publish
