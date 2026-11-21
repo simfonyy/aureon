@@ -1,0 +1,7 @@
+{
+  "identifier": "ios",
+  "description": "Aureon on iPhone",
+  "windows": ["main"],
+  "platforms": ["iOS"],
+  "permissions": ["core:default"]
+}

@@ -1,6 +1,7 @@
 <template>
-  <q-layout view="lHh Lpr lFf" class="app-shell">
+  <q-layout view="lHh Lpr lFf" class="app-shell" :class="{ 'phone-login': phoneLayout }">
     <div
+      v-if="!phoneLayout"
       class="titlebar"
       style="justify-content: flex-end"
       @mousedown="startWindowDrag"
@@ -24,8 +25,7 @@
 
           <template v-if="!waiting">
             <p class="dim t-13 login-lead">
-              Войди через аккаунт Яндекса - откроется браузер. Токен приложение
-              получит само, копировать ничего не нужно.
+              {{ phoneLayout ? 'Получи код, открой Яндекс и подтверди вход.' : 'Войди через аккаунт Яндекса. Приложение получит токен автоматически.' }}
             </p>
 
             <button
@@ -41,8 +41,7 @@
 
           <div v-else class="login-waiting">
             <p class="dim t-13 login-wait-lead">
-              В браузере открылась страница входа Яндекса. Войди и введи там
-              этот код:
+              Введи этот код на странице входа Яндекса.
             </p>
             <div class="login-code-row">
               <div class="login-code">{{ userCode }}</div>
@@ -62,7 +61,10 @@
                 Отмена
               </button>
             </div>
-            <p class="faint t-11 login-url">
+            <button v-if="phoneLayout" class="login-primary" type="button" @click="openVerification">
+              Открыть Яндекс
+            </button>
+            <p v-else class="faint t-11 login-url">
               Если браузер не открылся, зайди вручную на {{ verifyUrl }}
             </p>
           </div>
@@ -115,7 +117,7 @@
           <div class="sep login-sep" />
 
           <div class="faint t-11">
-            Токен хранится только на твоём компьютере и используется лишь для
+            Токен хранится на твоём устройстве и используется лишь для
             API Яндекс Музыки.
           </div>
         </div>
@@ -126,6 +128,8 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import { api } from '@/api/client';
+import { phoneLayout } from '@/lib/phoneLayout';
 import WindowControls from "@/components/WindowControls.vue";
 import { startWindowDrag, toggleWindowMaximize } from "@/lib/window";
 import { onBeforeUnmount, ref } from "vue";
@@ -206,6 +210,15 @@ async function cancelAuto(): Promise<void> {
     const { invoke } = await import("@tauri-apps/api/core");
     await invoke("oauth_cancel");
   } catch {}
+}
+
+async function openVerification() {
+  try {
+    await api.openExternal(verifyUrl.value);
+    autoError.value = '';
+  } catch {
+    autoError.value = 'Открой страницу входа вручную: ' + verifyUrl.value;
+  }
 }
 
 async function submitManual(): Promise<void> {

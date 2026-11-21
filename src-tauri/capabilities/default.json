@@ -3,6 +3,7 @@
   "identifier": "default",
   "description": "Базовые разрешения главного окна",
   "windows": ["main"],
+  "platforms": ["linux", "macOS", "windows"],
   "permissions": [
     "core:default",
     "core:window:allow-minimize",

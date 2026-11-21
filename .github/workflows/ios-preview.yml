@@ -1,0 +1,65 @@
+name: iPhone preview
+
+on:
+  push:
+    branches: [ios/preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iphone-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iphone:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
+        with:
+          targets: aarch64-apple-ios
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run typecheck
+      - name: Generate Xcode project
+        run: node node_modules/@tauri-apps/cli/tauri.js ios init --ci
+      - name: Build unsigned iPhone package
+        run: node node_modules/@tauri-apps/cli/tauri.js ios build --ci --no-sign --target aarch64 -- --locked
+      - name: Verify iPhone package
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(src-tauri/gen/apple/build/arm64/*.ipa)
+          [[ ${#archives[@]} == 1 ]]
+          mkdir -p artifacts
+          cp "${archives[0]}" artifacts/Aureon-iPhone-preview.ipa
+          unzip -tq artifacts/Aureon-iPhone-preview.ipa
+          unpacked="$(mktemp -d)"
+          unzip -q artifacts/Aureon-iPhone-preview.ipa -d "$unpacked"
+          apps=("$unpacked"/Payload/*.app)
+          [[ ${#apps[@]} == 1 ]]
+          plist="${apps[0]}/Info.plist"
+          executable="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$plist")"
+          [[ "$(lipo -archs "${apps[0]}/$executable")" == arm64 ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$plist")" == app.nightlezz.devs.aureon ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print UIBackgroundModes:0' "$plist")" == audio ]]
+          (cd artifacts && shasum -a 256 Aureon-iPhone-preview.ipa > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: Aureon-iPhone-preview
+          path: artifacts/*
+          if-no-files-found: error

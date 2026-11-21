@@ -56,7 +56,7 @@ pub fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn open_external(url: String) -> Result<(), String> {
+pub fn open_external(_app: tauri::AppHandle, url: String) -> Result<(), String> {
     let target = url.trim();
     if !target.starts_with("http://") && !target.starts_with("https://") {
         return Err("unsupported url".to_string());
@@ -80,6 +80,13 @@ pub fn open_external(url: String) -> Result<(), String> {
         std::process::Command::new("xdg-open")
             .arg(target)
             .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "ios")]
+    {
+        use tauri_plugin_opener::OpenerExt;
+        _app.opener()
+            .open_url(target, None::<&str>)
             .map_err(|e| e.to_string())?;
     }
     Ok(())
