@@ -32,11 +32,14 @@ jobs:
       - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a
         with:
           workspaces: src-tauri -> target
+          cache-on-failure: true
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run typecheck
       - name: Generate Xcode project
-        run: npm run tauri -- ios init --ci
+        run: |
+          npm run tauri -- ios init --ci
+          grep -q 'AVFAudio.framework' src-tauri/gen/apple/*.xcodeproj/project.pbxproj
       - name: Build unsigned iPhone package
         run: npm run tauri -- ios build --ci --no-sign --target aarch64 -- --locked
       - name: Verify iPhone package

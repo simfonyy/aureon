@@ -17,6 +17,7 @@
   "bundle": {
     "targets": "all",
     "iOS": {
+      "frameworks": ["AVFAudio"],
       "minimumSystemVersion": "17.0"
     }
   }
