@@ -99,6 +99,7 @@ import ListenBrainzSection from '@/components/settings/sections/ListenBrainzSect
 import AudioToolsSection from '@/components/settings/sections/AudioToolsSection.vue';
 import LocalLibrarySection from '@/components/settings/sections/LocalLibrarySection.vue';
 import { matchItems } from "@/lib/settings-catalog";
+import { phoneLayout } from '@/lib/phoneLayout';
 import { useEqualizerStore } from "@/stores/equalizer";
 import { usePlayerStore } from "@/stores/player/index";
 import { useUiStore } from "@/stores/ui/index";
@@ -111,6 +112,7 @@ const scrollRoot = ref<HTMLElement | null>(null);
 const query = ref("");
 
 const GROUPS = ["Основное", "Плеер", "Библиотека", "Сеть", "Система"];
+const phoneSections = new Set(['theme', 'player', 'equalizer', 'playlists', 'cache', 'genius', 'listenbrainz', 'about']);
 
 const sections = [
   {id:'audio',label:'Звук и запись',icon:'wave',group:'Плеер',hint:'темп тональность микрофон выход устройство soundtouch',component:AudioToolsSection},
@@ -237,7 +239,7 @@ const sections = [
     hint: "версия github автор",
     component: AboutSection,
   },
-];
+].filter(section => !phoneLayout || phoneSections.has(section.id));
 
 const groups = computed(() => {
   const needle = query.value.trim().toLowerCase();
@@ -270,7 +272,7 @@ function sectionFromQuery(): string | null {
   return sections.some((s) => s.id === id) ? id : null;
 }
 
-const active = ref(sectionFromQuery() ?? 'backgrounds');
+const active = ref(sectionFromQuery() ?? (phoneLayout ? 'theme' : 'backgrounds'));
 
 watch(
   () => route.query.section,
@@ -292,8 +294,7 @@ function select(id: string) {
 async function reset() {
   const ok = await askConfirm({
     title: "Сбросить все настройки?",
-    message:
-      "Оформление, интерфейс, текст песни, эквалайзер и Discord вернутся к значениям по умолчанию. Авторизация и кеш останутся на месте.",
+    message: "Настройки Aureon вернутся к значениям по умолчанию. Авторизация и кеш останутся на месте.",
     okLabel: "Сбросить",
     danger: true,
   });

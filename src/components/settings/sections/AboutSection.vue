@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <div class="about-update">
+    <div v-if="!phoneLayout" class="about-update">
       <button class="btn" :disabled="updates.checking || updates.downloading" @click="updates.check('manual')">{{ updates.checking ? 'Проверяем…' : 'Проверить обновления' }}</button>
       <span role="status">{{ updates.error || (updates.checked && !updates.release ? 'Установлена последняя версия.' : updates.release ? 'Доступна версия ' + updates.release.version : 'Новые версии проверяются автоматически.') }}</span>
     </div>
@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { version as appVersion } from "../../../../package.json";
 import { api } from "@/api/client";
+import { phoneLayout } from '@/lib/phoneLayout';
 import Icon from "@/components/Icon.vue";
 
 import { useUpdatesStore } from '@/stores/updates';

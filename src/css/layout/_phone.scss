@@ -166,7 +166,10 @@
 .phone-mini-copy > span { color: var(--fg-dim); font-size: 12px; line-height: 1.2; }
 
 body .phone-player-modal .q-dialog__inner { padding: 0 !important; }
-body .phone-player-modal .q-dialog__inner > .phone-player { max-height: 100dvh !important; }
+body .phone-player-modal .q-dialog__inner > .phone-player {
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+}
 
 .phone-player {
   width: 100%;
@@ -253,8 +256,6 @@ body .phone-player-modal .q-dialog__inner > .phone-player { max-height: 100dvh !
 .phone-play { width: 64px; height: 64px; background: #f9f8ff; color: #15151a; }
 .phone-player-tools { min-height: 44px; }
 .phone-player-tools .clip-background-button { width: 44px; height: 44px; }
-.phone-player-tools .clip-background-hint { inset: auto 50% 52px auto; transform: translateX(50%); }
-.phone-player-tools .clip-background-hint::after { display: none; }
 .phone-play-icon-enter-active,
 .phone-play-icon-leave-active { transition: opacity .12s ease, scale .12s ease; }
 .phone-play-icon-enter-from,
@@ -299,7 +300,20 @@ body .phone-player-modal .q-dialog__inner > .phone-player { max-height: 100dvh !
 .phone-shell :is(.field, .settings-search) input,
 .phone-login input { font-size: 16px; }
 .phone-shell .home-library-link { display: none; }
-.phone-shell .settings-page { padding-inline: 0; }
+.phone-shell .settings-page { height: 100%; padding-inline: 0; }
+.phone-shell .settings-nav { padding-block: 8px; }
+.phone-shell .settings-nav-list { padding-block: 2px; }
+.phone-shell .settings-nav-item { min-height: 44px; }
+.phone-shell .settings-nav-divider { margin-block: 4px; }
+.phone-shell .playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-inline: 0;
+}
+.phone-shell .playlists-grid > .col-auto { min-width: 0; padding-inline: 0; }
+.phone-shell .playlists-grid .card { width: 100% !important; }
+.phone-shell .playlists-grid .card-play { opacity: 1; transform: none; }
 .phone-shell .row-track { min-height: 50px; }
 .phone-shell .row-track .track-album { display: none; }
 

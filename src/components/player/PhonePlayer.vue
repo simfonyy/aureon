@@ -51,53 +51,53 @@
         </header>
 
         <div class="phone-media">
-        <div v-show="!queueOpen" class="phone-artwork" :class="{ 'is-playing': player.isPlaying }">
-          <Transition name="phone-cover">
-            <img v-if="track.cover_url" :key="track.cover_url" :src="track.cover_url" alt="" decoding="async" />
-            <Icon v-else key="fallback" name="note" :size="58" />
-          </Transition>
-          <MusicClipBackdrop
-            v-if="open"
-            class="phone-clip"
-            :track="track"
-            :active="!queueOpen && !player.loading"
-            :enabled="ui.settings.musicVideoBackground"
-            :alignment-allowed="!player.censorReplaced && !player.playingLocal"
-            :position="player.progress"
-            :playing="player.isPlaying"
-            :playback-rate="player.playbackRate"
-            :pending-resume="player.pendingResume"
-          />
-        </div>
-
-        <section v-if="queueOpen" class="phone-queue" aria-label="Очередь">
-          <div class="phone-queue-head">
-            <h2>Очередь</h2>
-            <QueuePlaylistButton />
+          <div v-show="!queueOpen" class="phone-artwork" :class="{ 'is-playing': player.isPlaying }">
+            <Transition name="phone-cover">
+              <img v-if="track.cover_url" :key="track.cover_url" :src="track.cover_url" alt="" decoding="async" />
+              <Icon v-else key="fallback" name="note" :size="58" />
+            </Transition>
+            <MusicClipBackdrop
+              v-if="open"
+              class="phone-clip"
+              :track="track"
+              :active="!queueOpen && !player.loading"
+              :enabled="ui.settings.musicVideoBackground"
+              :alignment-allowed="!player.censorReplaced && !player.playingLocal"
+              :position="player.progress"
+              :playing="player.isPlaying"
+              :playback-rate="player.playbackRate"
+              :pending-resume="player.pendingResume"
+            />
           </div>
-          <q-virtual-scroll :items="player.queue" :virtual-scroll-item-size="56" class="phone-queue-list">
-            <template #default="{ item, index }">
-              <button
-                :key="item.id + '-' + index"
-                class="phone-queue-track"
-                :class="{ current: index === player.index }"
-                :aria-current="index === player.index ? 'true' : undefined"
-                type="button"
-                @click="playFromQueue(index)"
-              >
-                <span class="phone-mini-art">
-                  <img v-if="item.cover_url" :src="item.cover_url" alt="" loading="lazy" />
-                  <Icon v-else name="note" :size="17" />
-                </span>
-                <span class="phone-mini-copy">
-                  <strong class="ellipsis">{{ item.title }}</strong>
-                  <span class="ellipsis">{{ artistNames(item.artists) }}</span>
-                </span>
-                <Icon v-if="index === player.index" name="wave" :size="18" />
-              </button>
-            </template>
-          </q-virtual-scroll>
-        </section>
+
+          <section v-if="queueOpen" class="phone-queue" aria-label="Очередь">
+            <div class="phone-queue-head">
+              <h2>Очередь</h2>
+              <QueuePlaylistButton />
+            </div>
+            <q-virtual-scroll :items="player.queue" :virtual-scroll-item-size="56" class="phone-queue-list">
+              <template #default="{ item, index }">
+                <button
+                  :key="item.id + '-' + index"
+                  class="phone-queue-track"
+                  :class="{ current: index === player.index }"
+                  :aria-current="index === player.index ? 'true' : undefined"
+                  type="button"
+                  @click="playFromQueue(index)"
+                >
+                  <span class="phone-mini-art">
+                    <img v-if="item.cover_url" :src="item.cover_url" alt="" loading="lazy" />
+                    <Icon v-else name="note" :size="17" />
+                  </span>
+                  <span class="phone-mini-copy">
+                    <strong class="ellipsis">{{ item.title }}</strong>
+                    <span class="ellipsis">{{ artistNames(item.artists) }}</span>
+                  </span>
+                  <Icon v-if="index === player.index" name="wave" :size="18" />
+                </button>
+              </template>
+            </q-virtual-scroll>
+          </section>
         </div>
 
         <div class="phone-player-meta">
@@ -144,7 +144,7 @@
           <button class="phone-player-button" type="button" aria-label="Текст песни" @click="openTrackLyrics(track)">
             <Icon name="lyrics" :size="23" />
           </button>
-          <ClipBackgroundControl :track="track" :active="open && !queueOpen" />
+          <ClipBackgroundControl :track="track" :active="open && !queueOpen" :show-hint="false" />
           <button class="phone-player-button" type="button" aria-label="Очередь" :aria-pressed="queueOpen" @click="queueOpen = !queueOpen">
             <Icon name="queue" :size="23" />
           </button>
@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import Icon from '@/components/Icon.vue';
 import TrackMenu from '@/components/TrackMenu.vue';
 import QueuePlaylistButton from '@/components/QueuePlaylistButton.vue';
@@ -184,6 +184,8 @@ const queueOpen = ref(false);
 const seekPreview = ref<number | null>(null);
 const dragY = ref(0);
 const gesture = ref<{ pointerId: number; y: number; start: number } | null>(null);
+
+onMounted(() => player.bind());
 
 watch(track, (value, previous) => {
   if (!value) open.value = false;

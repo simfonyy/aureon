@@ -15,7 +15,7 @@
           <q-spinner size="24px" color="primary" />
         </div>
 
-        <div v-else class="row q-col-gutter-md q-mt-md">
+        <div v-else class="row q-col-gutter-md q-mt-md playlists-grid">
           <div v-for="pl in ordered" :key="pl.kind" class="col-auto">
             <div
               class="card"
