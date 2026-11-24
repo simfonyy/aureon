@@ -145,6 +145,7 @@ export interface StationOption {
 }
 
 export interface StationInfo {
+  filters: string[];
   id: string;
   name: string;
   language: string | null;

@@ -1,4 +1,4 @@
-html[data-appearance='matte'] {
+html[data-appearance] {
   --matte-sidebar: color-mix(in srgb, var(--bg) 72%, var(--surface));
   --matte-border: color-mix(in srgb, var(--fg) 10%, var(--bg));
   --matte-raised: color-mix(in srgb, var(--surface) 88%, var(--bg));
@@ -68,14 +68,14 @@ html[data-appearance='matte'] {
   .lyrics-wrap .lyric-line.on { text-shadow: none; }
   .q-menu, .q-dialog__inner > div { background: var(--surface); backdrop-filter: none; }
 }
-html[data-appearance='matte'][data-theme='oled'] { --matte-sidebar: var(--bg); }
+html[data-appearance][data-theme='oled'] { --matte-sidebar: var(--bg); }
 @media (max-width: 1050px) {
-  html[data-appearance='matte'] .settings-group { padding: 16px; }
+  html[data-appearance] .settings-group { padding: 16px; }
 }
 @media (max-width: 900px) {
-  html[data-appearance='matte'] .settings-nav { border-right: 0; border-bottom: 1px solid var(--line); }
+  html[data-appearance] .settings-nav { border-right: 0; border-bottom: 1px solid var(--line); }
 }
-html[data-appearance='matte'] .app-shell.queue-open .settings-nav { border-right: 0; border-bottom: 1px solid var(--line); }
+html[data-appearance] .app-shell.queue-open .settings-nav { border-right: 0; border-bottom: 1px solid var(--line); }
 .background-choices .background-choice { background: var(--surface); border-color: var(--line); color: var(--fg); box-shadow: none; }
 .background-choices .background-choice.selected { border-color: var(--accent); background: var(--surface); box-shadow: none; }
 .background-choices .choice-top { color: var(--fg); justify-content: space-between; }

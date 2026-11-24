@@ -153,7 +153,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   liquidParallax: false,
   liquidIntensity: 55,
   liquidSpeed: 36,
-  theme: "black",
+  theme: "oled",
   accent: "#a879ed",
   customBackground: "#09090b",
   customSurface: "#151518",

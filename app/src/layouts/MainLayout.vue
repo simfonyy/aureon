@@ -17,7 +17,7 @@
         <Icon v-else name="person" :size="23" />
       </button>
     </q-header>
-    <LiquidMetalBackground v-if="liquidAvailable" v-show="!panels.hidden && !panels.mini" :suspended="panels.hidden || panels.mini || background.open" />
+    <LiquidMetalBackground v-if="liquidAvailable" v-show="!panels.hidden && !panels.mini" :suspended="panels.hidden || panels.mini" />
     <Transition name="lyrics-ambient">
       <LyricsBackdrop v-if="lyricsVisible && !panels.hidden && !panels.mini" class="lyrics-shell-backdrop" :cover="player.current?.cover_url || ''" :mode="ui.settings.lyricsBackdrop" :blur="ui.settings.lyricsBackgroundBlur" :opacity="ui.settings.lyricsBackgroundOpacity" :motion="ui.settings.lyricsMotion" />
     </Transition>
@@ -496,11 +496,9 @@ const CommandPalette=defineAsyncComponent(()=>import('@/components/commands/Comm
 const ScreenshotSearchDialog=defineAsyncComponent(()=>import('@/components/search/ScreenshotSearchDialog.vue'));
 const LibraryToolsDialog=defineAsyncComponent(()=>import('@/components/library/LibraryToolsDialog.vue'));
 const AudioToolsDialog=defineAsyncComponent(()=>import('@/components/audio/AudioToolsDialog.vue'));
-import { useBackgroundStore } from '@/stores/background';
 import { motion } from 'motion-v';
 import AlbumCoverTransition from '@/components/AlbumCoverTransition.vue';
 import LiquidMetalBackground from "@/components/LiquidMetalBackground.vue";
-import { isLightColor, lightThemes, themePalettes } from "@/stores/ui/themes";
 import {
   computed,
   nextTick,
@@ -556,15 +554,10 @@ const player = usePlayerStore();
 useLyricsFxStore();
 const library = useLibraryStore();
 const ui = useUiStore();
-const background = useBackgroundStore();
 const panels = usePanelsStore();
-const liquidAvailable = computed(() => {
-  if (phoneLayout) return false;
-  const theme = ui.settings.theme;
-  const background = theme === "custom" ? ui.settings.customBackground : themePalettes[theme].background;
-  return ui.settings.backgroundMode === 'beauty' && ui.settings.liquidMetal && !lightThemes.has(theme) && !isLightColor(background)
-    ;
-});
+const liquidAvailable = computed(() =>
+  !phoneLayout && ui.settings.backgroundMode === 'beauty' && ui.settings.liquidMetal
+);
 const liquidActive=computed(()=>liquidAvailable.value&&!panels.hidden&&!panels.mini);
 const hotkeys = useHotkeysStore();
 

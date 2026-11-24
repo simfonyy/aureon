@@ -9,9 +9,9 @@
           </button>
         </header>
 
-        <HomeDiscovery :featured="phoneLayout" :select-lead="selectLeadRelease" :favorite-artists="favoriteArtists">
-          <template #lead="{ release, playAlbum, loadingAlbum }">
-            <HomeSpotlight :release="release" :loading-album="loadingAlbum" @play="playAlbum" />
+        <HomeDiscovery :featured="phoneLayout" :select-leads="selectLeadReleases" :favorite-artists="favoriteArtists">
+          <template #lead="{ releases, playAlbum, loadingAlbum }">
+            <HomeSpotlight :releases="releases" :loading-album="loadingAlbum" @play="playAlbum" />
           </template>
           <button
             v-if="player.current && player.pendingResume"
@@ -182,9 +182,12 @@ const knownArtists = computed(() => {
   const names = new Set(library.likedAlbums.flatMap(album => (album.artists || "").toLowerCase().split(", ")));
   return { ids, names };
 });
-function selectLeadRelease(albums: DiscoveryAlbum[]) {
+function selectLeadReleases(albums: DiscoveryAlbum[]) {
   const { ids, names } = knownArtists.value;
-  return albums.find(album => album.artists.some(artist => ids.has(artist.id) || names.has(artist.name.toLowerCase()))) ?? albums[0];
+  const familiar = (album: DiscoveryAlbum) => album.artists.some(artist =>
+    ids.has(artist.id) || names.has(artist.name.toLowerCase()));
+  const count = Math.min(4, Math.max(2, Math.ceil(albums.length / 2)));
+  return [...albums.filter(familiar), ...albums.filter(album => !familiar(album))].slice(0, count);
 }
 
 const playlists = ref<Playlist[]>([]);

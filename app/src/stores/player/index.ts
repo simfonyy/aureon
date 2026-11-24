@@ -155,6 +155,7 @@ let stallSince = 0;
 let recoverStep = 0;
 let lastRecover = 0;
 let radioStarted = false;
+let waveRequest = 0;
 
 function cancelPendingAudioSeek() {
   clearPendingSeek?.();
@@ -549,7 +550,9 @@ export const usePlayerStore = defineStore("player", {
       }
     },
 
-    async startWave(stationId?: string, stationName?: string) {
+    async startWave(stationId?: string, stationName?: string, filters?: string[]) {
+      const request = ++waveRequest;
+      const autoplay = filters === undefined || !this.isWave || !this.current || this.isPlaying;
       this.loading = true;
       this.waveError = null;
       const station = stationId ?? this.stationId ?? DEFAULT_STATION;
@@ -558,6 +561,7 @@ export const usePlayerStore = defineStore("player", {
         await api
           .sendFeedback({ type: "radioStarted", station_id: station })
           .catch(() => undefined);
+        if (request !== waveRequest) return;
         radioStarted = true;
 
         const history = readCache<string[]>(WAVE_HISTORY_KEY) ?? [];
@@ -571,8 +575,9 @@ export const usePlayerStore = defineStore("player", {
 
         for (let attempt = 0; attempt < 6 && fresh.length < 8; attempt++) {
           const res = await api.wave(
-            sessionId ? { station, sessionId, queue: delivered } : { station },
+            sessionId ? { station, sessionId, queue: delivered } : { station, filters },
           );
+          if (request !== waveRequest) return;
           if (res.radio_session_id) sessionId = res.radio_session_id;
           if (!res.tracks.length) break;
           batchId = res.batch_id ?? batchId;
@@ -614,14 +619,15 @@ export const usePlayerStore = defineStore("player", {
         this.index = 0;
         this.isWave = true;
         writeCache(`wave.last.${station}`, tracks.slice(0, 30));
-        await this.loadCurrent();
+        await this.loadCurrent({ autoplay });
       } catch (e) {
+        if (request !== waveRequest) return;
         const message =
           e instanceof Error ? e.message : "Не удалось запустить волну";
         this.waveError = message;
         Notify.create({ type: "negative", message });
       } finally {
-        this.loading = false;
+        if (request === waveRequest) this.loading = false;
       }
     },
 
@@ -630,6 +636,7 @@ export const usePlayerStore = defineStore("player", {
       startIndex = 0,
       opts?: { wave?: boolean; batchId?: string | null; playlist?: PlaylistSource },
     ) {
+      ++waveRequest;
       this.playlistSource = opts?.playlist ?? null;
       this.sourceQueue = [...tracks];
       this.queue = [...tracks];
@@ -1281,12 +1288,15 @@ export const usePlayerStore = defineStore("player", {
     },
 
     async rescueWave(station: string) {
+      const request = waveRequest;
+      const session = this.waveSessionId;
       try {
         const res = await api.wave(
           this.waveSessionId
             ? { station, sessionId: this.waveSessionId, queue: this.queue.filter(t=>!isLibraryTrack(t.id)).map((t) => t.id) }
             : { station },
         );
+        if (request !== waveRequest || session !== this.waveSessionId) return 0;
         if (res.radio_session_id) this.waveSessionId = res.radio_session_id;
         if (res.batch_id) this.waveBatchId = res.batch_id;
         const playing = this.current?.id;
@@ -1410,11 +1420,13 @@ export const usePlayerStore = defineStore("player", {
       if (useTogetherStore().isGuest) return 0;
       if (this.fetchingMore || !this.isWave) return 0;
       this.fetchingMore = true;
+      const request = waveRequest;
       let added = 0;
       try {
         await this.ensureRadioStarted();
         const station = this.stationId ?? DEFAULT_STATION;
         for (let attempt = 0; attempt < 4 && added === 0; attempt++) {
+          const session = this.waveSessionId;
           const res = await api.wave(
             this.waveSessionId
               ? {
@@ -1424,6 +1436,7 @@ export const usePlayerStore = defineStore("player", {
                 }
               : { station },
           );
+          if (request !== waveRequest || session !== this.waveSessionId) return 0;
           if (res.radio_session_id) this.waveSessionId = res.radio_session_id;
           if (res.batch_id) this.waveBatchId = res.batch_id;
 

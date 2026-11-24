@@ -131,7 +131,8 @@
                 :key="option.value"
                 type="button"
                 :class="{ on: group.current === option.value }"
-                :disabled="applying"
+                :aria-pressed="group.current === option.value"
+                :disabled="applying || player.loading"
                 @click="applySetting(group.key, option.value)"
               >
                 {{ option.name }}
@@ -267,31 +268,50 @@ const settingsGroups = computed(() => {
   return groups.filter((group) => group.options.length > 1);
 });
 
-async function loadInfo() {
+const activeStation = computed(() => player.stationId ?? DEFAULT_STATION);
+let settingsRequest = 0;
+
+watch(activeStation, async (station) => {
+  const request = ++settingsRequest;
+  info.value = null;
+  applying.value = false;
   try {
-    info.value = await api.stationInfo(player.stationId ?? DEFAULT_STATION);
+    const details = await api.stationInfo(station);
+    if (request === settingsRequest) info.value = details;
   } catch {
-    info.value = null;
+    if (request === settingsRequest) info.value = null;
   }
-}
+}, { immediate: true });
 
 async function applySetting(key: SettingKey, value: string) {
-  if (applying.value) return;
+  const current = info.value;
+  if (!current || applying.value || player.loading || current.id !== activeStation.value) return;
+  const settings = {
+    moodEnergy: current.mood_energy,
+    diversity: current.diversity,
+    language: current.language,
+  };
+  if (settings[key] === value && !player.waveError) return;
+  settings[key] = value;
+  const request = ++settingsRequest;
   applying.value = true;
   try {
-    await api.setStationSettings({
-      station: player.stationId ?? DEFAULT_STATION,
-      [key]: value,
-    });
-    await loadInfo();
-    await player.startWave(
-      player.stationId ?? DEFAULT_STATION,
-      player.stationName || undefined,
-    );
+    const result = await api.setStationSettings({ station: current.id, ...settings });
+    if (request !== settingsRequest) return;
+    if (!result.ok) throw new Error();
+    const saved = await api.stationInfo(current.id);
+    if (request !== settingsRequest) return;
+    info.value = saved;
+    if (
+      (settings.moodEnergy !== null && saved.mood_energy !== settings.moodEnergy) ||
+      (settings.language !== null && saved.language !== settings.language) ||
+      (settings.diversity !== null && saved.diversity !== settings.diversity)
+    ) throw new Error();
+    await player.startWave(current.id, player.stationName || undefined, saved.filters);
   } catch {
-    Notify.create({ message: "Не удалось обновить настройки волны" });
+    if (request === settingsRequest) Notify.create({ message: "Не удалось применить настройки волны" });
   } finally {
-    applying.value = false;
+    if (request === settingsRequest) applying.value = false;
   }
 }
 
@@ -353,6 +373,10 @@ function onPrimary() {
 }
 
 function playStation(item: WheelItem) {
+  if (applying.value) {
+    ++settingsRequest;
+    applying.value = false;
+  }
   void player.startWave(stationIdOf(item), item.name);
 }
 
@@ -504,7 +528,6 @@ watch(stations, () => {
 });
 
 onMounted(() => {
-  void loadInfo();
   void load();
 
   void nextTick(() => {
@@ -519,6 +542,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  ++settingsRequest;
   stopGlide();
   chipsResize?.disconnect();
   chipsResize = null;

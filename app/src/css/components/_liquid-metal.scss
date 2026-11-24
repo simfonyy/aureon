@@ -1,6 +1,6 @@
 .liquid-shell.app-shell {
   isolation: isolate;
-  background: #08090c;
+  background: var(--bg);
 }
 
 .liquid-metal {
@@ -75,54 +75,11 @@
   display: block; height: 64px; border-radius: 8px;
   background: linear-gradient(145deg, #090b10 15%, #272a32 35%, var(--preset-accent) 39%, #101219 43%, #050709 60%, #292c34 78%, var(--preset-accent) 82%, #101116 87%);
 }
-.liquid-shell .btn, .liquid-shell .btn-solid, .liquid-shell .icon-btn { transition: transform .18s, background .18s, box-shadow .18s; }
-.liquid-shell .btn:active, .liquid-shell .btn-solid:active, .liquid-shell .icon-btn:active { transform: scale(.96); }
-.liquid-shell .nav.on svg { animation: nav-arrive .35s ease-out; }
-@keyframes nav-arrive { from { opacity: .4; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
-
-.liquid-shell {
-  .settings-page { background: transparent; }
-  .q-drawer { background: transparent; }
-  .settings-group { padding: 20px; }
-  .q-page-container { position: relative; }
-  .topbar, .sidebar, .rightbar {
-    background: rgba(12, 13, 17, .55);
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
-  }
-  .sidebar { background: rgba(12, 13, 17, .55) !important; border-right: 1px solid rgba(255, 255, 255, .08); }
-  .home-card, .panel, .settings-group {
-    background: rgba(20, 20, 26, .50);
-    border: 1px solid rgba(255, 255, 255, .1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 12px 32px rgba(0, 0, 0, .15);
-    border-radius: var(--radius);
-  }
-  .home-card { padding: 9px; transition: background .2s, border-color .2s, transform .2s; }
-  .home-card:hover { background: rgba(36, 36, 45, .65); border-color: rgba(220, 213, 237, .25); transform: translateY(-3px); }
-  .nav.on {
-    background: linear-gradient(130deg, rgba(186, 181, 202, .19), rgba(71, 69, 84, .2));
-    box-shadow: inset 0 0 0 1px rgba(218, 208, 239, .25), inset 0 1px 0 rgba(255, 255, 255, .13);
-  }
-  .searchbar { background: rgba(25, 25, 31, .65); border: 1px solid rgba(255, 255, 255, .1); }
-  .main-player-footer {
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0 12px;
-    box-shadow: none;
-  }
-  .player-bar {
-    border: 1px solid rgba(207, 213, 232, .2);
-    border-radius: 18px;
-    background: linear-gradient(115deg, color-mix(in srgb, var(--player-art-accent, var(--accent)) 9%, transparent), transparent 52%), rgba(15, 16, 21, .88);
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(1.2);
-    box-shadow: inset 0 1px 0 rgba(237, 240, 255, .07), 0 12px 30px rgba(0, 0, 0, .25);
-  }
+.liquid-shell .q-page-container {
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
 }
 
-.no-glass .liquid-shell {
-  .topbar, .sidebar, .rightbar, .player-bar { backdrop-filter: none; background-color: rgba(12, 13, 17, .94); }
-  .sidebar { background: rgba(12, 13, 17, .94) !important; }
-}
+.liquid-shell .settings-page { background: transparent; }
 
 .metal-preview {
   display: flex;
@@ -140,8 +97,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .material-preset, .liquid-shell .nav.on svg { animation: none !important; transition: none !important; transform: none !important; }
+  .material-preset { animation: none !important; transition: none !important; transform: none !important; }
   .metal-folds, .metal-ambient { animation: none !important; }
   .liquid-metal-field { transform: none !important; transition: none; }
-  .liquid-shell *, .liquid-shell *::before, .liquid-shell *::after { transition-duration: .01ms !important; }
 }

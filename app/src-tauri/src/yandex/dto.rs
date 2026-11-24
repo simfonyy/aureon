@@ -198,6 +198,7 @@ pub struct StationOptionDto {
 
 #[derive(Serialize)]
 pub struct StationInfoDto {
+    pub filters: Vec<String>,
     pub id: String,
     pub name: String,
     pub language: Option<String>,

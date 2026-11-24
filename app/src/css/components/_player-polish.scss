@@ -27,7 +27,7 @@
   .pb-dots:hover { background: var(--hover); }
 }
 
-html[data-appearance='matte'] .player-bar {
+html[data-appearance] .player-bar {
   background: var(--surface);
   box-shadow: 0 -1px 0 var(--line);
   .player-cover { box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-soft) 35%, transparent); }

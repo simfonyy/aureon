@@ -139,7 +139,6 @@ export const useUiStore = defineStore("ui", {
       value: InterfaceSettings[K],
     ) {
       this.settings[key] = value;
-      if (key === 'theme' && value === 'matte') this.settings.backgroundMode = 'matte';
       this.apply();
     },
 
@@ -296,7 +295,6 @@ export const useUiStore = defineStore("ui", {
 
     useCustomTheme() {
       this.settings.theme = "custom";
-      this.settings.backgroundMode = "matte";
       this.apply();
     },
 

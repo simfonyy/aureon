@@ -4,7 +4,7 @@
     <strong>{{ updates.progress }}%</strong>
     <q-linear-progress :value="updates.progress / 100" color="primary" rounded />
   </aside>
-  <q-dialog :model-value="updates.open && !blocked" :persistent="updates.downloading" @update:model-value="value => { if (!value) updates.remindLater(); }">
+  <q-dialog :model-value="updates.open" :persistent="updates.downloading" @update:model-value="value => { if (!value) updates.remindLater(); }">
     <div v-if="updates.release" class="update-notice" aria-labelledby="update-title">
       <span class="update-caption">Обновление Aureon</span>
       <h2 id="update-title">Версия {{ updates.release.version }}</h2>
@@ -31,7 +31,6 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 import { api } from '@/api/client';
 import { useUpdatesStore } from '@/stores/updates';
-defineProps<{ blocked?: boolean }>();
 const updates = useUpdatesStore();
 let timer: ReturnType<typeof setInterval>;
 const check = () => { if (document.visibilityState === 'visible') void updates.check(); };

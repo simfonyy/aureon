@@ -14,16 +14,28 @@ impl Yandex {
         station: &str,
         session_id: Option<&str>,
         queue: &[String],
+        filters: Option<Vec<String>>,
     ) -> Result<WaveResponse, String> {
         let (path, body) = match session_id {
             Some(sid) => (
                 format!("/rotor/session/{sid}/tracks"),
                 serde_json::json!({ "queue": queue }),
             ),
-            None => (
-                "/rotor/session/new".to_string(),
-                serde_json::json!({ "seeds": [station], "includeTracksInResponse": true }),
-            ),
+            None => {
+                let filters = match filters {
+                    Some(filters) => filters,
+                    None => self.station_info(station).await.map(|info| info.filters).unwrap_or_default(),
+                };
+                let mut seeds = vec![station.to_owned()];
+                for filter in filters {
+                    if !seeds.contains(&filter) {
+                        seeds.push(filter);
+                    }
+                }
+                ("/rotor/session/new".to_owned(), serde_json::json!({
+                    "seeds": seeds, "includeTracksInResponse": true
+                }))
+            }
         };
         let result = self.post_value(&path, body).await?;
         let parsed: YRotorSession =
@@ -208,6 +220,7 @@ impl Yandex {
                 .and_then(|v| v.as_str())
                 .unwrap_or(station)
                 .to_string(),
+            filters: session_filters(&settings, &restrictions),
             language: setting_value(&settings, "language"),
             mood_energy: setting_value(&settings, "moodEnergy"),
             diversity: setting_value(&settings, "diversity"),
@@ -238,20 +251,12 @@ impl Yandex {
             return Ok(false);
         }
 
-        let response = self
-            .http
-            .post(format!("{BASE}/rotor/station/{station}/settings3"))
-            .header("Authorization", self.auth())
-            .header("X-Yandex-Music-Client", MUSIC_CLIENT)
-            .json(&serde_json::Value::Object(body))
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !response.status().is_success() {
-            return Err(format!("station settings failed: {}", response.status()));
-        }
-        Ok(true)
+        body.insert("type".into(), serde_json::json!("rotor"));
+        let result = self.post_value(
+            &format!("/rotor/station/{station}/settings3"),
+            serde_json::Value::Object(body),
+        ).await?;
+        Ok(result.as_str() == Some("ok"))
     }
 
     pub async fn feedback(
@@ -325,6 +330,28 @@ impl Yandex {
     }
 }
 
+fn session_filters(settings: &serde_json::Value, restrictions: &serde_json::Value) -> Vec<String> {
+    [
+        ("moodEnergy", "settingMoodEnergy", "all"),
+        ("diversity", "settingDiversity", "default"),
+        ("language", "settingLanguage", "any"),
+    ]
+    .into_iter()
+    .filter_map(|(key, prefix, unrestricted)| {
+        let value = settings.get(key)?.as_str()?;
+        let option = restrictions.get(key)?.get("possibleValues")?.as_array()?.iter()
+            .find(|item| item["value"].as_str() == Some(value))?;
+        if value == unrestricted || option["unspecified"].as_bool() == Some(true) {
+            return None;
+        }
+        Some(match option["serializedSeed"].as_str().filter(|seed| !seed.is_empty()) {
+            Some(seed) => seed.to_string(),
+            None => format!("{prefix}:{value}"),
+        })
+    })
+    .collect()
+}
+
 fn setting_value(settings: &serde_json::Value, key: &str) -> Option<String> {
     settings
         .get(key)
@@ -355,4 +382,30 @@ fn enum_options(restrictions: &serde_json::Value, key: &str) -> Vec<StationOptio
                 .collect()
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::session_filters;
+    use serde_json::json;
+
+    #[test]
+    fn combines_station_options_and_uses_the_service_language_seed() {
+        let restrictions = json!({
+            "moodEnergy": {"possibleValues": [{"value": "calm"}, {"value": "all"}]},
+            "diversity": {"possibleValues": [{"value": "discover"}, {"value": "default"}]},
+            "language": {"possibleValues": [
+                {"value": "local", "name": "Узбекский", "serializedSeed": "settingLanguage:uzbek"},
+                {"value": "unrestricted", "unspecified": true}
+            ]}
+        });
+        let settings = json!({"moodEnergy":"calm", "diversity":"discover", "language":"local"});
+        assert_eq!(session_filters(&settings, &restrictions), [
+            "settingMoodEnergy:calm", "settingDiversity:discover", "settingLanguage:uzbek",
+        ]);
+        let reset = json!({"moodEnergy":"all", "diversity":"default", "language":"unrestricted"});
+        assert!(session_filters(&reset, &restrictions).is_empty());
+        let partial = json!({"moodEnergy":"calm", "language":"unavailable"});
+        assert_eq!(session_filters(&partial, &restrictions), ["settingMoodEnergy:calm"]);
+    }
 }

@@ -109,7 +109,7 @@ export function applyInterfaceSettings(settings: InterfaceSettings): void {
   root.classList.toggle("light-theme", light);
   Dark.set(!light);
 
-  root.classList.toggle("no-glass", !settings.glass || settings.backgroundMode === 'matte');
+  root.classList.toggle("no-glass", !settings.glass);
   root.classList.toggle("no-motion", !settings.animations);
   root.classList.toggle("thin-scrollbar", settings.thinScrollbar);
   root.classList.toggle("hide-playlist-covers", !settings.showPlaylistCovers);

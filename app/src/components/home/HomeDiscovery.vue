@@ -1,6 +1,6 @@
 <template>
   <div class="home-discovery" :aria-busy="loading">
-    <slot v-if="!featured" name="lead" :release="leadRelease" :play-album="playAlbum" :loading-album="loadingAlbum" />
+    <slot v-if="!featured" name="lead" :releases="leadReleases" :play-album="playAlbum" :loading-album="loadingAlbum" />
     <slot v-if="!featured" />
     <template v-if="featured ? featuredReleases.length : shelfReleases.length">
       <HomeShelf id="home-new-releases" :label="releaseHeading" :class="{ 'phone-releases': featured }">
@@ -39,7 +39,7 @@
         </template>
       </HomeShelf>
     </template>
-    <section v-else-if="!leadRelease && (loading || releasesError)" class="discovery-status-section" aria-labelledby="new-releases-heading">
+    <section v-else-if="!leadReleases.length && (loading || releasesError)" class="discovery-status-section" aria-labelledby="new-releases-heading">
       <div class="home-section-head"><h2 id="new-releases-heading">Новые релизы</h2></div>
       <p v-if="loading" class="discovery-loading" role="status"><q-spinner size="15px" />Загружаем релизы…</p>
     </section>
@@ -78,7 +78,7 @@ import HomePlayingBadge from './HomePlayingBadge.vue';
 import Icon from '@/components/Icon.vue';
 import TrackRow from '@/components/TrackRow.vue';
 
-const props = defineProps<{ featured?: boolean; favoriteArtists?: Set<string>; selectLead?: (albums: DiscoveryAlbum[]) => DiscoveryAlbum | undefined }>();
+const props = defineProps<{ featured?: boolean; favoriteArtists?: Set<string>; selectLeads?: (albums: DiscoveryAlbum[]) => DiscoveryAlbum[] }>();
 const router = useRouter(), auth = useAuthStore(), player = usePlayerStore();
 const releases = ref<DiscoveryAlbum[]>([]), chart = ref<Track[]>([]);
 const releasesError = ref(''), chartError = ref(''), loading = ref(false), chartExpanded = ref(false), loadingAlbum = ref('');
@@ -90,8 +90,11 @@ const featuredReleases = computed(() => {
   return [...prioritized, ...releases.value.filter(album => !prioritized.has(album))];
 });
 const releaseHeading = computed(() => props.featured && favoriteReleases.value.length ? 'Свежие для тебя' : 'Новые релизы');
-const leadRelease = computed(() => props.featured ? undefined : props.selectLead?.(releases.value));
-const shelfReleases = computed(() => releases.value.filter(album => album.id !== leadRelease.value?.id));
+const leadReleases = computed(() => props.featured ? [] : props.selectLeads?.(releases.value) ?? []);
+const shelfReleases = computed(() => {
+  const featuredIds = new Set(leadReleases.value.map(album => album.id));
+  return releases.value.filter(album => !featuredIds.has(album.id));
+});
 const visibleChart = computed(() => chartExpanded.value ? chart.value : chart.value.slice(0, 10));
 let disposed = false, generation = 0, playbackGeneration = 0;
 function account() { return auth.profile?.uid ?? null; }

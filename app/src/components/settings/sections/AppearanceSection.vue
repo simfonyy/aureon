@@ -94,10 +94,7 @@ type ColorKey =
 
 function setColor(key: ColorKey, value: string) {
   ui.settings[key] = value;
-  if (key !== "accent") { ui.settings.theme = "custom"; ui.settings.backgroundMode = "matte"; }
+  if (key !== "accent") ui.settings.theme = "custom";
   ui.apply();
 }
 </script>
-
-
-

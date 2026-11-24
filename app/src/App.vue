@@ -1,20 +1,17 @@
 <template>
-  <div :inert="main&&(bg.open||bg.intro)" :aria-hidden="main&&(bg.open||bg.intro)?true:undefined" style="display:contents"><router-view /></div>
-  <BackgroundOnboarding v-if="main" />
-  <UpdateNotice v-if="main" :blocked="bg.open || bg.intro" />
-  <StartupIntro v-if="main&&bg.intro" @done="bg.intro=false" />
+  <router-view />
+  <UpdateNotice v-if="mainWindow" />
 </template>
 
 <script setup lang="ts">
+import { isTauri } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import UpdateNotice from '@/components/UpdateNotice.vue';
-import {onMounted} from 'vue';
-import {phoneLayout} from '@/lib/phoneLayout';
-import {isTauri} from '@tauri-apps/api/core';
-import {getCurrentWindow} from '@tauri-apps/api/window';
-import {useBackgroundStore} from '@/stores/background';
-import BackgroundOnboarding from '@/components/background/BackgroundOnboarding.vue';
-import StartupIntro from '@/components/background/StartupIntro.vue';
-const bg=useBackgroundStore();const main=!phoneLayout&&(!isTauri()||getCurrentWindow().label==='main');
+import { phoneLayout } from '@/lib/phoneLayout';
+import { useUiStore } from '@/stores/ui';
+import { applyInterfaceSettings } from '@/stores/ui/apply';
+
+const mainWindow = !phoneLayout && (!isTauri() || getCurrentWindow().label === 'main');
 document.documentElement.classList.toggle('phone-layout', phoneLayout);
-onMounted(()=>{if(main){if(!bg.completed)bg.restart()}});
+applyInterfaceSettings(useUiStore().settings);
 </script>
