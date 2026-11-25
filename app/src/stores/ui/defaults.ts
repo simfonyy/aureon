@@ -235,7 +235,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   discordDetails: "{title}",
   discordState: "{artist}",
   discordButtonLabel: "Открыть трек",
-  discordDownloadButton: false,
+  discordDownloadButton: true,
   discordShowArtwork: true,
   discordShowTime: true,
   cacheEnabled: true,

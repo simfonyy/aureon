@@ -27,17 +27,17 @@
 <details>
 <summary><strong>Установка на Linux</strong></summary>
 
-Для Ubuntu или Debian скачай из **Assets** файл с окончанием `_amd64.deb`. Открой терминал в папке с файлом. Для версии 1.2.5 команда такая:
+Для Ubuntu или Debian скачай из **Assets** файл с окончанием `_amd64.deb`. Открой терминал в папке с файлом. Для версии 1.2.6 команда такая:
 
 ```bash
-sudo apt install ./Aureon_1.2.5_amd64.deb
+sudo apt install ./Aureon_1.2.6_amd64.deb
 ```
 
 После установки найди **Aureon** в меню приложений. Если предпочитаешь запуск из одной папки, скачай файл `.AppImage` и выполни в его папке:
 
 ```bash
-chmod +x ./Aureon_1.2.5_amd64.AppImage
-./Aureon_1.2.5_amd64.AppImage
+chmod +x ./Aureon_1.2.6_amd64.AppImage
+./Aureon_1.2.6_amd64.AppImage
 ```
 
 Для другого релиза подставь имя скачанного файла.
