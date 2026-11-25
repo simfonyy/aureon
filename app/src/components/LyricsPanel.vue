@@ -433,7 +433,7 @@ import { useUiStore } from "@/stores/ui/index";
 
 type Credit = { id: number; name: string; role: string; image: string };
 
-type SourcePick = "auto" | "lrclib" | "genius";
+type SourcePick = "auto" | "lrclib" | "netease" | "genius";
 
 const player = usePlayerStore();
 const emit = defineEmits<{ 'clip-ready': [value: boolean] }>();
@@ -730,6 +730,7 @@ function partLabel(text: string): string {
 const sources: Array<{ id: SourcePick; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
+  { id: "netease", label: "NetEase" },
   { id: "genius", label: "Genius" },
 ];
 
@@ -739,8 +740,9 @@ const pick = computed<SourcePick>(
 
 const searchingIn = computed(() => {
   if (pick.value === "lrclib") return "LRCLIB";
+  if (pick.value === "netease") return "NetEase";
   if (pick.value === "genius") return "Genius";
-  return "LRCLIB, Яндексе и Genius";
+  return "LRCLIB, Яндексе, NetEase и Genius";
 });
 
 const originTag = computed(() => {

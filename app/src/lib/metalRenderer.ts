@@ -9,7 +9,7 @@ uniform vec2 resolution, pointer;
 uniform float time, reflection, contrast, speed, depth, grain, seed, interaction;
 uniform vec3 accent;
 float field(vec2 p) {
- float t=time*speed*.025;
+ float t=time*speed*.65;
  p+=vec2(sin(p.y*1.4+t)+sin(p.x*.7-p.y*.8)*.4,cos(p.x*1.05-t))*.85;
  float fold=p.y*2.4+p.x*.65+sin(p.x*1.25+t)*1.3;
  float h=sin(fold)*.53;

@@ -547,6 +547,7 @@ const marks: Array<{ id: LyricsAnnotationMark; label: string }> = [
 const lyricsSources: Array<{ id: LyricsSource; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
+  { id: "netease", label: "NetEase" },
   { id: "genius", label: "Genius" },
 ];
 </script>

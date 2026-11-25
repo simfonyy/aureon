@@ -284,6 +284,7 @@ const ui = useUiStore();
 const sources: Array<{ value: LyricsSource; label: string }> = [
   { value: "auto", label: "Авто" },
   { value: "lrclib", label: "LRCLIB" },
+  { value: "netease", label: "NetEase" },
   { value: "genius", label: "Genius" },
   { value: "yandex", label: "Яндекс" },
 ];

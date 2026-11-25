@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
-let lrclib, yandex;
+let lrclib, yandex, netease = [];
 globalThis.lyricsSourceFixture = {
-  api: { lrclibLookup: async () => lrclib, lyrics: async () => { if(yandex instanceof Error) throw yandex; return yandex; } },
+  api: { neteaseLookup: async () => netease, lrclibLookup: async () => lrclib, lyrics: async () => { if(yandex instanceof Error) throw yandex; return yandex; } },
   artistNames: () => 'Artist',
   useGeniusStore: () => ({ ready: false }),
   useUiStore: () => ({ settings: { lyricsSource: 'auto' } }),
@@ -24,4 +24,15 @@ test('a later source failure does not discard readable plain lyrics', async () =
   lrclib = { synced: false, lines: [{ text: 'plain', time_ms: 0 }] };
   yandex = new Error('offline');
   assert.equal((await loadTrackLyrics(track)).lyrics.lines[0].text, 'plain');
+});
+
+test('automatic lookup uses timed NetEase lyrics before falling back to plain text', async () => {
+  lrclib = null;
+  yandex = { synced: false, lines: [{ time_ms: 0, text: 'plain' }] };
+  netease = [{ time_ms: 1200, text: 'timed' }];
+  const result = await loadTrackLyrics(track);
+  assert.equal(result.origin, 'netease');
+  assert.equal(result.lyrics.lines[0].time_ms, 1200);
+  netease = [];
+  assert.equal((await loadTrackLyrics(track)).origin, 'yandex');
 });

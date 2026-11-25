@@ -13,7 +13,7 @@
 .setting-row select option { background: #16161c; }
 .liquid-shell.optimized-effects, .liquid-shell:has(.game-active) {
   .topbar, .sidebar, .rightbar, .player-bar { backdrop-filter: none; }
-  .metal-folds, .metal-ambient { animation-play-state: paused; }
+
 }
 @media(max-width: 1050px) {
 

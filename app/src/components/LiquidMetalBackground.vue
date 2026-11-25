@@ -51,7 +51,7 @@ const parallax = computed(() => moving.value && ui.settings.liquidParallax);
 const materialStyle = computed(() => ({
   '--metal-glow': tint.value.glow,
   '--metal-intensity': Math.max(15, Math.min(100, ui.settings.liquidIntensity)) / 100,
-  '--metal-cycle': `${Math.max(25, Math.min(45, ui.settings.liquidSpeed))}s`,
+  '--metal-cycle': `${Math.round(900 / Math.max(5, ui.settings.metalSpeed))}s`,
 }));
 let frame = 0;
 let x = 0;

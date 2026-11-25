@@ -29,7 +29,7 @@ pub struct LrcLyrics {
     pub source: String,
 }
 
-fn http() -> Result<&'static reqwest::Client, String> {
+pub(crate) fn http() -> Result<&'static reqwest::Client, String> {
     static CLIENT: OnceLock<Option<reqwest::Client>> = OnceLock::new();
     CLIENT
         .get_or_init(|| {
@@ -104,7 +104,7 @@ fn parse_stamp(stamp: &str) -> Option<i64> {
     Some(minutes * 60_000 + (seconds * 1000.0).round() as i64)
 }
 
-fn parse_lrc(raw: &str) -> Vec<LrcLine> {
+pub(crate) fn parse_lrc(raw: &str) -> Vec<LrcLine> {
     let mut out: Vec<LrcLine> = Vec::new();
 
     for line in raw.lines() {

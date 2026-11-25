@@ -4,7 +4,7 @@
       <div class="choice-top"><b>{{mode.title}}</b><Icon v-if="bg.mode===mode.id" name="check" :size="16" /></div>
       <p>{{mode.subtitle}}</p>
       <div :class="['choice-art',mode.id]">
-        <img v-if="mode.id==='beauty'" src="/backgrounds/black-chrome.png" alt="" loading="lazy" />
+        <div v-if="mode.id==='beauty'" class="material-preset-art" aria-hidden="true" style="--preset-accent: var(--accent); height: 100%" />
         <div v-else class="matte-sample" aria-hidden="true"><i/><div><b/><span/><span/></div></div>
       </div>
     </button>

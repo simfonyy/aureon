@@ -17,7 +17,7 @@
         <Icon v-else name="person" :size="23" />
       </button>
     </q-header>
-    <LiquidMetalBackground v-if="liquidAvailable" v-show="!panels.hidden && !panels.mini" :suspended="panels.hidden || panels.mini" />
+    <LiquidMetalBackground v-if="liquidAvailable" v-show="!panels.hidden && !panels.mini" :suspended="panels.hidden || panels.mini || background.previewActive" />
     <Transition name="lyrics-ambient">
       <LyricsBackdrop v-if="lyricsVisible && !panels.hidden && !panels.mini" class="lyrics-shell-backdrop" :cover="player.current?.cover_url || ''" :mode="ui.settings.lyricsBackdrop" :blur="ui.settings.lyricsBackgroundBlur" :opacity="ui.settings.lyricsBackgroundOpacity" :motion="ui.settings.lyricsMotion" />
     </Transition>
@@ -542,6 +542,7 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import { useLibraryStore } from "@/stores/library";
 import { useHotkeysStore } from "@/stores/hotkeys";
+import { useBackgroundStore } from "@/stores/background";
 import { usePanelsStore } from "@/stores/panels";
 import { usePlayerStore } from "@/stores/player/index";
 import { useLyricsFxStore } from "@/stores/lyricsFx";
@@ -555,6 +556,7 @@ useLyricsFxStore();
 const library = useLibraryStore();
 const ui = useUiStore();
 const panels = usePanelsStore();
+const background = useBackgroundStore();
 const liquidAvailable = computed(() =>
   !phoneLayout && ui.settings.backgroundMode === 'beauty' && ui.settings.liquidMetal
 );

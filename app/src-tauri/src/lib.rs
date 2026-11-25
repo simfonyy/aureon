@@ -13,6 +13,7 @@ mod genius;
 #[cfg(desktop)]
 mod hotkeys;
 mod lrclib;
+mod netease;
 mod lyrics_fx;
 #[cfg(desktop)]
 mod mini;
@@ -181,6 +182,7 @@ pub fn run() {
             genius::genius_lookup,
             genius::genius_artist,
             genius::genius_clear_cache,
+            netease::netease_lookup,
             lrclib::lrclib_lookup,
             lrclib::lrclib_clear_cache,
             presence::validate_discord_app,

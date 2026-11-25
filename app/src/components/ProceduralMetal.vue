@@ -10,15 +10,15 @@ let renderer:MetalRenderer|null=null, disposed=false, initializing=false;
 let frame=0, timer:ReturnType<typeof setTimeout>|undefined;
 let clock=0,last=0; let pointer:[number,number]=[.5,.5];
 let adaptiveFps=25, healthyFrames=0;
-let focused=true, hidden=false, reduced=false; let media:MediaQueryList;
+let hidden=false, reduced=false; let media:MediaQueryList;
 const parameters=()=>({accent:ui.settings.metalAccent,reflection:ui.settings.liquidIntensity,contrast:ui.settings.metalContrast,speed:ui.settings.metalSpeed,depth:ui.settings.metalDepth,grain:ui.settings.metalGrain,mouse:ui.settings.liquidParallax&&!reduced,seed:ui.settings.metalSeed});
 function stop(){clearTimeout(timer);cancelAnimationFrame(frame);last=0;}
 function draw(){renderer?.draw(parameters(),clock,pointer,ui.settings.metalQuality==='maximum'?'maximum':'balanced');}
 function schedule(){
- stop(); if(!ready.value||!activeMode.value||hidden||!focused||props.suspended)return;
+ stop(); if(!ready.value||!activeMode.value||hidden||props.suspended)return;
  draw(); if(reduced||!ui.settings.liquidMotion||!ui.settings.animations)return;
  const cap=ui.settings.metalQuality==='maximum'?40:25;adaptiveFps=Math.min(cap,adaptiveFps);
- const tick=(now:number)=>{if(disposed||hidden||!focused||!activeMode.value||props.suspended)return;
+ const tick=(now:number)=>{if(disposed||hidden||!activeMode.value||props.suspended)return;
   if(last){const delta=now-last;clock+=Math.min(.1,delta/1000);if(delta>1000/adaptiveFps*1.65){adaptiveFps=Math.max(15,adaptiveFps-5);healthyFrames=0}else if(++healthyFrames>100){adaptiveFps=Math.min(cap,adaptiveFps+5);healthyFrames=0}}
   last=now;draw();timer=setTimeout(()=>{frame=requestAnimationFrame(tick);},Math.max(0,1000/adaptiveFps-(performance.now()-now)-8));};
  frame=requestAnimationFrame(tick);
@@ -30,8 +30,8 @@ async function initialize(){
  catch{renderer?.dispose();renderer=null;ready.value=false;}
  finally{initializing=false;}
 }
-function visibility(){hidden=document.hidden;focused=document.hasFocus();schedule();}
-function focus(){focused=true;schedule();}function blur(){focused=false;stop();}
+function visibility(){hidden=document.hidden;schedule();}
+
 function preference(){reduced=media.matches;pointer=[.5,.5];schedule();}
 function move(e:PointerEvent){if(!ui.settings.liquidParallax||reduced||!activeMode.value)return;pointer=[e.clientX/innerWidth,1-e.clientY/innerHeight];}
 function lost(e:Event){e.preventDefault();stop();ready.value=false;}
@@ -41,12 +41,12 @@ watch(()=>[ui.settings.metalQuality,ui.settings.metalAccent,ui.settings.liquidIn
 watch(activeMode,()=>{void initialize();schedule();});
 watch(()=>props.suspended,()=>{void initialize();schedule();});
 onMounted(()=>{
- media=matchMedia('(prefers-reduced-motion: reduce)');reduced=media.matches;hidden=document.hidden;focused=document.hasFocus();
- media.addEventListener('change',preference);document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',focus);window.addEventListener('blur',blur);window.addEventListener('pointermove',move,{passive:true});window.addEventListener('resize',schedule);
+ media=matchMedia('(prefers-reduced-motion: reduce)');reduced=media.matches;hidden=document.hidden;
+ media.addEventListener('change',preference);document.addEventListener('visibilitychange',visibility);window.addEventListener('pointermove',move,{passive:true});window.addEventListener('resize',schedule);
  canvas.value?.addEventListener('webglcontextlost',lost);canvas.value?.addEventListener('webglcontextrestored',restored);
 
- timer=setTimeout(()=>void initialize(),250);
+ void initialize();
 });
-onBeforeUnmount(()=>{disposed=true;stop();renderer?.dispose();media?.removeEventListener('change',preference);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',focus);window.removeEventListener('blur',blur);window.removeEventListener('pointermove',move);window.removeEventListener('resize',schedule);canvas.value?.removeEventListener('webglcontextlost',lost);canvas.value?.removeEventListener('webglcontextrestored',restored);});
+onBeforeUnmount(()=>{disposed=true;stop();renderer?.dispose();media?.removeEventListener('change',preference);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pointermove',move);window.removeEventListener('resize',schedule);canvas.value?.removeEventListener('webglcontextlost',lost);canvas.value?.removeEventListener('webglcontextrestored',restored);});
 </script>
 <style scoped>.procedural-metal{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}.procedural-metal.ready{opacity:1}</style>

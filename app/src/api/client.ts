@@ -297,6 +297,9 @@ export const api = {
 
   geniusClearCache: () => call<void>("genius_clear_cache"),
 
+  neteaseLookup: (title: string, artist: string, durationMs: number | null) =>
+    call<Lyrics["lines"]>("netease_lookup", { title, artist, durationMs }),
+
   lrclibLookup: (args: {
     title: string;
     artist: string;

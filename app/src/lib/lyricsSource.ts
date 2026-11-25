@@ -5,7 +5,7 @@ import { useGeniusStore } from "@/stores/genius";
 import type { LyricsSource } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
 
-export type LyricsOrigin = "lrclib" | "genius" | "yandex" | "local";
+export type LyricsOrigin = "netease" | "lrclib" | "genius" | "yandex" | "local";
 
 export interface LyricsResult {
   lyrics: Lyrics;
@@ -14,6 +14,7 @@ export interface LyricsResult {
 
 export const ORIGIN_LABEL: Record<LyricsOrigin, string> = {
   local: 'файл',
+  netease: 'NetEase',
   lrclib: "lrclib",
   genius: "genius",
   yandex: "яндекс",
@@ -23,8 +24,10 @@ export function lyricsMode(): LyricsSource {
   return useUiStore().settings.lyricsSource;
 }
 
-export function sourceOrder(mode: LyricsSource): LyricsOrigin[] {
+export function sourceOrder(mode: LyricsSource): Exclude<LyricsOrigin, "local">[] {
   switch (mode) {
+    case "netease":
+      return ["netease"];
     case "lrclib":
       return ["lrclib"];
     case "genius":
@@ -32,7 +35,7 @@ export function sourceOrder(mode: LyricsSource): LyricsOrigin[] {
     case "yandex":
       return ["yandex"];
     default:
-      return ["lrclib", "yandex", "genius"];
+      return ["lrclib", "yandex", "netease", "genius"];
   }
 }
 
@@ -87,10 +90,17 @@ async function fromGenius(
   return hasText(lyrics) ? lyrics : null;
 }
 
+async function fromNetEase(track: Track): Promise<Lyrics | null> {
+  const lines = await api.neteaseLookup(track.title, mainArtist(track), track.duration_ms || null);
+  return lines.length ? { track_id: track.id, synced: true, lines, writers: [] } : null;
+}
+
 async function fromYandex(track: Track): Promise<Lyrics | null> {
   const found = await api.lyrics(track.id);
   return hasText(found) ? found : null;
 }
+
+const providers = { lrclib: fromLrclib, netease: fromNetEase, genius: fromGenius, yandex: fromYandex };
 
 export async function loadTrackLyrics(
   track: Track,
@@ -102,12 +112,7 @@ export async function loadTrackLyrics(
 
   for (const origin of sourceOrder(mode)) {
     try {
-      const lyrics =
-        origin === "lrclib"
-          ? await fromLrclib(track, force)
-          : origin === "genius"
-            ? await fromGenius(track, force)
-            : await fromYandex(track);
+      const lyrics = await providers[origin](track, force);
       if (lyrics) {
         if (mode !== "auto" || lyrics.synced) return { lyrics, origin };
         fallback ??= { lyrics, origin };
