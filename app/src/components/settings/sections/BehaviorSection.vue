@@ -61,6 +61,16 @@
         description="В большой обложке и за текстом песни. Звук остаётся от трека."
         @update:model-value="ui.set('musicVideoBackground', $event)"
       />
+      <SettingSlider
+        label="Размытие клипа"
+        description="Для полноэкранного плеера и экрана текста."
+        :model-value="ui.settings.musicVideoBlur"
+        :min="0"
+        :max="MAX_MUSIC_VIDEO_BLUR"
+        :step="1"
+        suffix=" px"
+        @update:model-value="ui.set('musicVideoBlur', $event)"
+      />
     </div>
 
     <div class="settings-subgroup">
@@ -174,6 +184,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { MAX_MUSIC_VIDEO_BLUR } from "@/stores/ui/defaults";
 import SettingSlider from "@/components/settings/SettingSlider.vue";
 import SettingToggle from "@/components/settings/SettingToggle.vue";
 import { useUiStore } from "@/stores/ui/index";

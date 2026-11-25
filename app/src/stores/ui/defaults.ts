@@ -24,7 +24,10 @@ export type LyricsBackdrop = "cover" | "gradient" | "solid";
 export type LyricsHighlight = "white" | "accent" | "karaoke";
 export type LyricsAnnotationMark = "off" | "underline" | "dot" | "tint";
 
-export const DEFAULT_DISCORD_CLIENT_ID = "1552613649515020348";
+export type DiscordStatusTitle = "track" | "artist" | "app";
+
+export const MAX_MUSIC_VIDEO_BLUR = 16;
+export const DEFAULT_DISCORD_CLIENT_ID = "1575203322128891924";
 
 export interface InterfaceSettings {
   backgroundMode: 'matte' | 'beauty';
@@ -89,6 +92,7 @@ export interface InterfaceSettings {
   miniHeight: number;
   playerVisualizer: boolean;
   musicVideoBackground: boolean;
+  musicVideoBlur: number;
   lyricsFontSize: number;
   lyricsLineHeight: number;
   lyricsWeight: number;
@@ -113,9 +117,11 @@ export interface InterfaceSettings {
   togetherShowDock: boolean;
   discordEnabled: boolean;
   discordClientId: string;
+  discordStatusTitle: DiscordStatusTitle;
   discordDetails: string;
   discordState: string;
   discordButtonLabel: string;
+  discordDownloadButton: boolean;
   discordShowArtwork: boolean;
   discordShowTime: boolean;
   cacheEnabled: boolean;
@@ -200,6 +206,7 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   miniHeight: 152,
   playerVisualizer: true,
   musicVideoBackground: false,
+  musicVideoBlur: 2,
   lyricsFontSize: 36,
   lyricsLineHeight: 1.18,
   lyricsWeight: 700,
@@ -224,9 +231,11 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   togetherShowDock: true,
   discordEnabled: true,
   discordClientId: DEFAULT_DISCORD_CLIENT_ID,
+  discordStatusTitle: "track",
   discordDetails: "{title}",
   discordState: "{artist}",
   discordButtonLabel: "Открыть трек",
+  discordDownloadButton: false,
   discordShowArtwork: true,
   discordShowTime: true,
   cacheEnabled: true,

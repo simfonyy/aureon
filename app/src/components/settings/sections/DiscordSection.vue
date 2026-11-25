@@ -2,10 +2,10 @@
   <section id="settings-discord" class="settings-group">
     <div class="settings-group-head">
       <h2>Discord</h2>
-      <p>Показывает текущий трек в профиле Discord. Название статуса берётся из приложения Discord.</p>
+      <p>Во время трека Discord показывает прослушивание. На паузе видна карточка приложения без таймера.</p>
     </div>
     <div class="setting-row">
-      <span class="setting-copy"><b>Своё приложение Discord</b><span>Для своего названия статуса создай приложение Discord и укажи его ID ниже.</span></span>
+      <span class="setting-copy"><b>Своё приложение Discord</b><span>Чтобы использовать своё имя приложения, укажи его Application ID.</span></span>
       <button class="settings-reset-button" type="button" @click="api.openExternal('https://discord.com/developers/applications')">Открыть портал Discord</button>
     </div>
 
@@ -31,6 +31,22 @@
       />
     </label>
 
+    <div class="setting-row">
+      <span class="setting-copy"><b>Подпись во время воспроизведения</b><span>Показывается рядом с именем в списке участников Discord.</span></span>
+      <div class="settings-choice" role="group" aria-label="Подпись во время воспроизведения">
+        <button
+          v-for="option in statusTitles"
+          :key="option.value"
+          type="button"
+          :class="{ on: ui.settings.discordStatusTitle === option.value }"
+          :aria-pressed="ui.settings.discordStatusTitle === option.value"
+          @click="ui.set('discordStatusTitle', option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
     <label
       v-for="field in textFields"
       :key="field.key"
@@ -38,10 +54,11 @@
     >
       <span class="setting-copy">
         <b>{{ field.label }}</b>
-        <span>{{ field.hint }}</span>
+        <span>{{ lockedField === field.key ? "Эта строка используется как подпись статуса." : field.hint }}</span>
       </span>
       <input
-        :value="ui.settings[field.key]"
+        :value="lockedField === field.key ? field.placeholder : ui.settings[field.key]"
+        :disabled="lockedField === field.key"
         type="text"
         :maxlength="field.maxLength"
         :placeholder="field.placeholder"
@@ -60,6 +77,13 @@
       label="Таймер трека"
       description="Показывать, сколько осталось до конца трека."
       @update:model-value="setFlag('discordShowTime', $event)"
+    />
+
+    <SettingToggle
+      :model-value="ui.settings.discordDownloadButton"
+      label="Кнопка «Скачать Aureon»"
+      description="Добавляет ссылку на релизы. Кнопку видят другие пользователи Discord."
+      @update:model-value="setFlag('discordDownloadButton', $event)"
     />
 
     <div class="setting-row setting-row-column discord-status-row">
@@ -103,14 +127,25 @@ import { Notify } from "quasar";
 import { api } from "@/api/client";
 import SettingToggle from "@/components/settings/SettingToggle.vue";
 import { usePlayerStore } from "@/stores/player/index";
+import type { DiscordStatusTitle } from "@/stores/ui/defaults";
 import type { InterfaceSettings } from "@/stores/ui/index";
 import { DEFAULT_DISCORD_CLIENT_ID, useUiStore } from "@/stores/ui/index";
 
 type TextKey = "discordDetails" | "discordState" | "discordButtonLabel";
-type FlagKey = "discordShowArtwork" | "discordShowTime";
+type FlagKey = "discordShowArtwork" | "discordShowTime" | "discordDownloadButton";
 
 const ui = useUiStore();
 const player = usePlayerStore();
+const statusTitles: Array<{ value: DiscordStatusTitle; label: string }> = [
+  { value: "track", label: "Трек" },
+  { value: "artist", label: "Исполнитель" },
+  { value: "app", label: "Приложение" },
+];
+const lockedField = computed(() => ({
+  track: "discordDetails",
+  artist: "discordState",
+  app: null,
+})[ui.settings.discordStatusTitle]);
 
 const textFields: Array<{
   key: TextKey;
@@ -167,9 +202,7 @@ const statusText = computed(() => {
   if (player.presenceError) return player.presenceError;
   if (!player.presenceConnected)
     return "Discord не найден. Запусти его и нажми «Переподключиться».";
-  return player.current
-    ? "Статус обновляется вместе с треком."
-    : "Соединение есть - включи трек, чтобы увидеть статус.";
+  return "Статус обновляется при запуске трека и при паузе.";
 });
 
 function setEnabled(value: boolean) {

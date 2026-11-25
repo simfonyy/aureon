@@ -7,6 +7,7 @@ import { applyInterfaceSettings } from "./apply";
 import type { InterfaceSettings } from "./defaults";
 import {
   DEFAULT_DISCORD_CLIENT_ID,
+  MAX_MUSIC_VIDEO_BLUR,
   defaultInterfaceSettings,
 } from "./defaults";
 import type {
@@ -110,9 +111,13 @@ function load(): InterfaceSettings {
     merged.miniButtons.play = true;
     merged.miniButtons.prev = true;
     merged.miniButtons.next = true;
-    if (!merged.discordClientId.trim() || merged.discordClientId.trim() === "1532382113821753354") {
+    if (["", "1532382113821753354", "1552613649515020348"].includes(merged.discordClientId.trim())) {
       merged.discordClientId = DEFAULT_DISCORD_CLIENT_ID;
     }
+    if (!["track", "artist", "app"].includes(merged.discordStatusTitle)) {
+      merged.discordStatusTitle = defaultInterfaceSettings.discordStatusTitle;
+    }
+    merged.musicVideoBlur = Math.round(Math.min(MAX_MUSIC_VIDEO_BLUR, Math.max(0, merged.musicVideoBlur)));
     upgradeMetalPreset(merged);
     return merged;
   } catch {

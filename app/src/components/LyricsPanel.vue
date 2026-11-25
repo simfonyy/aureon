@@ -8,7 +8,7 @@
     :style="visualStyle"
   >
     <LyricsBackdrop :cover="coverUrl" :mode="s.backdrop" :blur="s.backgroundBlur" :opacity="s.backgroundOpacity" :motion="motionAllowed" />
-    <MusicClipBackdrop class="lyrics-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :active="player.showLyrics && !player.fullscreen && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipBackgroundReady" @loading="clipAligning = $event" @error="clipError" />
+    <MusicClipBackdrop class="lyrics-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :blur-px="ui.settings.musicVideoBlur" :active="player.showLyrics && !player.fullscreen && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipBackgroundReady" @loading="clipAligning = $event" @error="clipError" />
 
     <header class="lyrics-navigation" @mousedown.self="startWindowDrag">
       <nav class="lyrics-tabs" aria-label="Разделы плеера">
@@ -17,7 +17,7 @@
         <button type="button" :class="{ active: showQueue }" :aria-pressed="showQueue" @click="showQueue = !showQueue">Очередь</button>
       </nav>
       <label class="lyrics-search"><Icon name="search" :size="16" /><input v-model="searchText" type="search" placeholder="Найти в тексте…" aria-label="Найти в тексте" @keydown.enter.prevent="findNext" /><span v-if="searchText" aria-live="polite">{{ searchMatches.length ? `${searchMatchIndex + 1}/${searchMatches.length}` : '0' }}</span></label>
-      <WindowControls v-if="player.lyricsFullscreen || clipReady" />
+      <WindowControls v-if="player.lyricsFullscreen || clipReady" :exit-fullscreen="nativeFullscreen ? exitFullscreen : undefined" />
     </header>
 
     <div class="lyrics-toolbar">
@@ -115,7 +115,13 @@
       </div>
     </div>
 
-    <Transition name="lyrics-settings-reveal"><LyricsSettingsPanel v-if="showSettings" /></Transition>
+    <Transition name="lyrics-settings-reveal">
+      <LyricsSettingsPanel
+        v-if="showSettings"
+        :timing-offset="synced ? timingOffset : null"
+        @update:timing-offset="saveTimingOffset"
+      />
+    </Transition>
 
       <div
         class="lyrics-stage lyrics-layer"
@@ -255,7 +261,7 @@
             class="lyrics-lines"
             :class="[
               `align-${s.align}`,
-              { 'hl-karaoke': synced },
+              { 'hl-karaoke': karaoke },
               `ann-${markMode}`,
               { motion: motionAllowed && synced, plain: !synced },
             ]"
@@ -270,7 +276,7 @@
                 @click="seekTo(line.time_ms)"
                 @contextmenu.stop.prevent="onLineMenu($event, i)"
               >
-                <span class="lyric-text"><span v-for="(word, wordIndex) in words[i]" :key="wordIndex" :ref="el => setWordRef(el, i, wordIndex)" :data-word-id="fxWordId(i, wordIndex)" class="lyric-word" :class="{ 'word-singing': karaoke && clockMs >= word.start && clockMs < word.end }" :style="{ '--word-fill': `${wordFill(word, clockMs)}%`, '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word.text }}</span></span>
+                <span class="lyric-text"><span v-for="(word, wordIndex) in words[i]" :key="wordIndex" :ref="el => setWordRef(el, i, wordIndex)" :data-word-id="fxWordId(i, wordIndex)" class="lyric-word" :class="{ 'word-singing': karaoke && clockMs >= word.start && clockMs < word.end }" :style="{ '--word-fill': karaoke ? `${wordFill(word, clockMs)}%` : undefined, '--word-delay': `${Math.min(wordIndex * 22, 260)}ms` }">{{ word.text }}</span></span>
                 <span
                   v-if="lineAnnotations[i]"
                   class="lyric-note"
@@ -780,7 +786,34 @@ const visualStyle = computed(() => ({
   "--lyrics-line-blur": `${s.value.lineBlur}px`,
 }));
 
-const clockMs = ref(player.progress * 1000);
+const timingKey = computed(() => player.current ? `aureon.lyricsTiming.${player.current.id}` : null);
+const timingOffset = ref(0);
+const timingLimitMs = 30_000;
+
+watch(timingKey, key => {
+  timingOffset.value = 0;
+  if (!key) return;
+  try {
+    const saved = Number(localStorage.getItem(key));
+    if (Number.isInteger(saved) && Math.abs(saved) <= timingLimitMs) timingOffset.value = saved;
+  } catch {}
+}, { immediate: true, flush: "sync" });
+
+function saveTimingOffset(value: number) {
+  const key = timingKey.value;
+  if (!key || !Number.isFinite(value)) return;
+  const offset = Math.max(-timingLimitMs, Math.min(timingLimitMs, Math.round(value)));
+  try {
+    if (offset === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, String(offset));
+    timingOffset.value = offset;
+  } catch {
+    Notify.create({ message: "Не удалось сохранить сдвиг текста" });
+  }
+}
+
+const playbackMs = ref(player.progress * 1000);
+const clockMs = computed(() => playbackMs.value - timingOffset.value);
 const activeIndex = computed(() => {
   if (!synced.value) return -1;
   let low = 0, high = lines.value.length;
@@ -795,7 +828,7 @@ const words = computed(() => lines.value.map((line, i) => lineWords(line, lines.
 const firstVocal = computed(() => words.value.find(row => row.some(word => word.text.trim()))?.[0]?.start);
 const countdown = computed(() => synced.value ? vocalCountdown(firstVocal.value, clockMs.value) : 0);
 const karaoke = computed(
-  () => synced.value && player.showLyrics,
+  () => synced.value && player.showLyrics && ui.settings.lyricsHighlight === "karaoke",
 );
 const effectsLayer = ref<InstanceType<typeof LyricsEffectsLayer> | null>(null);
 const wordRefs = shallowReactive(new Map<string, HTMLElement>());
@@ -815,7 +848,7 @@ const effectFrames=computed<FxFrame[]>(()=>fxAllowed.value?fx.events.flatMap(eve
 watch(lines,()=>{ wordRefs.clear(); effectsLayer.value?.clear(); },{flush:'pre'});
 
 function syncEffectClock() {
-  clockMs.value=(player.pendingResume?player.progress:audio.currentTime)*1000;
+  playbackMs.value = (player.pendingResume ? player.progress : audio.currentTime) * 1000;
   if (audio.paused || audio.seeking) scrollFollower.stop();
   void nextTick(()=>effectsLayer.value?.render());
 }
@@ -825,7 +858,7 @@ onBeforeUnmount(()=>{audio.removeEventListener('pause',syncEffectClock);audio.re
 let raf = 0;
 
 function tick() {
-  clockMs.value = (player.pendingResume ? player.progress : audio.currentTime) * 1000;
+  playbackMs.value = (player.pendingResume ? player.progress : audio.currentTime) * 1000;
   raf = requestAnimationFrame(tick);
 }
 
@@ -861,7 +894,7 @@ function setLineRef(el: unknown, i: number) {
 }
 
 function seekTo(ms: number) {
-  if (synced.value && ms >= 0) player.seek(ms / 1000);
+  if (synced.value && ms >= 0) player.seek((ms + timingOffset.value) / 1000);
 }
 
 function lineClass(i: number) {

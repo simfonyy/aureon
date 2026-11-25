@@ -143,6 +143,21 @@
   font-size: 11.5px;
 }
 
+.lset-timing-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lset-timing-value {
+  display: block;
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .lset-seg {
   display: grid;
   grid-auto-columns: 1fr;

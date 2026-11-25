@@ -1,5 +1,5 @@
 <template>
-  <div class="music-clip-backdrop" :class="{ 'is-ready': frameReady }" aria-hidden="true">
+  <div class="music-clip-backdrop" :class="{ 'is-ready': frameReady }" :style="blurStyle" aria-hidden="true">
     <video :key="mediaKey" ref="video" muted playsinline preload="auto" disablepictureinpicture
       tabindex="-1" @loadedmetadata="metadataLoaded" @loadeddata="frameLoaded"
       @seeked="frameLoaded" @canplay="frameLoaded" @error="mediaFailed" />
@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Track } from '@/api/types';
 import { api } from '@/api/client';
 import { clipsForTrack, hasMusicClips, musicTrackId } from '@/lib/musicClips';
@@ -27,8 +27,16 @@ const props = withDefaults(defineProps<{
   pendingResume?: boolean;
   offsetSeconds?: number;
   alignmentAllowed?: boolean;
+  blurPx?: number;
 }>(), { playbackRate: 1, pendingResume: false, offsetSeconds: 0, alignmentAllowed: true });
 const emit = defineEmits<{ ready: [value: boolean]; error: [message: string]; loading: [value: boolean] }>();
+const blurStyle = computed(() => {
+  const radius = props.blurPx ?? 2;
+  return {
+    "--clip-filter": radius ? `blur(${radius}px)` : "none",
+    "--clip-bleed": `${radius * 1.5}px`,
+  };
+});
 const video = ref<HTMLVideoElement | null>(null);
 const frameReady = ref(false), mediaKey = ref(0);
 let visible = typeof document === 'undefined' || !document.hidden;
@@ -237,7 +245,15 @@ onBeforeUnmount(() => {
 <style scoped>
 .music-clip-backdrop { position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 240ms ease; }
 .music-clip-backdrop.is-ready { opacity:1; }
-.music-clip-backdrop video { position:absolute;inset:-3px;display:block;width:calc(100% + 6px);height:calc(100% + 6px);object-fit:cover;filter:blur(2px); }
+.music-clip-backdrop video {
+  position: absolute;
+  inset: calc(-1 * var(--clip-bleed));
+  display: block;
+  width: calc(100% + 2 * var(--clip-bleed));
+  height: calc(100% + 2 * var(--clip-bleed));
+  object-fit: cover;
+  filter: var(--clip-filter);
+}
 .music-clip-backdrop-shade { position:absolute;inset:0;background:linear-gradient(180deg,#050508b8,#05050855 28%,#05050880 72%,#050508d9),linear-gradient(90deg,#05050855,transparent 55%); }
 @media(prefers-reduced-motion:reduce) { .music-clip-backdrop { transition:none; } }
 </style>

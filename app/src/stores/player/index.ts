@@ -448,8 +448,8 @@ export const usePlayerStore = defineStore("player", {
       const error = await this.syncPresence(true);
       if (error) {
         Notify.create({ type: "negative", message: error });
-      } else if (!this.current) {
-        Notify.create({ message: "Включи трек - статус появится в Discord" });
+      } else if (!useUiStore().settings.discordEnabled) {
+        Notify.create({ message: "Включи показ статуса в настройках Discord" });
       } else {
         Notify.create({ message: "Статус отправлен в Discord" });
       }

@@ -20,7 +20,9 @@
 import { useWindowState } from "@/composables/useWindowState";
 import Icon from "@/components/Icon.vue";
 
-const { expanded: maximized, toggle: toggleMaximize } = useWindowState();
+const props = defineProps<{ exitFullscreen?: () => Promise<void> }>();
+const { expanded: maximized, toggle } = useWindowState();
+const toggleMaximize = () => props.exitFullscreen?.() ?? toggle();
 
 type AppWindow = {
   minimize: () => Promise<void>;

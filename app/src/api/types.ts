@@ -384,12 +384,15 @@ export interface GeniusPersonHit {
 export interface PresencePayload {
   enabled: boolean;
   applicationId: string;
+  idle: boolean;
+  statusDisplayType: 0 | 1 | 2;
   details: string;
   state: string;
   album: string;
   coverUrl: string | null;
   trackUrl: string;
   buttonLabel: string;
+  showDownloadButton?: boolean;
   startedAt: number | null;
   endsAt: number | null;
   partyId: string | null;

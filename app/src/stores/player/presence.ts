@@ -1,5 +1,6 @@
 import { api } from "@/api/client";
-import type { Track } from "@/api/types";
+import type { PresencePayload, Track } from "@/api/types";
+import { musicTrackUrl } from "@/lib/musicClips";
 import { DEFAULT_DISCORD_CLIENT_ID, useUiStore } from "@/stores/ui/index";
 import { useTogetherStore } from "@/stores/together/index";
 
@@ -33,7 +34,7 @@ function clampLine(value: string, fallback: string): string {
   return padded.slice(0, 128);
 }
 
-const TRACK_BASE = "https" + "://music.yandex.ru/track/";
+const statusDisplayTypes = { app: 0, artist: 1, track: 2 } as const;
 
 let lastSignature = "";
 
@@ -46,10 +47,10 @@ export async function syncDiscordPresence(
   options: { force?: boolean } = {},
 ): Promise<string | null> {
   const settings = useUiStore().settings;
-  const track = context.track;
+  const track = context.isPlaying ? context.track : null;
   const clientId = settings.discordClientId.trim() || DEFAULT_DISCORD_CLIENT_ID;
 
-  if (!settings.discordEnabled || !track) {
+  if (!settings.discordEnabled) {
     if (lastSignature) {
       lastSignature = "";
       await api.clearDiscordPresence().catch(() => undefined);
@@ -57,56 +58,60 @@ export async function syncDiscordPresence(
     return null;
   }
 
-  const duration = context.duration || (track.duration_ms ?? 0) / 1000;
-  const rate = Math.max(0.25, context.playbackRate);
-  const timed = settings.discordShowTime && context.isPlaying && duration > 0;
-  const now = Math.floor(Date.now() / 1000);
-  const artists = track.artists.map((item) => item.name).join(", ");
-
-  const together = useTogetherStore();
-  let stateText = clampLine(
-    template(settings.discordState, track),
-    artists || "Яндекс Музыка",
-  );
-  let party: { id: string; size: number; max: number } | null = null;
-  if (together.active) {
-    const size = Math.max(1, together.peers.length);
-    const note = together.isHost
-      ? size > 1
-        ? `в группе · ${size}`
-        : "в группе"
-      : `в группе с ${together.hostNick}`;
-    stateText = clampLine(`${stateText} · 🎧 ${note}`, `🎧 ${note}`);
-    const room = together.invite || "together";
-    party = {
-      id: `nightlezz:${room}`.slice(0, 128),
-      size,
-      max: Math.max(size, 2),
-    };
-  }
-
-  const payload = {
+  const payload: PresencePayload = {
     enabled: true,
     applicationId: clientId,
-    details: clampLine(template(settings.discordDetails, track), track.title),
-    state: stateText,
-    album: clampLine(track.album_title || track.title, track.title),
-    coverUrl: settings.discordShowArtwork && !track.id.startsWith('local:')
-      ? normalizeCover(track.cover_url)
-      : null,
-    trackUrl: track.id.startsWith('local:') ? '' : TRACK_BASE + track.id,
-    buttonLabel: clampLine(
-      settings.discordButtonLabel,
-      "Слушать в Яндекс Музыке",
-    ).slice(0, 31),
-    startedAt: timed ? now - Math.floor(context.progress / rate) : null,
-    endsAt: timed
-      ? now + Math.max(1, Math.floor((duration - context.progress) / rate))
-      : null,
-    partyId: party?.id ?? null,
-    partySize: party?.size ?? null,
-    partyMax: party?.max ?? null,
+    idle: !track,
+    statusDisplayType: statusDisplayTypes.app,
+    details: context.track && !track ? "На паузе" : "",
+    state: "",
+    album: "",
+    coverUrl: null,
+    trackUrl: "",
+    buttonLabel: "",
+    showDownloadButton: settings.discordDownloadButton,
+    startedAt: null,
+    endsAt: null,
+    partyId: null,
+    partySize: null,
+    partyMax: null,
   };
+
+  if (track) {
+    const artists = track.artists.map(item => item.name).filter(name => name.trim()).join(", ");
+    const statusTitle = settings.discordStatusTitle;
+    payload.statusDisplayType = statusDisplayTypes[statusTitle] ?? statusDisplayTypes.track;
+    payload.details = clampLine(statusTitle === "track" ? track.title : template(settings.discordDetails, track), track.title);
+    payload.state = clampLine(statusTitle === "artist" ? artists : template(settings.discordState, track), artists || "Яндекс Музыка");
+    if (statusTitle === "artist" && !artists) payload.statusDisplayType = statusDisplayTypes.app;
+    if (statusTitle === "track" && !track.title.trim()) payload.statusDisplayType = statusDisplayTypes.app;
+
+    payload.album = clampLine(track.album_title || track.title, track.title);
+    payload.coverUrl = settings.discordShowArtwork && !track.id.startsWith("local:") ? normalizeCover(track.cover_url) : null;
+    payload.trackUrl = musicTrackUrl(track.id) ?? "";
+    payload.buttonLabel = settings.discordButtonLabel.trim();
+
+    const duration = context.duration || (track.duration_ms ?? 0) / 1000;
+    if (settings.discordShowTime && duration > 0) {
+      const rate = Math.max(0.25, context.playbackRate);
+      const now = Math.floor(Date.now() / 1000);
+      payload.startedAt = now - Math.floor(context.progress / rate);
+      payload.endsAt = now + Math.max(1, Math.floor((duration - context.progress) / rate));
+    }
+
+    const together = useTogetherStore();
+    if (together.active) {
+      const size = Math.max(1, together.peers.length);
+      const note = together.isHost
+        ? size > 1 ? `в группе · ${size}` : "в группе"
+        : `в группе с ${together.hostNick}`;
+      const field = statusTitle === "artist" ? "details" : "state";
+      payload[field] = clampLine(`${payload[field]} · 🎧 ${note}`, `🎧 ${note}`);
+      payload.partyId = `nightlezz:${together.invite || "together"}`.slice(0, 128);
+      payload.partySize = size;
+      payload.partyMax = Math.max(size, 2);
+    }
+  }
 
   const signature = JSON.stringify({
     ...payload,

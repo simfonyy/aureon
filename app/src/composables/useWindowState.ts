@@ -9,6 +9,7 @@ export function useWindowState() {
   let revision = 0;
   let unlisten: (() => void) | undefined;
   let ownsFullscreen = false;
+  let restoreMaximized = false;
   let fullscreenChange = Promise.resolve();
   async function refresh() {
     const request = ++revision;
@@ -29,6 +30,12 @@ export function useWindowState() {
       await refresh();
     } catch { /* Browser preview. */ }
   }
+  async function restorePlacement(win: ReturnType<typeof getCurrentWindow>) {
+    if (!restoreMaximized) return;
+    await win.maximize();
+    restoreMaximized = false;
+  }
+
   function changeFullscreen(value?: boolean): Promise<void> {
     // Read the native state after the previous click completes, so rapid clicks
     // cannot both enter fullscreen or restore the wrong window placement.
@@ -37,9 +44,21 @@ export function useWindowState() {
       const win = getCurrentWindow();
       const current = await win.isFullscreen();
       const next = value ?? !current;
-      if (next !== current) {
-        await win.setFullscreen(next);
-        ownsFullscreen = next;
+      if (next && !current) {
+        if (/Windows/i.test(navigator.userAgent) && await win.isMaximized()) {
+          await win.unmaximize();
+          restoreMaximized = true;
+        }
+        try {
+          await win.setFullscreen(true);
+          ownsFullscreen = true;
+        } catch {
+          await restorePlacement(win);
+        }
+      } else if (!next) {
+        if (current) await win.setFullscreen(false);
+        ownsFullscreen = false;
+        await restorePlacement(win);
       }
       await refresh();
     }).catch(() => { /* Leave the observed state unchanged if native access fails. */ });
@@ -62,10 +81,11 @@ export function useWindowState() {
     // Closing the lyrics must not leave the rest of the app in native fullscreen.
     // Other users of this composable (the titlebar) never acquire this ownership.
     fullscreenChange = fullscreenChange.then(async () => {
-      if (!ownsFullscreen) return;
+      if (!ownsFullscreen && !restoreMaximized) return;
       const win = getCurrentWindow();
-      if (await win.isFullscreen()) await win.setFullscreen(false);
+      if (ownsFullscreen && await win.isFullscreen()) await win.setFullscreen(false);
       ownsFullscreen = false;
+      await restorePlacement(win);
     }).catch(() => {});
   });
   return { expanded, fullscreen, ready, toggle, toggleFullscreen, exitFullscreen };

@@ -141,12 +141,18 @@ pub struct DiscordState {
 pub struct PresencePayload {
     pub enabled: bool,
     pub application_id: String,
+    #[serde(default)]
+    pub idle: bool,
+    #[serde(default)]
+    pub status_display_type: u8,
     pub details: String,
     pub state: String,
     pub album: String,
     pub cover_url: Option<String>,
     pub track_url: String,
     pub button_label: String,
+    #[serde(default)]
+    pub show_download_button: bool,
     pub started_at: Option<i64>,
     pub ends_at: Option<i64>,
     #[serde(default)]
@@ -275,22 +281,20 @@ fn handshake(application_id: &str) -> Result<Connection, String> {
 }
 
 fn activity_json(payload: &PresencePayload, level: u8) -> serde_json::Value {
-    let mut activity = serde_json::json!({
-        "type": 2,
-        "details": clamp(&payload.details),
-        "state": clamp(&payload.state),
-    });
-
-    if level == 3 {
-        return serde_json::json!({
-            "details": clamp(&payload.details),
-            "state": clamp(&payload.state),
-        });
+    let mut map = serde_json::Map::new();
+    if level <= 3 {
+        map.insert("type".to_string(), (if payload.idle { 0 } else { 2 }).into());
+        if !payload.idle && matches!(payload.status_display_type, 1 | 2) {
+            map.insert("status_display_type".to_string(), payload.status_display_type.into());
+        }
+    }
+    for (key, value) in [("details", &payload.details), ("state", &payload.state)] {
+        if !value.trim().is_empty() {
+            map.insert(key.to_string(), clamp(value).into());
+        }
     }
 
-    let map = activity.as_object_mut().expect("activity object");
-
-    if let (Some(start), true) = (payload.started_at, level <= 2) {
+    if let (Some(start), true) = (payload.started_at, !payload.idle && level <= 2) {
         let mut timestamps = serde_json::Map::new();
         timestamps.insert("start".to_string(), seconds(start).into());
         if let Some(end) = payload.ends_at {
@@ -300,7 +304,12 @@ fn activity_json(payload: &PresencePayload, level: u8) -> serde_json::Value {
     }
 
     if level <= 1 {
-        if let Some(cover) = payload
+        if payload.idle && payload.application_id == "1575203322128891924" {
+            map.insert("assets".to_string(), serde_json::json!({
+                "large_image": "https://cdn.discordapp.com/app-assets/1575203322128891924/1575245830129188964.png",
+                "large_text": "Aureon",
+            }));
+        } else if let Some(cover) = payload
             .cover_url
             .as_deref()
             .filter(|url| url.starts_with("https://"))
@@ -326,18 +335,27 @@ fn activity_json(payload: &PresencePayload, level: u8) -> serde_json::Value {
                 serde_json::json!({ "id": id, "size": [size, max] }),
             );
         }
+    }
 
+    if level <= 2 {
+        let mut buttons = Vec::with_capacity(2);
         let label = payload.button_label.trim();
         if !label.is_empty() && payload.track_url.starts_with("https://") {
             let short: String = label.chars().take(31).collect();
-            map.insert(
-                "buttons".to_string(),
-                serde_json::json!([{ "label": short, "url": payload.track_url }]),
-            );
+            buttons.push(serde_json::json!({ "label": short, "url": payload.track_url }));
+        }
+        if payload.show_download_button {
+            buttons.push(serde_json::json!({
+                "label": "Скачать Aureon",
+                "url": "https://github.com/simfonyy/aureon/releases/latest",
+            }));
+        }
+        if !buttons.is_empty() {
+            map.insert("buttons".to_string(), serde_json::Value::Array(buttons));
         }
     }
 
-    activity
+    serde_json::Value::Object(map)
 }
 
 fn send_activity(
@@ -402,7 +420,7 @@ fn send_activity(
 fn push(connection: &mut Connection, payload: &PresencePayload) -> Result<(), String> {
     let mut last = String::new();
 
-    for level in 0u8..4 {
+    for level in 0u8..5 {
         match send_activity(connection, Some(activity_json(payload, level))) {
             Ok(()) => {
                 dev_log!("activity accepted at level {level}");

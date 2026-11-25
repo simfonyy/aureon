@@ -47,13 +47,15 @@ test('window state tracks external maximize/restore and removes its resize liste
 let fixtureNumber = 0;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-async function fullscreenFixture({ maximized = false, fullscreen = false, beforeSet } = {}) {
+async function fullscreenFixture({ maximized = false, fullscreen = false, beforeSet, windows = false } = {}) {
   const native = { maximized, fullscreen, calls: [], removed: false };
   const hooks = {};
   const win = {
     isMaximized: async () => native.maximized,
     isFullscreen: async () => native.fullscreen,
     toggleMaximize: async () => { native.calls.push(['maximize']); native.maximized = !native.maximized; },
+    maximize: async () => { native.calls.push(['maximize']); native.maximized = true; },
+    unmaximize: async () => { native.calls.push(['unmaximize']); native.maximized = false; },
     setFullscreen: async value => {
       native.calls.push(['fullscreen', value]);
       await beforeSet?.(value);
@@ -70,7 +72,8 @@ async function fullscreenFixture({ maximized = false, fullscreen = false, before
   const source = await readFile(new URL('../src/composables/useWindowState.ts', import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
     .replace(/import\s*\{([^}]+)\}\s*from\s*['"][^'"]+['"];?/g, (_, names) => `const {${names}} = globalThis.windowStateFixture;`);
-  const { useWindowState } = await import(`data:text/javascript;base64,${Buffer.from(`${code}\n// fixture ${++fixtureNumber}`).toString('base64')}`);
+  const platformCode = code.replace("navigator.userAgent", JSON.stringify(windows ? "Windows NT 10.0" : "Linux"));
+  const { useWindowState } = await import(`data:text/javascript;base64,${Buffer.from(`${platformCode}\n// fixture ${++fixtureNumber}`).toString('base64')}`);
   const state = useWindowState();
   await hooks.mount();
   return { native, hooks, state };
@@ -92,6 +95,25 @@ for (const maximized of [false, true]) {
     assert.deepEqual(native.calls, [['fullscreen', true], ['fullscreen', false]]);
   });
 }
+
+test('Windows leaves maximize before fullscreen and restores it on exit', async () => {
+  const { native, state } = await fullscreenFixture({ maximized: true, windows: true });
+  await state.toggleFullscreen();
+  assert.equal(state.fullscreen.value, true);
+  await state.exitFullscreen();
+  assert.equal(state.expanded.value, true);
+  assert.deepEqual(native.calls, [['unmaximize'], ['fullscreen', true], ['fullscreen', false], ['maximize']]);
+});
+
+test('rejected fullscreen on Windows restores the original maximized placement', async () => {
+  const { native, state } = await fullscreenFixture({
+    maximized: true, windows: true, beforeSet: () => { throw new Error('denied'); },
+  });
+  await state.toggleFullscreen();
+  assert.equal(state.fullscreen.value, false);
+  assert.equal(native.maximized, true);
+  assert.deepEqual(native.calls, [['unmaximize'], ['fullscreen', true], ['maximize']]);
+});
 
 test('rapid fullscreen clicks serialize against the native state', async () => {
   const { native, state } = await fullscreenFixture();

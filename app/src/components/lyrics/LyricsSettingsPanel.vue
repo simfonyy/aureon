@@ -7,6 +7,22 @@
       </button>
     </div>
 
+    <section v-if="timingOffset !== null" class="lset-group" aria-label="Сдвиг текста">
+      <div class="lset-timing-heading">
+        <div class="lset-group-head">Сдвиг текста</div>
+        <button v-if="timingOffset !== 0" type="button" class="lset-reset" @click="emit('update:timingOffset', 0)">
+          Сбросить сдвиг
+        </button>
+      </div>
+      <output class="lset-timing-value" aria-live="polite">{{ offsetLabel }}</output>
+      <div class="lset-seg">
+        <button type="button" aria-label="Текст раньше на секунду" @click="emit('update:timingOffset', timingOffset - 1000)">−1 с</button>
+        <button type="button" aria-label="Текст раньше на 100 миллисекунд" @click="emit('update:timingOffset', timingOffset - 100)">−100 мс</button>
+        <button type="button" aria-label="Текст позже на 100 миллисекунд" @click="emit('update:timingOffset', timingOffset + 100)">+100 мс</button>
+        <button type="button" aria-label="Текст позже на секунду" @click="emit('update:timingOffset', timingOffset + 1000)">+1 с</button>
+      </div>
+    </section>
+
     <div class="lset-group">
       <div class="lset-group-head">Текст</div>
 
@@ -129,8 +145,17 @@
         </button>
       </div>
 
-      <div class="lset-label">Караоке по словам</div>
-      <div class="lset-hint">Работает автоматически с синхронным текстом: спетые слова белые, остальные серые. Если есть только время строк, ритм слов приблизительный.</div>
+      <div class="lset-label">Подсветка</div>
+      <div class="lset-seg">
+        <button type="button" :class="{ on: s.lyricsHighlight !== 'karaoke' }"
+          :aria-pressed="s.lyricsHighlight !== 'karaoke'" @click="ui.set('lyricsHighlight', 'white')">
+          Строка
+        </button>
+        <button type="button" :class="{ on: s.lyricsHighlight === 'karaoke' }"
+          :aria-pressed="s.lyricsHighlight === 'karaoke'" @click="ui.set('lyricsHighlight', 'karaoke')">
+          По словам
+        </button>
+      </div>
 
       <label class="lset-range" style="margin-top: 10px">
         <span class="lset-range-top">
@@ -178,7 +203,7 @@
 
       <label class="lset-range">
         <span class="lset-range-top">
-          <span>Размытие</span><b>{{ s.lyricsBackgroundBlur }} px</b>
+          <span>Размытие обложки</span><b>{{ s.lyricsBackgroundBlur }} px</b>
         </span>
         <input
           type="range"
@@ -207,6 +232,20 @@
       <button type="button" class="lset-switch" :class="{ on: s.musicVideoBackground }" role="switch" :aria-checked="s.musicVideoBackground" @click="ui.set('musicVideoBackground', !s.musicVideoBackground)">
         <span>Клип на фоне</span><span class="lset-track" aria-hidden="true"><i /></span>
       </button>
+      <label v-if="s.musicVideoBackground" class="lset-range">
+        <span class="lset-range-top">
+          <span>Размытие клипа</span><b>{{ s.musicVideoBlur }} px</b>
+        </span>
+        <input
+          type="range"
+          min="0"
+          :max="MAX_MUSIC_VIDEO_BLUR"
+          step="1"
+          aria-label="Размытие клипа"
+          :value="s.musicVideoBlur"
+          @input="onNum('musicVideoBlur', $event)"
+        />
+      </label>
       <button
         type="button"
         class="lset-switch"
@@ -335,6 +374,7 @@
 </template>
 
 <script setup lang="ts">
+import { MAX_MUSIC_VIDEO_BLUR } from "@/stores/ui/defaults";
 import ExtraLyricsSources from "@/components/lyrics/ExtraLyricsSources.vue";
 import { computed, ref, watch } from "vue";
 import type {
@@ -346,10 +386,17 @@ import type {
 } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
 
+const props = defineProps<{ timingOffset: number | null }>();
+const emit = defineEmits<{ 'update:timingOffset': [offset: number] }>();
+const offsetLabel = computed(() => {
+  const offset = props.timingOffset ?? 0;
+  return offset === 0 ? "0 мс" : `${Math.abs(offset)} мс ${offset < 0 ? "раньше" : "позже"}`;
+});
 const ui = useUiStore();
 const s = computed(() => ui.settings);
 
 type NumericKey =
+  | "musicVideoBlur"
   | "lyricsFontSize"
   | "lyricsLineHeight"
   | "lyricsWeight"

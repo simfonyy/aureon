@@ -77,14 +77,12 @@
       </div>
     </div>
 
-    <div class="setting-row">
-      <div class="setting-copy">
-        <b>Караоке по словам</b>
-        <span>
-          Включается автоматически для текста с синхронизацией. Если известно только время строк, подсветка слов приблизительная. Перед первой строкой — отсчёт.
-        </span>
-      </div>
-    </div>
+    <SettingToggle
+      :model-value="ui.settings.lyricsHighlight === 'karaoke'"
+      label="Караоке по словам"
+      description="При выключении подсвечивается вся активная строка."
+      @update:model-value="ui.set('lyricsHighlight', $event ? 'karaoke' : 'white')"
+    />
 
     <SettingSlider
       label="Размер строк"

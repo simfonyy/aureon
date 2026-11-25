@@ -13,7 +13,7 @@
           :style="{ backgroundImage: `url(${coverUrl})` }"
         />
         <div class="fs-shade" />
-        <MusicClipBackdrop class="fs-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :active="player.fullscreen && !player.showLyrics && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipReady = $event" @loading="clipAligning = $event" @error="clipError" />
+        <MusicClipBackdrop class="fs-clip-backdrop" :track="player.current" :enabled="ui.settings.musicVideoBackground" :blur-px="ui.settings.musicVideoBlur" :active="player.fullscreen && !player.showLyrics && !player.loading" :position="player.progress" :playing="player.isPlaying" :playback-rate="player.playbackRate" :pending-resume="player.pendingResume" :alignment-allowed="!player.censorReplaced && !player.playingLocal" @ready="clipReady = $event" @loading="clipAligning = $event" @error="clipError" />
 
         <div class="fs-top">
           <div class="fs-drag" @mousedown="onDrag" @dblclick="toggleNative" />
