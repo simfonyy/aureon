@@ -11,7 +11,7 @@
       <div class="setting-copy">
         <b>Источник текста</b>
         <span>
-          «Авто» ищет в LRCLIB, Яндексе и Genius и выбирает текст с синхронизацией. В плеере источник можно сменить для текущего трека.
+          В режиме «Авто» плеер проверяет каталоги и предпочитает текст с синхронизацией. В плеере источник можно сменить для текущего трека.
         </span>
       </div>
       <div class="settings-choice">
@@ -23,6 +23,7 @@
         >
           {{ item.label }}
         </button>
+        <ExtraLyricsSources :model-value="ui.settings.lyricsSource" @select="ui.set('lyricsSource', $event)" />
       </div>
     </div>
 
@@ -268,6 +269,7 @@
 </template>
 
 <script setup lang="ts">
+import ExtraLyricsSources from "@/components/lyrics/ExtraLyricsSources.vue";
 import SettingSlider from "@/components/settings/SettingSlider.vue";
 import SettingToggle from "@/components/settings/SettingToggle.vue";
 import type {
@@ -284,9 +286,6 @@ const ui = useUiStore();
 const sources: Array<{ value: LyricsSource; label: string }> = [
   { value: "auto", label: "Авто" },
   { value: "lrclib", label: "LRCLIB" },
-  { value: "netease", label: "NetEase" },
-  { value: "kugou", label: "KuGou" },
-  { value: "qqmusic", label: "QQ Music" },
   { value: "genius", label: "Genius" },
   { value: "yandex", label: "Яндекс" },
 ];

@@ -53,6 +53,7 @@
         >
           {{ opt.label }}
         </button>
+        <ExtraLyricsSources class="lyrics-src-btn" :model-value="pick" :disabled="!player.current" @select="choose" />
       </div>
 
       <div class="lyrics-tools">
@@ -399,6 +400,7 @@
 </template>
 
 <script setup lang="ts">
+import ExtraLyricsSources from "@/components/lyrics/ExtraLyricsSources.vue";
 import { computed, nextTick, onBeforeUnmount, ref, shallowReactive, watch } from "vue";
 import type { QScrollArea } from "quasar";
 import { Notify } from 'quasar';
@@ -730,9 +732,6 @@ function partLabel(text: string): string {
 const sources: Array<{ id: SourcePick; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
-  { id: "netease", label: "NetEase" },
-  { id: "kugou", label: "KuGou" },
-  { id: "qqmusic", label: "QQ Music" },
   { id: "genius", label: "Genius" },
 ];
 

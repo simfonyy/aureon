@@ -325,17 +325,17 @@
         >
           {{ item.label }}
         </button>
+        <ExtraLyricsSources :model-value="s.lyricsSource" @select="ui.set('lyricsSource', $event)" />
       </div>
       <div class="lset-hint">
-        Авто: сначала LRCLIB (синхрон), потом Genius. Разборы с Genius
-        подтягиваются к синхронному тексту LRCLIB. Кнопки вверху меняют источник
-        только для текущего трека.
+        В режиме «Авто» плеер проверяет и дополнительные каталоги. Кнопки вверху меняют источник только для текущего трека.
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import ExtraLyricsSources from "@/components/lyrics/ExtraLyricsSources.vue";
 import { computed, ref, watch } from "vue";
 import type {
   LyricsAlign,
@@ -547,9 +547,6 @@ const marks: Array<{ id: LyricsAnnotationMark; label: string }> = [
 const lyricsSources: Array<{ id: LyricsSource; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
-  { id: "netease", label: "NetEase" },
-  { id: "kugou", label: "KuGou" },
-  { id: "qqmusic", label: "QQ Music" },
   { id: "genius", label: "Genius" },
 ];
 </script>
