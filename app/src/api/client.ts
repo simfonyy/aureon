@@ -297,6 +297,9 @@ export const api = {
 
   geniusClearCache: () => call<void>("genius_clear_cache"),
 
+  catalogLyrics: (catalog: "kugou" | "qqmusic", title: string, artist: string, durationMs: number | null) =>
+    call<Lyrics["lines"]>("catalog_lyrics", { catalog, title, artist, durationMs }),
+
   neteaseLookup: (title: string, artist: string, durationMs: number | null) =>
     call<Lyrics["lines"]>("netease_lookup", { title, artist, durationMs }),
 

@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 let lrclib, yandex, netease = [];
 globalThis.lyricsSourceFixture = {
-  api: { neteaseLookup: async () => netease, lrclibLookup: async () => lrclib, lyrics: async () => { if(yandex instanceof Error) throw yandex; return yandex; } },
+  api: { catalogLyrics: async () => [], neteaseLookup: async () => netease, lrclibLookup: async () => lrclib, lyrics: async () => { if(yandex instanceof Error) throw yandex; return yandex; } },
   artistNames: () => 'Artist',
   useGeniusStore: () => ({ ready: false }),
   useUiStore: () => ({ settings: { lyricsSource: 'auto' } }),
@@ -35,4 +35,21 @@ test('automatic lookup uses timed NetEase lyrics before falling back to plain te
   assert.equal(result.lyrics.lines[0].time_ms, 1200);
   netease = [];
   assert.equal((await loadTrackLyrics(track)).origin, 'yandex');
+});
+
+test('a KuGou outage still allows QQ Music to supply timed lyrics', async () => {
+  netease = [];
+  lrclib = null;
+  yandex = { synced: false, lines: [{ time_ms: 0, text: 'plain' }] };
+  const calls = [];
+  globalThis.lyricsSourceFixture.api.catalogLyrics = async (provider) => {
+    calls.push(provider);
+    if (provider === 'kugou') throw new Error('unavailable');
+    return [{ time_ms: 400, text: 'timed' }];
+  };
+  assert.equal((await loadTrackLyrics(track)).origin, 'qqmusic');
+  assert.deepEqual(calls, ['kugou', 'qqmusic']);
+  calls.length = 0;
+  assert.equal((await loadTrackLyrics(track, 'qqmusic')).lyrics.synced, true);
+  assert.deepEqual(calls, ['qqmusic']);
 });

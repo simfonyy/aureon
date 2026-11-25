@@ -5,7 +5,7 @@ import { useGeniusStore } from "@/stores/genius";
 import type { LyricsSource } from "@/stores/ui/defaults";
 import { useUiStore } from "@/stores/ui/index";
 
-export type LyricsOrigin = "netease" | "lrclib" | "genius" | "yandex" | "local";
+export type LyricsOrigin = "kugou" | "qqmusic" | "netease" | "lrclib" | "genius" | "yandex" | "local";
 
 export interface LyricsResult {
   lyrics: Lyrics;
@@ -15,6 +15,8 @@ export interface LyricsResult {
 export const ORIGIN_LABEL: Record<LyricsOrigin, string> = {
   local: 'файл',
   netease: 'NetEase',
+  kugou: 'KuGou',
+  qqmusic: 'QQ Music',
   lrclib: "lrclib",
   genius: "genius",
   yandex: "яндекс",
@@ -26,6 +28,9 @@ export function lyricsMode(): LyricsSource {
 
 export function sourceOrder(mode: LyricsSource): Exclude<LyricsOrigin, "local">[] {
   switch (mode) {
+    case "kugou":
+    case "qqmusic":
+      return [mode];
     case "netease":
       return ["netease"];
     case "lrclib":
@@ -35,7 +40,7 @@ export function sourceOrder(mode: LyricsSource): Exclude<LyricsOrigin, "local">[
     case "yandex":
       return ["yandex"];
     default:
-      return ["lrclib", "yandex", "netease", "genius"];
+      return ["lrclib", "yandex", "netease", "kugou", "qqmusic", "genius"];
   }
 }
 
@@ -90,9 +95,15 @@ async function fromGenius(
   return hasText(lyrics) ? lyrics : null;
 }
 
-async function fromNetEase(track: Track): Promise<Lyrics | null> {
-  const lines = await api.neteaseLookup(track.title, mainArtist(track), track.duration_ms || null);
-  return lines.length ? { track_id: track.id, synced: true, lines, writers: [] } : null;
+function timedProvider(origin: "netease" | "kugou" | "qqmusic") {
+  return async (track: Track): Promise<Lyrics | null> => {
+    const artist = mainArtist(track);
+    const duration = track.duration_ms || null;
+    const lines = origin === "netease"
+      ? await api.neteaseLookup(track.title, artist, duration)
+      : await api.catalogLyrics(origin, track.title, artist, duration);
+    return lines.length ? { track_id: track.id, synced: true, lines, writers: [] } : null;
+  };
 }
 
 async function fromYandex(track: Track): Promise<Lyrics | null> {
@@ -100,7 +111,7 @@ async function fromYandex(track: Track): Promise<Lyrics | null> {
   return hasText(found) ? found : null;
 }
 
-const providers = { lrclib: fromLrclib, netease: fromNetEase, genius: fromGenius, yandex: fromYandex };
+const providers = { lrclib: fromLrclib, netease: timedProvider("netease"), kugou: timedProvider("kugou"), qqmusic: timedProvider("qqmusic"), genius: fromGenius, yandex: fromYandex };
 
 export async function loadTrackLyrics(
   track: Track,

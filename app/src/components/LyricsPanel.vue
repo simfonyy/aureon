@@ -433,7 +433,7 @@ import { useUiStore } from "@/stores/ui/index";
 
 type Credit = { id: number; name: string; role: string; image: string };
 
-type SourcePick = "auto" | "lrclib" | "netease" | "genius";
+type SourcePick = "auto" | "lrclib" | "netease" | "kugou" | "qqmusic" | "genius";
 
 const player = usePlayerStore();
 const emit = defineEmits<{ 'clip-ready': [value: boolean] }>();
@@ -731,6 +731,8 @@ const sources: Array<{ id: SourcePick; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
   { id: "netease", label: "NetEase" },
+  { id: "kugou", label: "KuGou" },
+  { id: "qqmusic", label: "QQ Music" },
   { id: "genius", label: "Genius" },
 ];
 
@@ -740,9 +742,11 @@ const pick = computed<SourcePick>(
 
 const searchingIn = computed(() => {
   if (pick.value === "lrclib") return "LRCLIB";
+  if (pick.value === "kugou") return "KuGou";
+  if (pick.value === "qqmusic") return "QQ Music";
   if (pick.value === "netease") return "NetEase";
   if (pick.value === "genius") return "Genius";
-  return "LRCLIB, Яндексе, NetEase и Genius";
+  return "LRCLIB, Яндексе, NetEase, KuGou, QQ Music и Genius";
 });
 
 const originTag = computed(() => {

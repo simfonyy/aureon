@@ -285,6 +285,8 @@ const sources: Array<{ value: LyricsSource; label: string }> = [
   { value: "auto", label: "Авто" },
   { value: "lrclib", label: "LRCLIB" },
   { value: "netease", label: "NetEase" },
+  { value: "kugou", label: "KuGou" },
+  { value: "qqmusic", label: "QQ Music" },
   { value: "genius", label: "Genius" },
   { value: "yandex", label: "Яндекс" },
 ];

@@ -548,6 +548,8 @@ const lyricsSources: Array<{ id: LyricsSource; label: string }> = [
   { id: "auto", label: "Авто" },
   { id: "lrclib", label: "LRCLIB" },
   { id: "netease", label: "NetEase" },
+  { id: "kugou", label: "KuGou" },
+  { id: "qqmusic", label: "QQ Music" },
   { id: "genius", label: "Genius" },
 ];
 </script>
