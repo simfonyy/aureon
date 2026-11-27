@@ -1,61 +1,53 @@
-# Aureon
+<p align="center">
+  <img src="app/public/icons/aureon-256.png" width="80" height="80" alt="">
+</p>
 
-Неофициальный плеер Яндекс Музыки для Windows и Linux. Нужен аккаунт с Плюсом.
+<h1 align="center">Aureon</h1>
 
-**[Скачать Aureon](https://github.com/simfonyy/aureon/releases/latest)**
+<p align="center">
+  Неофициальный клиент Яндекс Музыки для Windows и Linux.<br>
+  Для каталога нужен аккаунт с Яндекс Плюсом.
+</p>
 
-![Клип в полноэкранном плеере Aureon](docs/screenshots/player.png)
+<p align="center">
+  <strong><a href="https://github.com/simfonyy/aureon/releases/latest">Скачать Aureon ↓</a></strong>
+</p>
 
-Клип включается прямо с обложки. Если убрать мышь, обложка уедет в угол и освободит кадр. Aureon запоминает синхронизацию для каждого трека.
+![Полноэкранный плеер Aureon с текстом песни на фоне клипа](docs/screenshots/lyrics.png)
 
-Мини-плеер можно прицепить к краю рабочего стола. Щелчок по обложке ставит трек на паузу, колесо меняет громкость. Через `Ctrl+K` можно найти песню, а через `Shift+Enter` — поставить её следующей.
+## Что внутри
+
+- **Клип на весь экран.** Включается с обложки и может идти за текстом песни. Уведи курсор, и обложка уйдёт в угол. Размытие можно убрать, а синхронизацию Aureon запоминает для каждого трека.
+- **Караоке.** Подсветка по словам или по строкам. Если текст спешит или отстаёт, подвинь тайминг для этой песни. В режиме «Авто» Aureon ищет версию с таймкодами в нескольких каталогах.
+- **Мини-плеер.** Прикрепи его к краю рабочего стола. Клик по обложке ставит трек на паузу, колесо меняет громкость.
+- **Поиск и очередь.** Вбей пару слов из песни в поиске по строчке. В быстром поиске (`Ctrl+K`) можно поставить выбранный трек следующим через `Shift+Enter`.
+- **Моя волна.** Сочетай настроение, язык и разнообразие. На главной — свежие релизы и альбомы, которые ты недавно слушал.
+- **Своя музыка.** Добавляй локальные файлы в библиотеку и сохраняй очередь как приватный плейлист.
+- **Discord.** Показывай трек или исполнителя в статусе. Друзья могут открыть песню прямо оттуда.
+
+[Больше скриншотов](docs/screenshots/INDEX.md)
 
 ## Установка
 
-### Windows
+Открой **Assets** в последнем релизе и выбери файл под свою систему.
 
-1. Нажми **Скачать Aureon** в начале страницы. Откроется последний релиз.
-2. Прокрути до **Assets**. Если список свёрнут, нажми на стрелку рядом с **Assets**.
-3. Нажми на файл с окончанием `_x64_ru-RU.msi`. Это установщик для 64-битной Windows.
-4. Открой скачанный файл из папки **Загрузки**. Нажми **Далее** и пройди шаги мастера. В конце отметь **Запустить Aureon** и нажми **Готово**.
-5. Войди в свой аккаунт Яндекс Музыки. В следующий раз плеер можно открыть из меню **Пуск**.
+| Система | Файл | Как запустить |
+| --- | --- | --- |
+| **Windows x64** | `_x64_ru-RU.msi` | Открой установщик. После установки Aureon появится в меню «Пуск». |
+| **Windows x64 · portable** | `_windows-x64_portable.zip` | Выбери «Извлечь всё», затем запусти `Aureon.exe` из распакованной папки. |
+| **Ubuntu / Debian x64** | `_amd64.deb` | Открой пакет установщиком или выполни `sudo apt install ./имя-файла.deb`. |
+| **Linux x64 · AppImage** | `_amd64.AppImage` | Разреши запуск в свойствах файла и открой его. |
 
-**Хочешь portable?** В том же списке скачай файл с окончанием `_windows-x64_portable.zip`. Щёлкни по нему правой кнопкой, выбери **Извлечь все…** и укажи папку, где будет лежать плеер. Открой эту папку и дважды щёлкни по `Aureon.exe`.
+В Windows автообновление работает с версии 1.2.2. Если у тебя более ранняя версия, обновись один раз вручную.
 
-Если у тебя 1.2.0 или 1.2.1, один раз обновись вручную тем же способом. С версии 1.2.2 Aureon сам проверяет обновления при запуске.
+В следующих обновлениях планирую выпустить сборку для Android и `.ipa` для iPhone. Не теряйте :)
 
-<details>
-<summary><strong>Установка на Linux</strong></summary>
-
-Для Ubuntu или Debian скачай из **Assets** файл с окончанием `_amd64.deb`. Открой терминал в папке с файлом. Для версии 1.2.6 команда такая:
-
-```bash
-sudo apt install ./Aureon_1.2.6_amd64.deb
-```
-
-После установки найди **Aureon** в меню приложений. Если предпочитаешь запуск из одной папки, скачай файл `.AppImage` и выполни в его папке:
-
-```bash
-chmod +x ./Aureon_1.2.6_amd64.AppImage
-./Aureon_1.2.6_amd64.AppImage
-```
-
-Для другого релиза подставь имя скачанного файла.
-
-</details>
-
-## Android и iPhone
-
-В следующих обновлениях планирую выложить версию для Android и `.ipa` для iPhone. Обе появятся здесь же, в Releases. Не теряйте :)
-
-## Как собрать самому
+## Собрать самому
 
 <details>
-<summary><strong>Windows · собрать свой MSI</strong></summary>
+<summary>Windows · MSI</summary>
 
-1. Установи Git, Node.js 22 с npm и Rust через rustup. В установщике Rust выбери стандартный вариант для Windows x64 (MSVC).
-2. В Visual Studio Installer установи **Build Tools** с набором **Разработка классических приложений на C++**. Оставь выбранными компилятор MSVC для x64 и Windows SDK. Для запуска плеера нужен Microsoft Edge WebView2 Runtime.
-3. Открой новое окно PowerShell в папке, где хочешь хранить проект, и выполни:
+Понадобятся Git, Node.js 22 с npm, Rust через rustup (x64 MSVC) и Visual Studio Build Tools с набором «Разработка классических приложений на C++» и Windows SDK. Для запуска нужен Microsoft Edge WebView2 Runtime.
 
 ```powershell
 git clone https://github.com/simfonyy/aureon.git
@@ -63,16 +55,16 @@ cd aureon/app
 .\scripts\build\Build-MSI.bat
 ```
 
-Скрипт сам установит зависимости проекта и соберёт плеер. Первый запуск может занять время. Когда сборка закончится, откроется Проводник с готовым установщиком из `app/src-tauri/target/release/bundle/msi/`. Сам плеер лежит в `app/src-tauri/target/release/Aureon.exe`. Если сборка остановилась с ошибкой, полный вывод лежит в `app/build-logs/`.
+Скрипт установит зависимости и откроет папку с MSI после сборки. Результат лежит в `app/src-tauri/target/release/bundle/msi/`, журнал сборки — в `app/build-logs/`.
 
-Чтобы посмотреть изменения во время разработки, запусти `npm.cmd run tauri:dev` из папки `aureon/app`. Остановить этот режим можно через `Ctrl+C`.
+Для разработки из `aureon/app` запусти `npm.cmd run tauri:dev` после установки зависимостей через `npm.cmd ci`.
 
 </details>
 
 <details>
-<summary><strong>Linux · собрать DEB и AppImage</strong></summary>
+<summary>Linux · DEB и AppImage</summary>
 
-Релизные пакеты собираются на Ubuntu 22.04 x64. Установи Node.js 22 с npm и Rust stable через rustup. Затем открой терминал и установи библиотеки для сборки и воспроизведения музыки:
+Команды рассчитаны на Ubuntu 22.04 x64. Понадобятся Node.js 22 с npm, Rust stable через rustup и системные пакеты.
 
 ```bash
 sudo apt update
@@ -80,30 +72,28 @@ sudo apt install git build-essential curl wget file pkg-config patchelf xdg-util
   libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev \
   libsecret-1-dev libdbus-1-dev libfuse2 gstreamer1.0-plugins-base \
   gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
-```
 
-Скачай исходники и запусти сборку:
-
-```bash
 git clone https://github.com/simfonyy/aureon.git
 cd aureon/app
 npm ci
 bash scripts/build/Build-Linux.sh
 ```
 
-Готовый пакет для установки лежит в `app/src-tauri/target/release/bundle/deb/`, а файл для запуска без установки — в `app/src-tauri/target/release/bundle/appimage/`. Для разработки из той же папки проекта запусти `npm run tauri:dev`.
+Пакеты появятся в `app/src-tauri/target/release/bundle/deb/` и `app/src-tauri/target/release/bundle/appimage/`. Для разработки запусти `npm run tauri:dev` из `aureon/app`.
 
 </details>
 
+## Авторы
+
+Aureon вырос из [Mashiro](https://github.com/aeviww/yandex-music-client). Код распространяется по [GPL-3.0-or-later](LICENSE).
+
 <details>
-<summary><strong>Авторы и источники</strong></summary>
+<summary>Источники и лицензии</summary>
 
-Aureon вырос из [Mashiro](https://github.com/aeviww/yandex-music-client). Это неофициальный клиент. Яндекс не участвует в разработке.
+Тексты ищутся в Яндекс Музыке, [LRCLIB](https://lrclib.net), [Genius](https://genius.com), NetEase, KuGou и QQ Music. Если доступны только тайминги строк, подсветка слов приблизительная.
 
-Тексты предоставляют [LRCLIB](https://lrclib.net) и [Genius](https://genius.com). Если у песни есть только тайминги строк, подсветка слов приблизительная. Без таймингов доступен обычный текст.
+Для работы с каталогом использованы [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless). Источники версий без цензуры — [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData).
 
-Для работы с Яндекс Музыкой использованы [MarshalX/yandex-music-api](https://github.com/MarshalX/yandex-music-api) и [vyfor/yandex-music-rs](https://github.com/vyfor/yandex-music-rs). Фильтр AI-треков использует [Slopless](https://github.com/alexeyfv/slopless). Источники версий без цензуры — [FckCensor](https://github.com/Hazzz895/FckCensor) и [FckCensorData](https://github.com/Hazzz895/FckCensorData).
-
-Aureon распространяется под [GPL-3.0-or-later](LICENSE). Уведомления об авторских правах собраны в [NOTICE](docs/NOTICE). Лицензия шаблона установщика лежит в [app/src-tauri/installer](app/src-tauri/installer).
+Уведомления об авторских правах собраны в [NOTICE](docs/NOTICE). Лицензия шаблона установщика лежит в [app/src-tauri/installer](app/src-tauri/installer).
 
 </details>
